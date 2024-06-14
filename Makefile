@@ -61,7 +61,7 @@ ITALIC				=	\e[3m
 BOLD					=	\e[1m
 NEW						=	\r\033[K
 
-SRC_PATH			=	./
+SRC_PATH			=	./srcs
 
 OBJ_PATH			=	obj/
 
