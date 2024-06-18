@@ -76,8 +76,10 @@ AR						=	ar rcs
 ################################################################################
 
 SRCS_MAIN		=	main/main.cpp \
+					main/Webserv.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
+					error_logs/logs.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 
