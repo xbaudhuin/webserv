@@ -45,11 +45,13 @@ endif
 
 TXT						=	compile_flags.txt
 
-HEADER				=	-I./include/ \
+HEADER				=	-I./include/headers_hpp/ \
 								
 DEP_PATH			=	dep/
 
-HEADER_FILES	=	 PmergeMe.hpp \
+HEADER_FILES	=	 Config.hpp \
+					 Webserv.hpp \
+					 ServerConf.hpp \
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -61,7 +63,7 @@ ITALIC				=	\e[3m
 BOLD					=	\e[1m
 NEW						=	\r\033[K
 
-SRC_PATH			=	./srcs
+SRC_PATH			=	./srcs/
 
 OBJ_PATH			=	obj/
 
@@ -73,7 +75,9 @@ AR						=	ar rcs
 #                                    SOURCES                                   #
 ################################################################################
 
-SRCS_MAIN		=	main.cpp \
+SRCS_MAIN		=	main/main.cpp \
+					parser/Config.cpp \
+					parser/Split.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 
