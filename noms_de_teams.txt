@@ -1,5 +1,5 @@
 nom: west side - Ariana Grande
-vote:
+vote:-
 
 nom: Houdini - Dua Lipa
 vote:
@@ -67,10 +67,10 @@ vote:
 nom: Rush - Troye Sivan
 vote:
 
-nom:
-vote:
+nom: Outer wilds - Andrew Prahlow
+vote: 
 
-nom:
+nom: 
 vote:
 
 nom:
