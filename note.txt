@@ -60,3 +60,59 @@ Field-Name: OSW Field-Value OSW = content-type: text/html; charset=utf-8
                     -PATCH    = partialy modify ressource)
           
           
+
+
+
+
+
+
+
+
+HTTP-Version:
+
+Client request highest version
+server: reply error 505 if not supported or max_server_vrsion which is  <= client_version
+
+Host:Port: MANDATORY
+
+if port not mentionned, 80 is the default
+
+
+URI:
+
+userinfo component = error (?)
+Origin Form: Get /path?query HTTP/1.1
+Absolute Form: GET https://www.exapmle.com/path
+Authority Form: CONNECT www.example.com:80 HTTP/1.1
+Asterisk Form: OPTIONS * HTTP/1.1
+
+
+CONNECTION:
+
+Default connections are persistant
+Connection: keep-alive = keep connection open
+Connection: close = close connection
+
+
+CACHING:
+
+Cache-Control: no-cache = force revalidation(?)
+Cache-Control: no-store = prevent storage
+
+If-Modified-Since: date = Validate based on midfication date
+If-None-Match: date = Validate base on ETag(?)
+
+ERREUR REQUEST:
+
+Wrong http version
+Empty host/ wrong port
+
+
+
+
+
+
+
+
+
+
