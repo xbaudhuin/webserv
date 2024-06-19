@@ -20,5 +20,6 @@ class Webserv
 };
 
 void errorParsing(const std::string &message);
+void errorServer(const std::string &message);
 
 #endif
