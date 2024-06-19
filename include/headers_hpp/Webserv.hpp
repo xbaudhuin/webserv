@@ -10,6 +10,7 @@ class Webserv
     private:
         vec_string env;
         Config conf;
+
     public:
         Webserv();
         Webserv(const Webserv& rhs);
