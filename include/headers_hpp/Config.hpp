@@ -15,11 +15,11 @@ class Config
         Config(const Config &rhs);
         Config& operator=(const Config &rhs);
         ~Config();
-        Config parse(vec_string split); 
+        void parse(vec_string split); 
         map_confs getMapConfs(void);
 
 };
 
-vec_string split(const std::string &str, const std::string &charset);
+ServerConf parser(const vec_string &split, size_t &i, const size_t &size);
 
 #endif

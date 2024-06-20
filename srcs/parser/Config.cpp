@@ -13,20 +13,33 @@ Config& Config::operator=(const Config &rhs)
 {
     if(this != &rhs)
     {
-
+        this->confs = rhs.confs;
     }
     return(*this);
 }
 
-Config Config::parse(vec_string split)
+map_confs Config::getMapConfs(void)
 {
-    size_t i = split.size();
-    for(size_t j = 0; j < i; j++)
+    return(this->confs);
+}
+
+void Config::parse(vec_string split)
+{
+    size_t size = split.size();
+    for(size_t jt = 0; jt < size; jt++)
     {
-        std::cout << split[j] << std::endl;
+        std::cout << split[jt] << std::endl;
     }
-    Config config;
-    return(config);
+    for(size_t i = 0; i < size; i++)
+    {
+        if(split[i] == "server")
+        {
+            i++;
+            ServerConf newConf = parser(split, i, size);
+            std::string name = newConf.getMainServerName();
+            this->confs.insert(std::make_pair(name, newConf));
+        }
+    }
 }
 
 Config::~Config()

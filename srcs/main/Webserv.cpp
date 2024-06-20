@@ -25,11 +25,17 @@ Webserv::~Webserv()
 
 void Webserv::addEnv(char **env)
 {
+    this->env_char = env;
     for(size_t i = 0; env[i]; i++)
     {
         std::string str = env[i];
         this->env.push_back(str);
     }
+}
+
+char** Webserv::getEnv()
+{
+    return(this->env_char);
 }
 
 void Webserv::parseConfig(const std::string &conf)

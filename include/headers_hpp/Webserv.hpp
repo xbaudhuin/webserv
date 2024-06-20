@@ -9,6 +9,7 @@ class Webserv
 {
     private:
         vec_string env;
+        char **env_char;
         Config conf;
 
     public:
@@ -18,6 +19,7 @@ class Webserv
         ~Webserv();
         void addEnv(char **env);
         void parseConfig(const std::string &conf);
+        char ** getEnv(void);
 };
 
 void errorParsing(const std::string &message);
