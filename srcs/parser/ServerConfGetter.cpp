@@ -2,6 +2,7 @@
 
 std::string ServerConf::getIndexErrorPage(int errorCode)
 {
+    (void)errorCode;
     return("");
 }
 

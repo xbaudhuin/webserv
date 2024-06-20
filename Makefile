@@ -79,6 +79,10 @@ SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
+					parser/CreateSocket.cpp \
+					parser/Parser.cpp \
+					parser/ServerConf.cpp \
+					parser/ServerConfGetter.cpp \
 					error_logs/logs.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \

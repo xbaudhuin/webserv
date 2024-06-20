@@ -3,12 +3,12 @@
 void configureBasicServer(ServerConf &cf)
 {
     static int i = 0;
-    cf.addHost("");
-    cf.addPort("");
-    cf.addServerName("");
+    cf.addHost("127.0.0.1");
+    cf.addPort("80");
+    cf.addServerName("Webserv");
     std::vector<int> v;
     v.push_back(404);
-    cf.addErrorPage("", v);
+    // cf.addErrorPage("", v);
     cf.setMainServerName();
     i++;
 }
@@ -78,5 +78,5 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
             break;
         i++;
     }
-    
+    return(cf);
 }

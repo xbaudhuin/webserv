@@ -45,7 +45,7 @@ class ServerConf
         std::string getMainServerName(void) const;
 
         /* setters */
-        void addErrorPage(const std::string &url, std::vector<int> err);
+        // void addErrorPage(const std::string &url, std::vector<int> err);
         void addPortOrHost(const std::string &str);
         void addPort(const std::string &str);
         void addHost(const std::string &str);
