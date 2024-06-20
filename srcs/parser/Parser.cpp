@@ -1,4 +1,4 @@
-#include "Config.hpp"
+#include "Webserv.hpp"
 
 void configureBasicServer(ServerConf &cf)
 {
@@ -26,6 +26,57 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     {
         configureBasicServer(cf);
         return(cf);
+    }
+    while(i < size)
+    {
+        if(split[i] == "listen")
+        {
+            i++;
+            if(i < size && split[i].find(';', 0) == std::string::npos)
+            {
+                if(i + 1 < size && split[i + 1] != ";")
+                {
+                    errorParsing("Error inside the listen directive, ';' not found");
+                    continue;
+                }
+            }
+            try
+            {
+                cf.addPortOrHost(split[i]);
+            }
+            catch(const std::exception& e)
+            {
+                writeInsideLog(e, errorParsing);
+            }
+            
+            i++;
+            continue;
+        }
+
+        else if(split[i] == "server_name")
+        {
+            i++;
+            while (i < size)
+            {
+                if(split[i].find_first_of("{}", 0) != std::string::npos)
+                {
+                    errorParsing("Error inside the server_name directive");
+                    break;
+                }
+                if((pos = split[i].find(';')) != std::string::npos)
+                {
+                    cf.addServerName(split[i].substr(0, pos));
+                    break;
+                }
+                cf.addServerName(split[i]);
+                i++;
+            }
+            i++;
+            continue;
+        }
+        if(split[i] == "}")
+            break;
+        i++;
     }
     
 }
