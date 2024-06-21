@@ -1,1 +1,4 @@
-syntax error for host target
+Error:
+Misconfigured server block, found "{" again
+Error inside the listen directive
+Error inside the client_max_body_size directive

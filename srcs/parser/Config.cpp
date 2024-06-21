@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "Error.hpp"
 
 Config::Config()
 {
@@ -23,6 +24,27 @@ map_confs Config::getMapConfs(void)
     return(this->confs);
 }
 
+bool checkNumberBrackets(const vec_string &split)
+{
+    size_t size = split.size();
+    size_t count = 0;
+    size_t pos = 0;
+    size_t pos2 = 0;
+    for (size_t i = 0; i < size; i++)
+    {
+        if((pos = split[i].find('{', 0)) != std::string::npos)
+            count++;
+        else if((pos2 = split[i].find('}', 0)) != std::string::npos)
+        {
+            if(count == 0)
+                return 1;
+            count--;
+        }
+    }
+    return 0;
+    
+}
+
 void Config::parse(vec_string split)
 {
     size_t size = split.size();
@@ -30,15 +52,24 @@ void Config::parse(vec_string split)
     // {
     //     std::cout << split[jt] << std::endl;
     // }
+    if(checkNumberBrackets(split))
+        return(errorParsing("Issue with the file, uneven number of {}"));
     for(size_t i = 0; i < size; i++)
     {
         if(split[i] == "server")
         {
             i++;
-            ServerConf newConf = parser(split, i, size);
-            std::string name = newConf.getMainServerName();
-            std::cout << name << std::endl;
-            this->confs.insert(std::make_pair(name, newConf));
+            try
+            {
+                ServerConf newConf = parser(split, i, size);
+                std::string name = newConf.getMainServerName();
+                std::cout << "Name: " << name << std::endl;
+                this->confs.insert(std::make_pair(name, newConf));
+            }
+            catch(const std::exception& e)
+            {
+                writeInsideLog(e, errorParsing);
+            }
         }
     }
     std::cout << "Test: " << this->confs.size() << std::endl;

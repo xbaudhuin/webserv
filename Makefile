@@ -52,6 +52,7 @@ DEP_PATH			=	dep/
 HEADER_FILES	=	 Config.hpp \
 					 Webserv.hpp \
 					 ServerConf.hpp \
+					 Error.hpp
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -83,6 +84,7 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/Parser.cpp \
 					parser/ServerConf.cpp \
 					parser/ServerConfGetter.cpp \
+					parser/UtilsParser.cpp \
 					error_logs/logs.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \

@@ -21,5 +21,6 @@ class Config
 };
 
 ServerConf parser(const vec_string &split, size_t &i, const size_t &size);
+void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t &i);
 
 #endif

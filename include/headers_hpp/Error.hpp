@@ -12,5 +12,6 @@ void writeInsideLog(const std::exception &e, F f)
 
 void errorParsing(const std::string &message);
 void errorServer(const std::string &message);
+void goToNextIndex(const vec_string &split, size_t &i);
 
 #endif

@@ -5,6 +5,8 @@
 #include "Error.hpp"
 #include <fstream>
 #include <sstream>
+#include <fcntl.h>
+#include <unistd.h>
 
 class Webserv
 {
@@ -22,6 +24,5 @@ class Webserv
         void parseConfig(const std::string &conf);
         char ** getEnv(void);
 };
-
 
 #endif

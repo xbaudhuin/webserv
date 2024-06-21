@@ -1,0 +1,9 @@
+obj/parser/ServerConf.o: srcs/parser/ServerConf.cpp \
+  include/headers_hpp/ServerConf.hpp include/headers_hpp/Location.hpp \
+  include/headers_hpp/Error.hpp
+
+include/headers_hpp/ServerConf.hpp:
+
+include/headers_hpp/Location.hpp:
+
+include/headers_hpp/Error.hpp:

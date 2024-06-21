@@ -12,10 +12,11 @@ class Location
         /* RETURN */
         /* ON/OFF DIRECT LISTENING */
         /* TYPE_FILE IF EXIST */
+        /* LIMIT SIZE */
 
     public:
-        Location(/* args */);
-        ~Location();
+        // Location(/* args */);
+        // ~Location();
 };
 
 // Location::Location(/* args */)
