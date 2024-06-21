@@ -23,7 +23,7 @@ ServerConf& ServerConf::operator=(const ServerConf &rhs)
         this->socket = rhs.socket;
         this->err_pages = rhs.err_pages;
         this->limit_body_size = rhs.limit_body_size;
-        this->locate = rhs.locate;
+        this->_locations = rhs._locations;
     }
     return(*this);
 }

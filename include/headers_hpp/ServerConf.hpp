@@ -22,7 +22,7 @@ class ServerConf
         uint32_t socket;
         map_err_pages err_pages;
         uint64_t limit_body_size;
-        location locate;
+        location _locations;
         std::string server_name;
 
     public:

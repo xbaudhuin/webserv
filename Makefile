@@ -85,6 +85,7 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/ServerConf.cpp \
 					parser/ServerConfGetter.cpp \
 					parser/UtilsParser.cpp \
+					parser/Location.cpp \
 					error_logs/logs.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
