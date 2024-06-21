@@ -6,10 +6,11 @@ Location::Location(){
     this->redirection = "";
     this->_directory_listing = 0;
     this->limit_body_size = 0;
+    this->code_redirection = 0;
 }
 
 Location::Location(const Location &rhs){
-
+    this->operator=(rhs);
 }
 
 Location& Location::operator=(const Location &rhs){

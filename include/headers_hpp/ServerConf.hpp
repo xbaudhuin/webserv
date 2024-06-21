@@ -11,7 +11,7 @@
 
 typedef std::vector<std::string> vec_string;
 typedef std::map<int, std::string> map_err_pages;
-typedef std::vector<Location> location;
+typedef std::vector<Location> vec_location;
 
 class ServerConf
 {
@@ -22,7 +22,7 @@ class ServerConf
         uint32_t socket;
         map_err_pages err_pages;
         uint64_t limit_body_size;
-        location _locations;
+        vec_location _locations;
         std::string server_name;
 
     public:
@@ -45,6 +45,8 @@ class ServerConf
         std::string getMainServerName(void) const;
         map_err_pages getErrPages(void) const;
         uint64_t getLimitBodySize(void) const;
+        vec_location getLocations(void) const;
+        Location getPreciseLocation(const std::string &url) const;
 
         /* setters */
         void addErrorPage(const std::string &url, std::vector<int> err);
@@ -53,6 +55,7 @@ class ServerConf
         void addHost(const std::string &str);
         void addServerName(const std::string &name);
         void addLimitBodySize(const std::string &limit);
+        void addLocation(const Location &loc);
         void setMainServerName(void);
 };
 

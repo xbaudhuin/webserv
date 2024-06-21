@@ -129,17 +129,15 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
             continue;
         }
 
-        // else if (/* condition */)
-        // {
-        // /* code */
-        // }
+        else if (split[i] == "location")
+        {
+            ParserLocation(split, i, size, cf);
+            continue;
+        }
         
         
         if(split[i] == "}")
-        {
-            std::cerr << "coucou" << std::endl;
             break;
-        }
         i++;
     }
     cf.setMainServerName();

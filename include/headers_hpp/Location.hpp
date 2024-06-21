@@ -1,6 +1,8 @@
 #ifndef LOCATION_HPP
 # define LOCATION_HPP
 
+#include <iostream>
+
 class Location
 {
     private:
@@ -36,13 +38,5 @@ class Location
         void addRedirection(const std::string &code, const std::string &redirect);
         void setAutoIndex(const std::string &check);
 };
-
-// Location::Location(/* args */)
-// {
-// }
-
-// Location::~Location()
-// {
-// }
 
 #endif

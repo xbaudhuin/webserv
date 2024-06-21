@@ -214,3 +214,8 @@ void ServerConf::addLimitBodySize(const std::string &limit)
     this->limit_body_size = static_cast<uint64_t>(std::strtoull(value.c_str(), NULL, 10)) * to_multiply;
     std::cout << "limit body size: " << this->limit_body_size << std::endl; 
 }
+
+void ServerConf::addLocation(const Location &loc)
+{
+    this->_locations.push_back(loc);
+}
