@@ -7,10 +7,11 @@
 #include <map>
 #include <limits>
 #include <arpa/inet.h>
+#include <Location.hpp>
 
 typedef std::vector<std::string> vec_string;
 typedef std::map<int, std::string> map_err_pages;
-typedef std::map<std::string, std::map<int, std::string> > location;
+typedef std::vector<Location> location;
 
 class ServerConf
 {
@@ -43,9 +44,10 @@ class ServerConf
         int getPort(void) const;
         uint32_t getHost(void) const;
         std::string getMainServerName(void) const;
+        map_err_pages getErrPages(void) const;
 
         /* setters */
-        // void addErrorPage(const std::string &url, std::vector<int> err);
+        void addErrorPage(const std::string &url, std::vector<int> err);
         void addPortOrHost(const std::string &str);
         void addPort(const std::string &str);
         void addHost(const std::string &str);

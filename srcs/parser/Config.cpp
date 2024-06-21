@@ -26,10 +26,10 @@ map_confs Config::getMapConfs(void)
 void Config::parse(vec_string split)
 {
     size_t size = split.size();
-    for(size_t jt = 0; jt < size; jt++)
-    {
-        std::cout << split[jt] << std::endl;
-    }
+    // for(size_t jt = 0; jt < size; jt++)
+    // {
+    //     std::cout << split[jt] << std::endl;
+    // }
     for(size_t i = 0; i < size; i++)
     {
         if(split[i] == "server")
@@ -37,9 +37,11 @@ void Config::parse(vec_string split)
             i++;
             ServerConf newConf = parser(split, i, size);
             std::string name = newConf.getMainServerName();
+            std::cout << name << std::endl;
             this->confs.insert(std::make_pair(name, newConf));
         }
     }
+    std::cout << "Test: " << this->confs.size() << std::endl;
 }
 
 Config::~Config()

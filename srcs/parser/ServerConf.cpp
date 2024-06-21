@@ -1,5 +1,5 @@
 #include "ServerConf.hpp"
-
+#include "Error.hpp"
 ServerConf::ServerConf()
 {
     port = -1;
@@ -61,15 +61,29 @@ void ServerConf::addPortOrHost(const std::string &str)
     vec_string vec = split(str, ":");
     if(vec.size() == 1)
     {
-        if((pos = vec[0].find_first_of(".")) == std::string::npos)
-            this->addPort(vec[0]);
-        else
-            this->addHost(vec[0]);        
+        try
+        {
+            if((pos = vec[0].find_first_of(".")) == std::string::npos)
+                this->addPort(vec[0]);
+            else
+                this->addHost(vec[0]);  
+        }
+        catch(const std::exception& e)
+        {
+            writeInsideLog(e, errorParsing);
+        }
     }
     else if(vec.size() == 2)
     {
-        this->addHost(vec[0]);
-        this->addPort(vec[1]);
+        try
+        {
+            this->addHost(vec[0]);
+            this->addPort(vec[1]);
+        }
+        catch(const std::exception& e)
+        {
+            writeInsideLog(e, errorParsing);
+        }
     }
     else
         throw std::logic_error("syntax error for listen directive");
@@ -108,15 +122,25 @@ void ServerConf::addHost(const std::string &str)
     {
         for(int i = 0; i < 4; i++)
         {
-            octet = static_cast<uint8_t>(std::strtol(vec[i].c_str(), NULL, 10));
-            if(octet > 255)
-            {
-                this->host = -1;
+            if(vec[i].size() > 3 || std::atoi(vec[i].c_str()) > 255)
                 throw std::logic_error("syntax error for host target");
-            }
-            ip |= (octet << ((3 - i) * 8));
+        }
+        int bitshift = 0;
+        for(int i = 0; i < 4; i++)
+        {
+            octet = static_cast<uint32_t>(std::strtol(vec[i].c_str(), NULL, 10));
+            ip = ip << bitshift;
+            ip |= octet;
+            bitshift = 8;
         }
         this->host = htonl(ip);
+        // ip = ntohl(this->host);
+        std::cout << this->host << " && " ;
+        std::cout << "IP: " 
+                  << ((ip >> 24) & 0xFF) << "."
+                  << ((ip >> 16) & 0xFF) << "."
+                  << ((ip >> 8) & 0xFF) << "."
+                  << (ip & 0xFF) << std::endl;
     }
     else
         throw std::logic_error("syntax error for host target");
@@ -137,3 +161,13 @@ void ServerConf::addPort(const std::string &str)
         throw std::logic_error("syntax error for port target");
     this->port = static_cast<int>(port_value);
 }
+
+void ServerConf::addErrorPage(const std::string &url, const std::vector<int> err)
+{
+    size_t size = err.size();
+    for(size_t i = 0; i < size; i++)
+    {
+        this->err_pages.insert(std::make_pair(err[i], url));
+    }
+}
+

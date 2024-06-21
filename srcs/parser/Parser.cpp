@@ -8,12 +8,13 @@ void configureBasicServer(ServerConf &cf)
     cf.addServerName("Webserv");
     std::vector<int> v;
     v.push_back(404);
-    // cf.addErrorPage("", v);
+    cf.addErrorPage("./html/basic_error_page.html", v);
     cf.setMainServerName();
     i++;
 }
 
 ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
+
     ServerConf cf;
     size_t pos = 0;
 
@@ -40,15 +41,7 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
                     continue;
                 }
             }
-            try
-            {
-                cf.addPortOrHost(split[i]);
-            }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
-            
+            cf.addPortOrHost(split[i]);
             i++;
             continue;
         }
@@ -74,9 +67,27 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
             i++;
             continue;
         }
+
+        else if (split[i] == "error_page")
+        {
+            /* code */
+        }
+        
+        // else if (/* condition */)
+        // {
+        // /* code */
+        // }
+
+        // else if (/* condition */)
+        // {
+        // /* code */
+        // }
+        
+        
         if(split[i] == "}")
             break;
         i++;
     }
+    cf.setMainServerName();
     return(cf);
 }

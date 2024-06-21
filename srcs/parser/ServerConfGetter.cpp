@@ -3,7 +3,10 @@
 std::string ServerConf::getIndexErrorPage(int errorCode)
 {
     (void)errorCode;
-    return("");
+    map_err_pages::iterator it = this->err_pages.find(errorCode);
+    if(it == this->err_pages.end())
+        return("");
+    return(it->second);
 }
 
 std::string ServerConf::limitBodySize(void)
@@ -32,4 +35,9 @@ void ServerConf::setMainServerName(void)
 std::string ServerConf::getMainServerName(void) const
 {
     return(this->server_name);
+}
+
+map_err_pages ServerConf::getErrPages(void) const
+{
+    return(this->err_pages);
 }

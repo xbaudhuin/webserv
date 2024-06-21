@@ -13,8 +13,6 @@ int main(int argc, char **argv, char **env)
         else
             config = "./config/good_config/test.conf";
         serv.parseConfig(config);
-        errorParsing("Test");
-        errorParsing("Test2");
     }
     catch(const std::exception& e)
     {

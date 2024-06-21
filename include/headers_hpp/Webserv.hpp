@@ -2,6 +2,7 @@
 #define WEBSERV_HPP
 
 #include "Config.hpp"
+#include "Error.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -22,14 +23,5 @@ class Webserv
         char ** getEnv(void);
 };
 
-template <typename F>
-void writeInsideLog(const std::exception &e, F f)
-{
-    std::string message = e.what();
-    f(message);
-}
-
-void errorParsing(const std::string &message);
-void errorServer(const std::string &message);
 
 #endif
