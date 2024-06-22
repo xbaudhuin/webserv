@@ -1,5 +1,2 @@
-Error:
-Incorrect client_limit_body_size passed as parameter1
-Error:
-Location directive missing the '{' separator, skipping until we find the next '}'
-Error inside the client_max_body_size directive
+Error inside the listen directive
+Error inside the root directive, ';' not found

@@ -19,6 +19,7 @@ Location& Location::operator=(const Location &rhs){
         this->url = rhs.url;
         this->root = rhs.root;
         this->redirection = rhs.redirection;
+        this->code_redirection = rhs.code_redirection;
         this->_directory_listing = rhs._directory_listing;
         this->limit_body_size = rhs.limit_body_size;
     }
@@ -48,6 +49,10 @@ std::string Location::getRedirection(void) const{
     return(this->redirection);
 }
 
+int Location::getRedirCode(void) const{
+    return(this->code_redirection);
+}
+
 bool Location::getAutoIndex(void) const{
     return(this->_directory_listing);
 }
@@ -63,16 +68,16 @@ void Location::addLimitBodySize(const std::string &limit)
     char c = '\0';
     pos = limit.find_first_not_of("0123456789kmgKMG;", 0);
     if(pos != std::string::npos)
-        throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter1");
+        throw std::logic_error("Error:\nIncorrect client_limit_body_size loc passed as parameter1");
     vec_string check = split(limit, ";");
     if(check.size() > 1)
-        throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter2");
+        throw std::logic_error("Error:\nIncorrect client_limit_body_size loc passed as parameter2");
     pos = limit.find_first_of("kmgKMG", 0);
     if(pos != std::string::npos)
     {
         std::cerr<< pos << " && " << check[0].size() << std::endl;
         if(pos == 0 || pos + 1 < check[0].size())
-            throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter3");
+            throw std::logic_error("Error:\nIncorrect client_limit_body_size loc passed as parameter3");
         c = limit[pos];
     }
     else
@@ -96,7 +101,6 @@ void Location::addLimitBodySize(const std::string &limit)
             break;
     }
     this->limit_body_size = static_cast<uint64_t>(std::strtoull(value.c_str(), NULL, 10)) * to_multiply;
-    std::cout << "limit body size: " << this->limit_body_size << std::endl; 
 }
 
 void Location::addUrl(const std::string &url){
@@ -104,8 +108,9 @@ void Location::addUrl(const std::string &url){
     if(check <= 0)
         throw std::logic_error("Error:\nCouldnt set url, invalid path passed as parameter");
     std::string s;
+    check--;
     if(url[check] == ';')
-        s = url.substr(0, check - 1);
+        s = url.substr(0, check);
     else
         s = url;
     this->url = s;
@@ -116,8 +121,9 @@ void Location::addRoot(const std::string &root){
     if(check <= 0)
         throw std::logic_error("Error:\nCouldnt set root, invalid path passed as parameter");
     std::string s;
+    check--;
     if(root[check] == ';')
-        s = root.substr(0, check - 1);
+        s = root.substr(0, check);
     else
         s = root;
     this->root = s;
@@ -134,11 +140,13 @@ void Location::addRedirection(const std::string &code, const std::string &redire
     if(check <= 0)
         throw std::logic_error("Error:\nCouldnt set redirection, invalid path passed as parameter");
     std::string s;
+    check--;
     if(redirect[check] == ';')
-        s = redirect.substr(0, check - 1);
+        s = redirect.substr(0, check);
     else
         s = redirect;
     this->redirection = s;
+    this->code_redirection = static_cast<int>(code_i);
 }
 
 void Location::setAutoIndex(const std::string &check)

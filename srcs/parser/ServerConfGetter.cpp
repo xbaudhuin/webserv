@@ -57,3 +57,8 @@ Location ServerConf::getPreciseLocation(const std::string &url) const
     throw std::logic_error("how wtf?");
     return(this->_locations[0]);
 }
+
+size_t ServerConf::getRank(void) const
+{
+    return(this->rank);
+}

@@ -24,6 +24,7 @@ ServerConf& ServerConf::operator=(const ServerConf &rhs)
         this->err_pages = rhs.err_pages;
         this->limit_body_size = rhs.limit_body_size;
         this->_locations = rhs._locations;
+        this->rank = rhs.rank;
     }
     return(*this);
 }
@@ -53,6 +54,11 @@ bool ServerConf::nameExist(const std::string &name)
     return(0);
 }
 
+void ServerConf::setRank(size_t rank)
+{
+    this->rank = rank;
+}
+
 void ServerConf::addPortOrHost(const std::string &str)
 {
     size_t pos = str.find_first_not_of("0123456789.:;", 0);
@@ -61,29 +67,15 @@ void ServerConf::addPortOrHost(const std::string &str)
     vec_string vec = split(str, ":");
     if(vec.size() == 1)
     {
-        try
-        {
-            if((pos = vec[0].find_first_of(".")) == std::string::npos)
-                this->addPort(vec[0]);
-            else
-                this->addHost(vec[0]);  
-        }
-        catch(const std::exception& e)
-        {
-            writeInsideLog(e, errorParsing);
-        }
+        if((pos = vec[0].find_first_of(".")) == std::string::npos)
+            this->addPort(vec[0]);
+        else
+            this->addHost(vec[0]);  
     }
     else if(vec.size() == 2)
     {
-        try
-        {
-            this->addHost(vec[0]);
-            this->addPort(vec[1]);
-        }
-        catch(const std::exception& e)
-        {
-            writeInsideLog(e, errorParsing);
-        }
+        this->addHost(vec[0]);
+        this->addPort(vec[1]);
     }
     else
         throw std::logic_error("syntax error for listen directive");
@@ -134,13 +126,13 @@ void ServerConf::addHost(const std::string &str)
             bitshift = 8;
         }
         this->host = htonl(ip);
-        // ip = ntohl(this->host);
+        /* ip = ntohl(this->host);
         std::cout << this->host << " && " ;
         std::cout << "IP: " 
                   << ((ip >> 24) & 0xFF) << "."
                   << ((ip >> 16) & 0xFF) << "."
                   << ((ip >> 8) & 0xFF) << "."
-                  << (ip & 0xFF) << std::endl;
+                  << (ip & 0xFF) << std::endl; */
     }
     else
         throw std::logic_error("syntax error for host target");
@@ -212,7 +204,7 @@ void ServerConf::addLimitBodySize(const std::string &limit)
             break;
     }
     this->limit_body_size = static_cast<uint64_t>(std::strtoull(value.c_str(), NULL, 10)) * to_multiply;
-    std::cout << "limit body size: " << this->limit_body_size << std::endl; 
+    // std::cout << "limit body size: " << this->limit_body_size << std::endl; 
 }
 
 void ServerConf::addLocation(const Location &loc)

@@ -29,6 +29,7 @@ class Location
         std::string getUrl(void) const;
         std::string getRoot(void) const;
         std::string getRedirection(void) const;
+        int getRedirCode(void) const;
         bool getAutoIndex(void) const;
 
         /* setters */

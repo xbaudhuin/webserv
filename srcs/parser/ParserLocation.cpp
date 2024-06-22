@@ -61,7 +61,7 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
             }
             try
             {
-                loc.addLimitBodySize(split[i]);
+                loc.setAutoIndex(split[i]);
                 i++;
             }
             catch(const std::exception& e)
@@ -72,6 +72,7 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         else if(split[i] == "return")
         {
             i++;
+            std::cerr << split[i] << "&&" << split[i  + 1] << std::endl;
             if(split[i].find(';', 0) != std::string::npos)
             {
                 if(i + 1 < size && split[i + 1] != ";")
@@ -98,12 +99,13 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
             try
             {
                 loc.addRedirection(split[i - 1], split[i]);
-                i++;
             }
             catch(const std::exception& e)
             {
                 writeInsideLog(e, errorParsing);
             }
+            i++;
+            continue;
         }
         else if (split[i] == "client_max_body_size")
         {
@@ -139,6 +141,5 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         i++;
     }
     i++;
-    std::cout << "Url: " << loc.getUrl() << std::endl;
     cf.addLocation(loc);
 }

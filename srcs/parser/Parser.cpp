@@ -17,6 +17,8 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
 
     ServerConf cf;
     size_t pos = 0;
+    static size_t rank = 0;
+    size_t index_brack = i;
 
     if (split[i] != "{" )
         throw std::logic_error("Error:\nMissing '{' of the server block");
@@ -37,17 +39,13 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
             i++;
             if(split[i].find_first_of("{}", 0) != std::string::npos)
             {
-                errorParsing("Error inside the listen directive");
                 goToNextIndex(split, i);
-                continue;
+                throw std::logic_error("Error inside the listen directive");
             }
             if(i < size && split[i].find(';', 0) == std::string::npos)
             {
                 if(i + 1 < size && split[i + 1] != ";")
-                {
-                    errorParsing("Error inside the listen directive, ';' not found");
-                    continue;
-                }
+                    throw std::logic_error("Error inside the listen directive , ';' not found");
             }
             cf.addPortOrHost(split[i]);
             i++;
@@ -80,22 +78,16 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
         else if (split[i] == "error_page")
         {
             std::vector<int> vec;
-            try
+            addErrorPagesNumber(vec, split, i);
+            if((pos = split[i].find(";")) != std::string::npos)
+                cf.addErrorPage(split[i].substr(0, pos), vec);
+            else
             {
-                addErrorPagesNumber(vec, split, i);
-                if((pos = split[i].find(";")) != std::string::npos)
-                    cf.addErrorPage(split[i].substr(0, pos), vec);
-                else
-                {
-                    cf.addErrorPage(split[i], vec);
-                    i++;
-                }
+                cf.addErrorPage(split[i], vec);
+                i++;
             }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
-            
+            i++;
+            continue;
             
         }
         
@@ -116,16 +108,8 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
                     continue;
                 }
             }
-            try
-            {
-                cf.addLimitBodySize(split[i]);
-                i++;
-            }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
-            
+            cf.addLimitBodySize(split[i]);
+            i++;
             continue;
         }
 
@@ -135,11 +119,13 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
             continue;
         }
         
-        
+        std::cout << split[i] << std::endl;
         if(split[i] == "}")
             break;
         i++;
     }
     cf.setMainServerName();
+    cf.setRank(rank);
+    rank++;
     return(cf);
 }

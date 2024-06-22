@@ -19,7 +19,7 @@ NAME					=	webserv
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
 
 debug 				= 	0
 
@@ -87,6 +87,7 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/UtilsParser.cpp \
 					parser/Location.cpp \
 					parser/ParserLocation.cpp \
+					parser/Printer.cpp \
 					error_logs/logs.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
@@ -97,7 +98,7 @@ OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 					
 all:			${NAME}
 
-${NAME}:		${OBJS} ${TXT}
+${NAME}:		${OBJS} ${TXT} Makefile
 		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS} ${HEADER}
 		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 

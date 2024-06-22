@@ -1,19 +1,8 @@
-\.php$
-{
-fastcgi_split_path_info
-^(.+\.php)(/.+)$;
-include
-fastcgi_params;
-fastcgi_pass
-wordpress:9000;
-fastcgi_index
-index.php;
-fastcgi_param
-SCRIPT_FILENAME
-$document_root$fastcgi_script_name;
-fastcgi_param
-SCRIPT_NAME
-$fastcgi_script_name;
-}
-0k{
-};
+1{}27.0.0.1:443
+2 && 3
+301&&http://thole.42.fr$request_uri;
+1 && 2
+301&&http://localhost;
+2 && 3
+1 && 2
+301&&http://localhost;

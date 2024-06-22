@@ -23,5 +23,6 @@ class Config
 ServerConf parser(const vec_string &split, size_t &i, const size_t &size);
 void ParserLocation(const vec_string &split, size_t &i,const size_t &size, ServerConf &cf);
 void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t &i);
+void printConfig(const map_confs &conf);
 
 #endif
