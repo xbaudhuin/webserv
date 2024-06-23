@@ -14,6 +14,7 @@ void printConfig(const map_confs &cf)
         }
         
         ServerConf serv = it->second;
+        cout << YELLOW << "Root: " << serv.getRoot() << std::endl;
         map_err_pages err = serv.getErrPages();
         map_err_pages::iterator err_it = err.begin();
         cout << PURP2 << "Error pages: " << RESET << std::endl;
@@ -38,8 +39,11 @@ void printConfig(const map_confs &cf)
             cout << "Loc[" << i << "]:\n\t";
             if(loc[i].getUrl().size() >  0)
                 cout << "Url: " << loc[i].getUrl() << "\n\t";
+            cout << "Exact Match: " << (loc[i].isExactMatch() ? "YES" : "NO") << "\n\t";
             if(loc[i].getRoot().size() >  0)
                 cout << "Root: " << loc[i].getRoot() << "\n\t";
+            if(loc[i].getIndexFile().size() > 0)
+                cout << "Index File: " << loc[i].getIndexFile() << "\n\t";
             if(loc[i].getRedirection().size() > 0)
                 cout << "Redirection URL and CODE: " << loc[i].getRedirection() << " && " << loc[i].getRedirCode() << "\n\t";
             cout << "Limit body size: " << loc[i].getLimitBodySize() << "\n\t";

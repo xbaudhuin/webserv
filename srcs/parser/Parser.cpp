@@ -111,7 +111,22 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
                 ParserLocation(split, i, size, cf);
                 continue;
             }
-
+            else if (split[i] == "root")
+            {
+                i++;
+                if(split[i].find_first_of("{};", 0) != std::string::npos)
+                {
+                    throw std::logic_error("Error inside the root directive");
+                }
+                if(i + 1 < size && split[i + 1] != ";")
+                {
+                    throw std::logic_error("Error inside the root directive, ';' not found");
+                }
+                cf.addRoot(split[i]);
+                i+=2;
+                continue;
+            }
+            
             if(split[i] == "}")
                 break;
             std::string s = "Error:\nUnknown directive found in the server block: ";

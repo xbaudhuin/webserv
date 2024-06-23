@@ -7,6 +7,8 @@ Location::Location(){
     this->_directory_listing = 0;
     this->limit_body_size = 0;
     this->code_redirection = 0;
+    this->_exact_match = 0;
+    this->index_file = "";
 }
 
 Location::Location(const Location &rhs){
@@ -22,6 +24,8 @@ Location& Location::operator=(const Location &rhs){
         this->code_redirection = rhs.code_redirection;
         this->_directory_listing = rhs._directory_listing;
         this->limit_body_size = rhs.limit_body_size;
+        this->_exact_match = rhs._exact_match;
+        this->index_file = rhs.index_file;
     }
     return(*this);
 }
@@ -49,6 +53,10 @@ std::string Location::getRedirection(void) const{
     return(this->redirection);
 }
 
+std::string Location::getIndexFile(void) const{
+    return(this->index_file);
+}
+
 int Location::getRedirCode(void) const{
     return(this->code_redirection);
 }
@@ -57,6 +65,9 @@ bool Location::getAutoIndex(void) const{
     return(this->_directory_listing);
 }
 
+bool Location::isExactMatch(void) const{
+    return(this->_exact_match);
+}
 
 /* setters */
 
@@ -75,7 +86,7 @@ void Location::addLimitBodySize(const std::string &limit)
     pos = limit.find_first_of("kmgKMG", 0);
     if(pos != std::string::npos)
     {
-        std::cerr<< pos << " && " << check[0].size() << std::endl;
+        // std::cerr<< pos << " && " << check[0].size() << std::endl;
         if(pos == 0 || pos + 1 < check[0].size())
             throw std::logic_error("Error:\nIncorrect client_limit_body_size loc passed as parameter3");
         c = limit[pos];
@@ -103,17 +114,40 @@ void Location::addLimitBodySize(const std::string &limit)
     this->limit_body_size = static_cast<uint64_t>(std::strtoull(value.c_str(), NULL, 10)) * to_multiply;
 }
 
-void Location::addUrl(const std::string &url){
+void Location::addUrl(const std::string &url, std::string root){
+    bool isfile = 0;
     size_t check = url.size();
     if(check <= 0)
         throw std::logic_error("Error:\nCouldnt set url, invalid path passed as parameter");
-    std::string s;
-    check--;
-    if(url[check] == ';')
-        s = url.substr(0, check);
+    std::string line = url;
+    vec_string s = tokenizer(line, " ", "/");
+    for (size_t i = 0; i < s.size(); i++)
+    {
+        if(i == 0)
+        {
+            if(s[i] != "/")
+                throw std::logic_error("Error:\nInvalid URL passed in the location block");
+            continue;
+        }
+        else if (i % 2 == 0)
+        {
+            isfile = 0;
+            if(s[i] != "/")
+                throw std::logic_error("Error:\nInvalid URL passed in the location block");
+            continue;
+        }
+        isfile = 1;
+    }
+    if(isfile && !this->_exact_match)
+    {
+        this->url = (root.erase(0)) + "/";
+        this->setIndexFile(root + url);
+    }
     else
-        s = url;
-    this->url = s;
+    {
+        this->url = url;
+        this->setIndexFile("");
+    }
 }
 
 void Location::addRoot(const std::string &root){
@@ -160,3 +194,11 @@ void Location::setAutoIndex(const std::string &check)
         throw std::logic_error("Error:\nCouln't set directory listing, unkown parameter passed as argument");
 }
 
+void Location::setExactMatch(void){
+    this->_exact_match = 1;
+}
+
+void Location::setIndexFile(const std::string &file)
+{
+    this->index_file = file;
+}

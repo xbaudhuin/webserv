@@ -62,3 +62,7 @@ size_t ServerConf::getRank(void) const
 {
     return(this->rank);
 }
+
+std::string ServerConf::getRoot(void) const{
+    return(this->root);
+}

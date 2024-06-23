@@ -21,7 +21,7 @@ vec_string split(const std::string &str, const std::string &charset)
     return(split);
 }
 
-vec_string tokenizer(std::string &str, const std::string &charset)
+vec_string tokenizer(std::string &str, const std::string &charset, const std::string &tokens)
 {
     vec_string split;
     size_t pos = 0;
@@ -30,7 +30,7 @@ vec_string tokenizer(std::string &str, const std::string &charset)
 
     while(1)
     {
-        pos_token = str.find_first_of("{};", pos_token);
+        pos_token = str.find_first_of(tokens, pos_token);
         if(pos_token != std::string::npos)
         {
             str.insert(pos_token , " ");
