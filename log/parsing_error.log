@@ -1,0 +1,2 @@
+Error:
+Error_page directive found invalid because the error_codes do not conform to standard http request codes limits
