@@ -7,6 +7,7 @@ ServerConf::ServerConf()
     socket = -1;
     limit_body_size = 0;
     rank = -1;
+    root = "./html";
 }
 
 ServerConf::ServerConf(const ServerConf &rhs)
@@ -26,6 +27,7 @@ ServerConf& ServerConf::operator=(const ServerConf &rhs)
         this->limit_body_size = rhs.limit_body_size;
         this->_locations = rhs._locations;
         this->rank = rhs.rank;
+        this->root = rhs.root;
     }
     return(*this);
 }
@@ -179,7 +181,7 @@ void ServerConf::addLimitBodySize(const std::string &limit)
     pos = limit.find_first_of("kmgKMG", 0);
     if(pos != std::string::npos)
     {
-        std::cerr<< pos << " && " << check[0].size() << std::endl;
+        // std::cerr<< pos << " && " << check[0].size() << std::endl;
         if(pos == 0 || pos + 1 < check[0].size())
             throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter3");
         c = limit[pos];
@@ -211,4 +213,19 @@ void ServerConf::addLimitBodySize(const std::string &limit)
 void ServerConf::addLocation(const Location &loc)
 {
     this->_locations.push_back(loc);
+}
+
+void ServerConf::addRoot(const std::string &dir)
+{
+    std::string check = dir;
+    if(check[0] != '.')
+        check.insert(0, ".");
+    std::string save = check;
+    vec_string s = tokenizer(check, " ", "/");
+    check = save;
+    if(s[0] != ".")
+        throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
+    if(check[check.size() - 1] == '/')
+        check.erase(check.end() - 1);
+    this->root = check;
 }

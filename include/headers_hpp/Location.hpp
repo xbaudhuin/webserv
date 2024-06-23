@@ -12,8 +12,10 @@ class Location
         /* DELETE */
         /* FAST_CGI */
         /* TYPE_FILE IF EXIST */
+        bool _exact_match;
         std::string root;
         std::string redirection;
+        std::string index_file;
         int code_redirection;
         bool _directory_listing;
         uint64_t limit_body_size;
@@ -29,15 +31,19 @@ class Location
         std::string getUrl(void) const;
         std::string getRoot(void) const;
         std::string getRedirection(void) const;
+        std::string getIndexFile(void) const;
         int getRedirCode(void) const;
         bool getAutoIndex(void) const;
+        bool isExactMatch(void) const;
 
         /* setters */
         void addLimitBodySize(const std::string &limit);
-        void addUrl(const std::string &url);
+        void addUrl(const std::string &url, std::string root);
         void addRoot(const std::string &root);
         void addRedirection(const std::string &code, const std::string &redirect);
         void setAutoIndex(const std::string &check);
+        void setExactMatch(void);
+        void setIndexFile(const std::string &file);
 };
 
 #endif

@@ -25,6 +25,7 @@ class ServerConf
         vec_location _locations;
         std::string server_name;
         size_t rank;
+        std::string root;
 
     public:
 
@@ -49,6 +50,7 @@ class ServerConf
         vec_location getLocations(void) const;
         Location getPreciseLocation(const std::string &url) const;
         size_t getRank(void) const;
+        std::string getRoot(void) const;
 
         /* setters */
         void addErrorPage(const std::string &url, std::vector<int> err);
@@ -60,11 +62,12 @@ class ServerConf
         void addLocation(const Location &loc);
         void setMainServerName(void);
         void setRank(size_t rank);
+        void addRoot(const std::string &dir);
 };
 
 typedef std::vector<std::pair<vec_string, ServerConf> > map_confs;
 vec_string split(const std::string &str, const std::string &charset);
-vec_string tokenizer(std::string &str, const std::string &charset);
+vec_string tokenizer(std::string &str, const std::string &charset, const std::string &tokens);
 
 //  std::numeric_limits<uint32_t>::max()
 

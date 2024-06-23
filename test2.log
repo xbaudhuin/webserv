@@ -1,55 +1,31 @@
+Coucou
 Server Name n[0]: webserv
-Server Name n[1]: cocuou
-Error pages: 
-Code Error: 404 && url: qqch
-Code Error: 405 && url: qqch
-Code Error: 406 && url: qqch
-Max body size: 13312
-IP: 127.0.0.1
-Port: 443
-Now printing locations:
-Loc[0]:
-	Url: /test
-	Root: /error_pages
-	Limit body size: 0
-	Directory Listing Status: 0
-Loc[1]:
-	Url: /
-	Redirection URL and CODE: http://thole.42.fr$request_uri && 301
-	Limit body size: 0
-	Directory Listing Status: 0
-Loc[2]:
-	Url: /html
-	Limit body size: 3072
-	Directory Listing Status: 1
-Loc[3]:
-	Url: /
-	Redirection URL and CODE: http://localhost && 301
-	Limit body size: 0
-	Directory Listing Status: 0
-		Rank: 0
-
-Server Name n[0]: localhost
+Root: ./html
 Error pages: 
 Code Error: 404 && url: qqch
 Code Error: 405 && url: qqch
 Code Error: 406 && url: qqch
 Max body size: 12288
 IP: 127.0.0.1
-Port: -1
+Port: 443
 Now printing locations:
 Loc[0]:
-	Url: /test
+	Url: /test/
+	Exact Match: YES
+	Root: /error_pages
 	Limit body size: 0
 	Directory Listing Status: 0
 Loc[1]:
-	Url: /html
+	Url: /
+	Exact Match: NO
+	Index File: toto.html
 	Limit body size: 3072
 	Directory Listing Status: 1
 Loc[2]:
 	Url: /
+	Exact Match: YES
 	Redirection URL and CODE: http://localhost && 301
 	Limit body size: 0
 	Directory Listing Status: 0
-		Rank: 1
+		Rank: 0
 

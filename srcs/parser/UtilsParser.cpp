@@ -20,32 +20,27 @@ void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t 
     i++;
     while(i < size)
     {
-        if(split[i] == ";")
+
+        if(i + 1 < size  && split[i + 1] == ";")
         {
-            i--;
+            if(split[i].find('/', 0) == std::string::npos)
+                throw std::logic_error("Error:\nError_page directive missing the url");
             break;
         }
         else if (split[i].find_first_of("{}", 0) != std::string::npos)
         {
-            throw std::logic_error("Error inside the error_page directive");
+            throw std::logic_error("Error:\nError_page directive found invalid because of misuse of '{}'");
         }
-        else if (split[i].find(";", 0) != std::string::npos || (i + 1 < size  && split[i + 1] == ";"))
-        {
-            break;
-        }
-
         if(split[i][0] == '=')
             ;
         else if((pos = split[i].find_first_not_of("0123456789", 0)) != std::string::npos)
         {
-            throw std::logic_error("Error inside the error codes, non numerical characters found");
+            throw std::logic_error("Error:\nError_page directive found invalid because we found non numerical characters inside the error codes");
         }
         long int code = std::strtol(split[i].c_str(), &ptr, 10);
         if(code < 100 || code > 599)
         {
-            std::string s = ptr;
-            std::string s2 = "Invalid error code, skipping it :" + s;
-            errorParsing(s2);
+            throw std::logic_error("Error:\nError_page directive found invalid because the error_codes do not conform to standard http request codes limits");
         }
         vec.push_back(static_cast<int>(code));
         i++;
