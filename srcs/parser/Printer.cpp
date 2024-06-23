@@ -8,7 +8,11 @@ void printConfig(const map_confs &cf)
     map_confs::const_iterator it = cf.begin();
     while(it != cf.end())
     {
-        cout << BLUE << "Server Name: " << it->first << RESET << std::endl;
+        for (size_t i = 0; i < it->first.size(); i++)
+        {
+            cout << BLUE << "Server Name n["<< i << "]: " << it->first[i] << RESET << std::endl;
+        }
+        
         ServerConf serv = it->second;
         map_err_pages err = serv.getErrPages();
         map_err_pages::iterator err_it = err.begin();

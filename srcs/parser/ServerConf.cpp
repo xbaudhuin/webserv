@@ -2,10 +2,11 @@
 #include "Error.hpp"
 ServerConf::ServerConf()
 {
-    port = -1;
-    host = -1;
+    port = 80;
+    host = 0;
     socket = -1;
     limit_body_size = 0;
+    rank = -1;
 }
 
 ServerConf::ServerConf(const ServerConf &rhs)

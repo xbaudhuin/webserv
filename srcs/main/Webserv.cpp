@@ -51,5 +51,5 @@ void Webserv::parseConfig(const std::string &conf)
     strm << config.rdbuf();
     std::string str = strm.str();
     config.close();
-    this->conf.parse(split(str, " \n\t\r\b\v\f"));
+    this->conf.parse(tokenizer(str, " \n\t\r\b\v\f"));
 }

@@ -27,7 +27,6 @@ void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t 
         }
         else if (split[i].find_first_of("{}", 0) != std::string::npos)
         {
-            goToNextIndex(split, i);
             throw std::logic_error("Error inside the error_page directive");
         }
         else if (split[i].find(";", 0) != std::string::npos || (i + 1 < size  && split[i + 1] == ";"))
@@ -39,7 +38,6 @@ void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t 
             ;
         else if((pos = split[i].find_first_not_of("0123456789", 0)) != std::string::npos)
         {
-            // std::cout << split[i] << std::endl;
             throw std::logic_error("Error inside the error codes, non numerical characters found");
         }
         long int code = std::strtol(split[i].c_str(), &ptr, 10);

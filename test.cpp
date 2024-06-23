@@ -33,11 +33,8 @@ vec_string tokenizer(std::string &str, const std::string &charset)
         pos_token = str.find_first_of("{};", pos_token);
         if(pos_token != std::string::npos)
         {
-            // std::cout << str << std::endl;
-            // std::cout << pos_token << std::endl;
             str.insert(pos_token , " ");
             str.insert(pos_token + 2, " ");
-            // std::cout << str << std::endl;
             pos_token+= 2;
         }
         if((pos = str.find_first_not_of(charset, pos)) == std::string::npos)
@@ -55,19 +52,11 @@ vec_string tokenizer(std::string &str, const std::string &charset)
 
 int main()
 {
-    std::string file = "./config/good_config/test.conf";
-    std::ifstream config;
-    config.open(file.c_str());
-    if(!config.is_open())
-        throw std::logic_error("Error\nCouldn't open config file");
-    std::stringstream strm;
-    strm << config.rdbuf();
-    std::string str = strm.str();
-    config.close();
-    vec_string test = tokenizer(str, " \n\t\r\b\v\f");
-    for (size_t i = 0; i < test.size(); i++)
+    vec_string name;
+    name.push_back("Webserv");
+    for (size_t i = 0; i < name.size(); i++)
     {
-        std::cout << YELLOW << test[i] << RESET << std::endl;
+        std::cout << name[i] << std::endl;
     }
     
 }

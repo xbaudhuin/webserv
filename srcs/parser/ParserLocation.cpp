@@ -11,129 +11,71 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
     loc.addUrl(split[i]);
     i++;
     if(split[i] != "{")
-        return(goToNextIndex(split, i), errorParsing("Error:\nLocation directive missing the '{' separator, skipping until we find the next '}'"));
+        throw std::logic_error("Error:\nLocation directive missing the '{' separator, skipping until we find the next '}'");
+    i++;
     while(i < size)
     {
         if(split[i] == "root")
         {
             i++;
-            if(split[i].find_first_of("{}", 0) != std::string::npos)
+            if(split[i].find_first_of("{};", 0) != std::string::npos)
             {
-                errorParsing("Error inside the root directive");
-                goToNextIndex(split, i);
-                continue;
+                throw std::logic_error("Error inside the root directive");
             }
-            if(i < size && split[i].find(';', 0) == std::string::npos)
+            if(i + 1 < size && split[i + 1] != ";")
             {
-                if(i + 1 < size && split[i + 1] != ";")
-                {
-                    errorParsing("Error inside the root directive, ';' not found");
-                    continue;
-                }
+                throw std::logic_error("Error inside the root directive, ';' not found");
             }
-            try
-            {
-                loc.addRoot(split[i]);
-                i++;
-            }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
-            
+            loc.addRoot(split[i]);
+            i+=2;
         }
         else if(split[i] == "autoindex")
         {
             i++;
-            if(split[i].find_first_of("{}", 0) != std::string::npos)
+            if(split[i].find_first_of("{};", 0) != std::string::npos)
             {
-                errorParsing("Error inside the autoindex directive");
-                goToNextIndex(split, i);
-                continue;
+                throw std::logic_error("Error inside the autoindex directive");
             }
-            if(i < size && split[i].find(';', 0) == std::string::npos)
+            if(i + 1 < size && split[i + 1] != ";")
             {
-                if(i + 1 < size && split[i + 1] != ";")
-                {
-                    errorParsing("Error inside the autoindex directive, ';' not found");
-                    continue;
-                }
+                throw std::logic_error("Error inside the autoindex directive, ';' not found");
             }
-            try
-            {
-                loc.setAutoIndex(split[i]);
-                i++;
-            }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
+            loc.setAutoIndex(split[i]);
+            i+=2;
         }
         else if(split[i] == "return")
         {
             i++;
-            std::cerr << split[i] << "&&" << split[i  + 1] << std::endl;
-            if(split[i].find(';', 0) != std::string::npos)
+            if(split[i].find_first_of("{};", 0) != std::string::npos)
             {
-                if(i + 1 < size && split[i + 1] != ";")
-                {
-                    errorParsing("Error inside the return directive, ';' not found");
-                    continue;
-                }
+                throw std::logic_error("Error inside the return directive, wrong format");
             }
             i++;
-            if(split[i].find_first_of("{}", 0) != std::string::npos)
+            if(split[i].find_first_of(";{}", 0) != std::string::npos)
             {
-                errorParsing("Error inside the return directive");
-                goToNextIndex(split, i);
-                continue;
+                throw std::logic_error("Error inside the return directive, wrong format");
             }
-            if(i < size && split[i].find(';', 0) == std::string::npos)
+            if(i + 1 < size && split[i + 1] != ";")
             {
-                if(i + 1 < size && split[i + 1] != ";")
-                {
-                    errorParsing("Error inside the return directive, ';' not found");
-                    continue;
-                }
+                throw std::logic_error("Error inside the return directive, ';' not found");
             }
-            try
-            {
-                loc.addRedirection(split[i - 1], split[i]);
-            }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
-            i++;
+            loc.addRedirection(split[i - 1], split[i]);
+            i+=2;
             continue;
         }
         else if (split[i] == "client_max_body_size")
         {
             i++;
-            if(split[i].find_first_of("{}", 0) != std::string::npos)
+            if(split[i].find_first_of("{};", 0) != std::string::npos)
             {
-                errorParsing("Error inside the client_max_body_size directive");
-                goToNextIndex(split, i);
-                continue;
+                throw std::logic_error("Error inside the client_max_body_size directive");
             }
-            if(i < size && split[i].find(';', 0) == std::string::npos)
+            if(i + 1 < size && split[i + 1] != ";")
             {
-                if(i + 1 < size && split[i + 1] != ";")
-                {
-                    errorParsing("Error inside the client_max_body_size directive, ';' not found");
-                    continue;
-                }
+                throw std::logic_error("Error inside the client_max_body_size directive, ';' not found");
             }
-            try
-            {
-                loc.addLimitBodySize(split[i]);
-                i++;
-            }
-            catch(const std::exception& e)
-            {
-                writeInsideLog(e, errorParsing);
-            }
-            
+            loc.addLimitBodySize(split[i]);
+            i+=2;
             continue;
         }
         if(split[i] == "}")

@@ -62,8 +62,9 @@ class ServerConf
         void setRank(size_t rank);
 };
 
-typedef std::multimap<std::string, ServerConf> map_confs;
+typedef std::vector<std::pair<vec_string, ServerConf> > map_confs;
 vec_string split(const std::string &str, const std::string &charset);
+vec_string tokenizer(std::string &str, const std::string &charset);
 
 //  std::numeric_limits<uint32_t>::max()
 

@@ -1,2 +1,1 @@
-Error inside the listen directive
-Error inside the root directive, ';' not found
+Error inside the client_max_body_size directive, ';' not found

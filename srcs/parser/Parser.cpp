@@ -1,16 +1,18 @@
 #include "Webserv.hpp"
 
-void configureBasicServer(ServerConf &cf)
+void goToNextServer(const vec_string &split, size_t &i, size_t &index ,const size_t &size)
 {
-    static int i = 0;
-    cf.addHost("127.0.0.1");
-    cf.addPort("80");
-    cf.addServerName("Webserv");
-    std::vector<int> v;
-    v.push_back(404);
-    cf.addErrorPage("./html/basic_error_page.html", v);
-    cf.setMainServerName();
-    i++;
+    size_t brackets = 1;
+    for (; index < size; i++)
+    {
+        if(split[i] == "{")
+            brackets++;
+        else if (split[i] == "}")
+            brackets--;
+        if(brackets == 0)
+            break;
+    }
+    
 }
 
 ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
@@ -18,111 +20,109 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     ServerConf cf;
     size_t pos = 0;
     static size_t rank = 0;
-    size_t index_brack = i;
+    size_t index = i;
 
     if (split[i] != "{" )
         throw std::logic_error("Error:\nMissing '{' of the server block");
     else if (( pos = split[i].find("}")) != std::string::npos)
         throw std::logic_error("Error:\nMisconfigured server block, issue comes from '}'");
     i++;
-    if(split[i].find("{") != std::string::npos)
+    if(split[i].find_first_of("{};") != std::string::npos)
         throw std::logic_error("Error:\nMisconfigured server block, found \"{\" again");
-    if (split[i] == "}")
-    {
-        configureBasicServer(cf);
-        return(cf);
-    }
-    while(i < size)
-    {
-        if(split[i] == "listen")
+    try
+    {    
+        while(i < size)
         {
-            i++;
-            if(split[i].find_first_of("{}", 0) != std::string::npos)
-            {
-                goToNextIndex(split, i);
-                throw std::logic_error("Error inside the listen directive");
-            }
-            if(i < size && split[i].find(';', 0) == std::string::npos)
-            {
-                if(i + 1 < size && split[i + 1] != ";")
-                    throw std::logic_error("Error inside the listen directive , ';' not found");
-            }
-            cf.addPortOrHost(split[i]);
-            i++;
-            continue;
-        }
+            index = i;
 
-        else if(split[i] == "server_name")
-        {
-            i++;
-            while (i < size)
+            if(split[i] == "listen")
             {
+                i++;
                 if(split[i].find_first_of("{}", 0) != std::string::npos)
                 {
-                    errorParsing("Error inside the server_name directive");
                     goToNextIndex(split, i);
-                    break;
+                    throw std::logic_error("Error inside the listen directive");
                 }
-                if((pos = split[i].find(';')) != std::string::npos)
-                {
-                    cf.addServerName(split[i].substr(0, pos));
-                    break;
-                }
-                cf.addServerName(split[i]);
-                i++;
-            }
-            i++;
-            continue;
-        }
-
-        else if (split[i] == "error_page")
-        {
-            std::vector<int> vec;
-            addErrorPagesNumber(vec, split, i);
-            if((pos = split[i].find(";")) != std::string::npos)
-                cf.addErrorPage(split[i].substr(0, pos), vec);
-            else
-            {
-                cf.addErrorPage(split[i], vec);
-                i++;
-            }
-            i++;
-            continue;
-            
-        }
-        
-        else if (split[i] == "client_max_body_size")
-        {
-            i++;
-            if(split[i].find_first_of("{}", 0) != std::string::npos)
-            {
-                errorParsing("Error inside the client_max_body_size directive");
-                goToNextIndex(split, i);
-                continue;
-            }
-            if(i < size && split[i].find(';', 0) == std::string::npos)
-            {
                 if(i + 1 < size && split[i + 1] != ";")
                 {
-                    errorParsing("Error inside the client_max_body_size directive, ';' not found");
-                    continue;
+                    throw std::logic_error("Error inside the listen directive , ';' not found");
                 }
+                cf.addPortOrHost(split[i]);
+                i+=2;
+                continue;
             }
-            cf.addLimitBodySize(split[i]);
-            i++;
-            continue;
-        }
 
-        else if (split[i] == "location")
-        {
-            ParserLocation(split, i, size, cf);
-            continue;
+            else if(split[i] == "server_name")
+            {
+                i++;
+                while (i < size)
+                {
+                    if(split[i].find_first_of("{}", 0) != std::string::npos)
+                    {
+                        throw std::logic_error ("Error inside the server_name directive");
+                    }
+                    if(split[i] == ";")
+                        break;
+                    cf.addServerName(split[i]);
+                    i++;
+                }
+                i++;
+                continue;
+            }
+
+            else if (split[i] == "error_page")
+            {
+                std::vector<int> vec;
+                addErrorPagesNumber(vec, split, i);
+                if((pos = split[i].find(";")) != std::string::npos)
+                {
+                    if(split[i] == ";")
+                        break;
+                    cf.addErrorPage(split[i].substr(0, pos), vec);
+                }
+                else
+                {
+                    cf.addErrorPage(split[i], vec);
+                    i++;
+                }
+                i++;
+                continue;
+
+            }
+
+            else if (split[i] == "client_max_body_size")
+            {
+                i++;
+                if(split[i].find_first_of("{};", 0) != std::string::npos)
+                {
+                    throw std::logic_error("Error inside the client_max_body_size directive");
+                }
+                if(i + 1 < size && split[i + 1] != ";")
+                {
+                    throw std::logic_error("Error inside the client_max_body_size directive, ';' not found");
+                }
+                cf.addLimitBodySize(split[i]);
+                i+=2;
+                continue;
+            }
+
+            else if (split[i] == "location")
+            {
+                ParserLocation(split, i, size, cf);
+                continue;
+            }
+
+            if(split[i] == "}")
+                break;
+            std::string s = "Error:\nUnknown directive found in the server block: ";
+            s += split[i];
+            throw std::logic_error(s);
         }
-        
-        std::cout << split[i] << std::endl;
-        if(split[i] == "}")
-            break;
-        i++;
+    }
+    catch(const std::exception& e)
+    {
+        goToNextServer(split, i, index, size);
+        throw;
     }
     cf.setMainServerName();
     cf.setRank(rank);

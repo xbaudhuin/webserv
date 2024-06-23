@@ -32,16 +32,12 @@ bool checkNumberBrackets(const vec_string &split)
     size_t pos2 = 0;
     for (size_t i = 0; i < size; i++)
     {
-        if((pos = split[i].find('{', 0)) != std::string::npos)
+        if(split[i] == "{")
         {
             count++;
-            // std::cout << split[i] << std::endl;
-            // if(split[i] != "{")
-            //     return 1;
         }
-        else if((pos2 = split[i].find('}', 0)) != std::string::npos)
+        else if(split[i] == "}")
         {
-            // std::cout << split[i] << std::endl;
             if(count == 0 )
                 return 1;
             count--;
@@ -69,9 +65,8 @@ void Config::parse(vec_string split)
             try
             {
                 ServerConf newConf = parser(split, i, size);
-                std::string name = newConf.getMainServerName();
-                // std::cout << "Name: " << name << std::endl;
-                this->confs.insert(std::make_pair(name, newConf));
+                vec_string name = newConf.getServerNames();
+                this->confs.push_back(std::make_pair(name, newConf));
                 check++;
             }
             catch(const std::exception& e)
@@ -82,7 +77,11 @@ void Config::parse(vec_string split)
     }
     // std::cout << "Test: " << this->confs.size() << std::endl;
     if(check)
-    printConfig(this->confs);
+    {
+        std::cout << "Coucou" << std::endl;
+        printConfig(this->confs);  
+    }
+
 }
 
 Config::~Config()
