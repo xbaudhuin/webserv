@@ -9,11 +9,6 @@ std::string ServerConf::getIndexErrorPage(int errorCode)
     return(it->second);
 }
 
-std::string ServerConf::limitBodySize(void)
-{
-    return(this->limit_body_size);
-}
-
 uint32_t ServerConf::getHost(void) const
 {
     return(this->host);
@@ -40,4 +35,30 @@ std::string ServerConf::getMainServerName(void) const
 map_err_pages ServerConf::getErrPages(void) const
 {
     return(this->err_pages);
+}
+
+uint64_t ServerConf::getLimitBodySize(void) const
+{
+    return(this->limit_body_size);
+}
+
+vec_location ServerConf::getLocations(void) const{
+    return(this->_locations);
+}
+
+Location ServerConf::getPreciseLocation(const std::string &url) const
+{
+    size_t size = this->_locations.size();
+    for (size_t i = 0; i < size; i++)
+    {
+        if(this->_locations[i].getUrl() == url)
+            return(this->_locations[i]);
+    }
+    throw std::logic_error("how wtf?");
+    return(this->_locations[0]);
+}
+
+size_t ServerConf::getRank(void) const
+{
+    return(this->rank);
 }

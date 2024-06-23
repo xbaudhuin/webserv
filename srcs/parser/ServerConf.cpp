@@ -2,10 +2,11 @@
 #include "Error.hpp"
 ServerConf::ServerConf()
 {
-    port = -1;
-    host = -1;
+    port = 80;
+    host = 0;
     socket = -1;
-    limit_body_size = "";
+    limit_body_size = 0;
+    rank = -1;
 }
 
 ServerConf::ServerConf(const ServerConf &rhs)
@@ -23,7 +24,8 @@ ServerConf& ServerConf::operator=(const ServerConf &rhs)
         this->socket = rhs.socket;
         this->err_pages = rhs.err_pages;
         this->limit_body_size = rhs.limit_body_size;
-        this->locate = rhs.locate;
+        this->_locations = rhs._locations;
+        this->rank = rhs.rank;
     }
     return(*this);
 }
@@ -53,6 +55,11 @@ bool ServerConf::nameExist(const std::string &name)
     return(0);
 }
 
+void ServerConf::setRank(size_t rank)
+{
+    this->rank = rank;
+}
+
 void ServerConf::addPortOrHost(const std::string &str)
 {
     size_t pos = str.find_first_not_of("0123456789.:;", 0);
@@ -61,29 +68,15 @@ void ServerConf::addPortOrHost(const std::string &str)
     vec_string vec = split(str, ":");
     if(vec.size() == 1)
     {
-        try
-        {
-            if((pos = vec[0].find_first_of(".")) == std::string::npos)
-                this->addPort(vec[0]);
-            else
-                this->addHost(vec[0]);  
-        }
-        catch(const std::exception& e)
-        {
-            writeInsideLog(e, errorParsing);
-        }
+        if((pos = vec[0].find_first_of(".")) == std::string::npos)
+            this->addPort(vec[0]);
+        else
+            this->addHost(vec[0]);  
     }
     else if(vec.size() == 2)
     {
-        try
-        {
-            this->addHost(vec[0]);
-            this->addPort(vec[1]);
-        }
-        catch(const std::exception& e)
-        {
-            writeInsideLog(e, errorParsing);
-        }
+        this->addHost(vec[0]);
+        this->addPort(vec[1]);
     }
     else
         throw std::logic_error("syntax error for listen directive");
@@ -134,13 +127,13 @@ void ServerConf::addHost(const std::string &str)
             bitshift = 8;
         }
         this->host = htonl(ip);
-        // ip = ntohl(this->host);
+        /* ip = ntohl(this->host);
         std::cout << this->host << " && " ;
         std::cout << "IP: " 
                   << ((ip >> 24) & 0xFF) << "."
                   << ((ip >> 16) & 0xFF) << "."
                   << ((ip >> 8) & 0xFF) << "."
-                  << (ip & 0xFF) << std::endl;
+                  << (ip & 0xFF) << std::endl; */
     }
     else
         throw std::logic_error("syntax error for host target");
@@ -171,3 +164,51 @@ void ServerConf::addErrorPage(const std::string &url, const std::vector<int> err
     }
 }
 
+void ServerConf::addLimitBodySize(const std::string &limit)
+{
+    std::string value;
+    uint64_t to_multiply = 1;
+    size_t pos = 0;
+    char c = '\0';
+    pos = limit.find_first_not_of("0123456789kmgKMG;", 0);
+    if(pos != std::string::npos)
+        throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter1");
+    vec_string check = split(limit, ";");
+    if(check.size() > 1)
+        throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter2");
+    pos = limit.find_first_of("kmgKMG", 0);
+    if(pos != std::string::npos)
+    {
+        std::cerr<< pos << " && " << check[0].size() << std::endl;
+        if(pos == 0 || pos + 1 < check[0].size())
+            throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter3");
+        c = limit[pos];
+    }
+    else
+        pos = limit.find_first_of(";", 0);
+    value = limit.substr(0, pos);
+    switch (c)
+    {
+        case 'k':
+        case 'K':
+            to_multiply *= 1024;
+            break;
+        case 'm':
+        case 'M':
+            to_multiply *= (1024 *1024);
+            break;
+        case 'g':
+        case 'G':
+            to_multiply *= (1024 *1024 *1024);
+            break;
+        default:
+            break;
+    }
+    this->limit_body_size = static_cast<uint64_t>(std::strtoull(value.c_str(), NULL, 10)) * to_multiply;
+    // std::cout << "limit body size: " << this->limit_body_size << std::endl; 
+}
+
+void ServerConf::addLocation(const Location &loc)
+{
+    this->_locations.push_back(loc);
+}

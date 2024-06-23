@@ -3,6 +3,12 @@
 int main(int argc, char **argv, char **env)
 {
     (void)argc;
+    int fd = open("./log/stderr.log", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd > 0)
+    {
+        dup2(fd, STDERR_FILENO);
+        close(fd);
+    }
     Webserv serv;
     try
     {

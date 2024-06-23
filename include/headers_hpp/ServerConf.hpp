@@ -7,11 +7,11 @@
 #include <map>
 #include <limits>
 #include <arpa/inet.h>
-#include <Location.hpp>
+#include "Location.hpp"
 
 typedef std::vector<std::string> vec_string;
-typedef std::map<int, std::string> map_err_pages;
-typedef std::vector<Location> location;
+typedef std::multimap<int, std::string> map_err_pages;
+typedef std::vector<Location> vec_location;
 
 class ServerConf
 {
@@ -21,9 +21,10 @@ class ServerConf
         uint32_t host;
         uint32_t socket;
         map_err_pages err_pages;
-        std::string limit_body_size;
-        location locate;
+        uint64_t limit_body_size;
+        vec_location _locations;
         std::string server_name;
+        size_t rank;
 
     public:
 
@@ -40,11 +41,14 @@ class ServerConf
         vec_string getServerNames();        
         uint32_t getSocket(void);
         std::string getIndexErrorPage(int errorCode);
-        std::string limitBodySize(void);
         int getPort(void) const;
         uint32_t getHost(void) const;
         std::string getMainServerName(void) const;
         map_err_pages getErrPages(void) const;
+        uint64_t getLimitBodySize(void) const;
+        vec_location getLocations(void) const;
+        Location getPreciseLocation(const std::string &url) const;
+        size_t getRank(void) const;
 
         /* setters */
         void addErrorPage(const std::string &url, std::vector<int> err);
@@ -52,11 +56,15 @@ class ServerConf
         void addPort(const std::string &str);
         void addHost(const std::string &str);
         void addServerName(const std::string &name);
+        void addLimitBodySize(const std::string &limit);
+        void addLocation(const Location &loc);
         void setMainServerName(void);
+        void setRank(size_t rank);
 };
 
-typedef std::map<std::string, ServerConf> map_confs;
+typedef std::vector<std::pair<vec_string, ServerConf> > map_confs;
 vec_string split(const std::string &str, const std::string &charset);
+vec_string tokenizer(std::string &str, const std::string &charset);
 
 //  std::numeric_limits<uint32_t>::max()
 

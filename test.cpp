@@ -1,51 +1,62 @@
-#include "Webserv.hpp"
+#include "./include/headers_hpp/Webserv.hpp"
 
-void ServerConf::addHost(const std::string &str)
+// vec_string split(const std::string &str, const std::string &charset)
+// {
+//     vec_string split;
+//     size_t pos = 0;
+//     size_t posend = 0;
+
+//     while(1)
+//     {
+//         if((pos = str.find_first_not_of(charset, pos)) == std::string::npos)
+//             break;
+//         posend = str.find_first_of(charset, pos);
+//         std::string to_add = str.substr(pos, posend - pos);
+//         split.push_back(to_add);
+//         if(posend == std::string::npos)
+//             break;
+//         pos = posend;
+//     }
+
+//     return(split);
+// }
+
+vec_string tokenizer(std::string &str, const std::string &charset)
 {
-    size_t size = str.size();
-    size_t count = 0;
-    uint32_t ip = 0;
-    uint8_t octet;
+    vec_string split;
+    size_t pos = 0;
+    size_t posend = 0;
+    size_t pos_token = 0;
 
-    for(size_t i = 0 ; i < size; i++)
+    while(1)
     {
-        if(str[i] == '.')
+        pos_token = str.find_first_of("{};", pos_token);
+        if(pos_token != std::string::npos)
         {
-            count++;
-            if(i + 1 == size || (i + 1 < size && str[i + 1] == '.'))
-                throw std::logic_error("syntax error for host target");
+            str.insert(pos_token , " ");
+            str.insert(pos_token + 2, " ");
+            pos_token+= 2;
         }
+        if((pos = str.find_first_not_of(charset, pos)) == std::string::npos)
+            break;
+        posend = str.find_first_of(charset, pos);
+        std::string to_add = str.substr(pos, posend - pos);
+        split.push_back(to_add);
+        if(posend == std::string::npos)
+            break;
+        pos = posend;
     }
 
-    if(count && count != 3)
-        throw std::logic_error("syntax error for host target");
+    return(split);
+}
 
-    vec_string vec = split(str, ".");
-
-    /* Future condition to handle * and localhost if necessary 
-    if(vec.size() == 1)
+int main()
+{
+    vec_string name;
+    name.push_back("Webserv");
+    for (size_t i = 0; i < name.size(); i++)
     {
+        std::cout << name[i] << std::endl;
     }
-    else */
-
-    /* bit shifting from chatgpt, i dunno if it works */
-    if(vec.size() == 4)
-    {
-        for(int i = 0; i < 4; i++)
-        {
-            if(vec[i].size() > 3 || std::atoi(vec[i].c_str()) > 255)
-                throw std::logic_error("syntax error for host target");
-        }
-        int bitshift = 0;
-        for(int i = 0; i < 4; i++)
-        {
-            octet = static_cast<uint32_t>(std::strtol(vec[i].c_str(), NULL, 10));
-            ip << bitshift;
-            ip |= octet;
-            bitshift = 8;
-        }
-        this->host = htonl(ip);
-    }
-    else
-        throw std::logic_error("syntax error for host target");
+    
 }
