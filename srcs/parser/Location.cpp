@@ -9,6 +9,8 @@ Location::Location(){
     this->code_redirection = 0;
     this->_exact_match = 0;
     this->index_file = "";
+    this->available_extension.push_back("py");
+    this->available_extension.push_back("sh");
 }
 
 Location::Location(const Location &rhs){
@@ -26,6 +28,8 @@ Location& Location::operator=(const Location &rhs){
         this->limit_body_size = rhs.limit_body_size;
         this->_exact_match = rhs._exact_match;
         this->index_file = rhs.index_file;
+        this->available_extension = rhs.available_extension;
+        this->cgi = rhs.cgi;
     }
     return(*this);
 }
@@ -67,6 +71,10 @@ bool Location::getAutoIndex(void) const{
 
 bool Location::isExactMatch(void) const{
     return(this->_exact_match);
+}
+
+std::vector<std::pair<std::string, std::string> > Location::getCgi(void) const{
+    return(this->cgi);
 }
 
 /* setters */
@@ -201,4 +209,13 @@ void Location::setExactMatch(void){
 void Location::setIndexFile(const std::string &file)
 {
     this->index_file = file;
+}
+
+void Location::setCgi(const std::string &extension, const std::string &executable)
+{
+    if(std::find(this->available_extension.begin(), this->available_extension.end(), extension) == this->available_extension.end())
+        throw std::logic_error("Error:\nUnknown extension found inside the cgi directive");
+    if(executable.size() < extension.size() || executable.substr(executable.size() - extension.size()) != extension)
+        throw std::logic_error("Error:\nIncorrect extension found inside the cgi directive");
+    this->cgi.push_back(std::make_pair(extension, executable));
 }

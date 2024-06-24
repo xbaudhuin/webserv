@@ -44,6 +44,13 @@ void printConfig(const map_confs &cf)
                 cout << "Root: " << loc[i].getRoot() << "\n\t";
             if(loc[i].getIndexFile().size() > 0)
                 cout << "Index File: " << loc[i].getIndexFile() << "\n\t";
+            if(loc[i].getCgi().size() > 0)
+            {
+                for (size_t j = 0; j < loc[i].getCgi().size(); j++)
+                {
+                    std::cout << "Cgi File: " << loc[i].getCgi()[j].second << "\n\t";
+                }
+            }                
             if(loc[i].getRedirection().size() > 0)
                 cout << "Redirection URL and CODE: " << loc[i].getRedirection() << " && " << loc[i].getRedirCode() << "\n\t";
             cout << "Limit body size: " << loc[i].getLimitBodySize() << "\n\t";

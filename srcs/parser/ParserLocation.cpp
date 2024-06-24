@@ -105,6 +105,31 @@ int testIndex(const vec_string &split, size_t &i, const size_t &size, Location &
     return(0);
 }
 
+int testCgi(const vec_string &split, size_t &i, const size_t &size, Location &loc)
+{
+    if(split[i] == "cgi")
+    {
+        i++;
+        if(split[i].find_first_of("{};", 0) != std::string::npos)
+        {
+            throw std::logic_error("Error inside the cgi directive, wrong format");
+        }
+        i++;
+        if(split[i].find_first_of(";{}", 0) != std::string::npos)
+        {
+            throw std::logic_error("Error inside the cgi directive, wrong format");
+        }
+        if(i + 1 < size && split[i + 1] != ";")
+        {
+            throw std::logic_error("Error inside the cgi directive, ';' not found");
+        }
+        loc.setCgi(split[i - 1], split[i]);
+        i+=2;
+        return(1);
+    }
+    return(0);
+}
+
 void ParserLocation(const vec_string &split, size_t &i,const size_t &size, ServerConf &cf)
 {
     i++;
@@ -143,6 +168,10 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
             continue;
         }
         else if (testIndex(split, i, size, loc))
+        {
+            continue;
+        }
+        else if(testCgi(split, i, size, loc))
         {
             continue;
         }
