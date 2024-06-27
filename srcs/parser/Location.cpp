@@ -11,6 +11,9 @@ Location::Location(){
     this->index_file = "";
     this->available_extension.push_back("py");
     this->available_extension.push_back("sh");
+    this->_get = 1;
+    this->_post = 0;
+    this->_delete = 1;
 }
 
 Location::Location(const Location &rhs){
@@ -30,6 +33,9 @@ Location& Location::operator=(const Location &rhs){
         this->index_file = rhs.index_file;
         this->available_extension = rhs.available_extension;
         this->cgi = rhs.cgi;
+        this->_get = rhs._get;
+        this->_post = rhs._post;
+        this->_delete = rhs._delete;
     }
     return(*this);
 }
@@ -71,6 +77,18 @@ bool Location::getAutoIndex(void) const{
 
 bool Location::isExactMatch(void) const{
     return(this->_exact_match);
+}
+
+bool Location::getGetSatus(void) const{
+    return(this->_get);
+}
+
+bool Location::getPostStatus(void) const{
+    return(this->_post);
+}
+
+bool Location::getDeleteStatus(void) const{
+    return(this->_delete);
 }
 
 std::vector<std::pair<std::string, std::string> > Location::getCgi(void) const{
@@ -218,4 +236,18 @@ void Location::setCgi(const std::string &extension, const std::string &executabl
     if(executable.size() < extension.size() || executable.substr(executable.size() - extension.size()) != extension)
         throw std::logic_error("Error:\nIncorrect extension found inside the cgi directive");
     this->cgi.push_back(std::make_pair(extension, executable));
+}
+
+void Location::setMethod(const std::string &method, const std::string &status){
+    bool stat;
+    if(status == "on" || status == "off")
+        stat = status == "on" ? 1 : 0;
+    else throw std::logic_error("Error:\nUnknown parameter passed inside the set_method directive");
+    if(method == "GET")
+        this->_get = stat;
+    else if(method == "POST")
+        this->_post = stat;
+    else if(method == "DELETE")
+        this->_delete = stat;
+    else throw std::logic_error("Error:\nUnknown method passed inside the set_method directive");
 }

@@ -1,2 +1,2 @@
 Error:
-Incorrect extension found inside the cgi directive
+Unknown method passed inside the _method directive

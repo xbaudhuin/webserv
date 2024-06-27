@@ -8,7 +8,9 @@ class Location
 {
     private:
         std::string url;
-        /* GET */
+        bool _post;
+        bool _get;
+        bool _delete;
         /* POST */
         /* DELETE */
         /* FAST_CGI */
@@ -38,6 +40,9 @@ class Location
         int getRedirCode(void) const;
         bool getAutoIndex(void) const;
         bool isExactMatch(void) const;
+        bool getPostStatus(void) const;
+        bool getGetSatus(void) const;
+        bool getDeleteStatus(void) const;
         std::vector<std::pair<std::string, std::string> > getCgi(void) const;
 
         /* setters */
@@ -49,6 +54,7 @@ class Location
         void setExactMatch(void);
         void setIndexFile(const std::string &file);
         void setCgi(const std::string &extension, const std::string &executable);
+        void setMethod(const std::string &method, const std::string &status);
 };
 
 #endif

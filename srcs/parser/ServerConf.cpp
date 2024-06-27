@@ -112,7 +112,6 @@ void ServerConf::addHost(const std::string &str)
     }
     else */
 
-    /* bit shifting from chatgpt, i dunno if it works */
     if(vec.size() == 4)
     {
         for(int i = 0; i < 4; i++)
@@ -129,13 +128,6 @@ void ServerConf::addHost(const std::string &str)
             bitshift = 8;
         }
         this->host = htonl(ip);
-        /* ip = ntohl(this->host);
-        std::cout << this->host << " && " ;
-        std::cout << "IP: " 
-                  << ((ip >> 24) & 0xFF) << "."
-                  << ((ip >> 16) & 0xFF) << "."
-                  << ((ip >> 8) & 0xFF) << "."
-                  << (ip & 0xFF) << std::endl; */
     }
     else
         throw std::logic_error("syntax error for host target");

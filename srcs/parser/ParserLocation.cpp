@@ -130,6 +130,31 @@ int testCgi(const vec_string &split, size_t &i, const size_t &size, Location &lo
     return(0);
 }
 
+int testSet_method(const vec_string &split, size_t &i, const size_t &size, Location &loc)
+{
+    if(split[i] == "set_method")
+    {
+        i++;
+        if(split[i].find_first_of("{};", 0) != std::string::npos)
+        {
+            throw std::logic_error("Error inside the set_method directive, wrong format");
+        }
+        i++;
+        if(split[i].find_first_of(";{}", 0) != std::string::npos)
+        {
+            throw std::logic_error("Error inside the set_method directive, wrong format");
+        }
+        if(i + 1 < size && split[i + 1] != ";")
+        {
+            throw std::logic_error("Error inside the set_method directive, ';' not found");
+        }
+        loc.setMethod(split[i - 1], split[i]);
+        i+=2;
+        return(1);
+    }
+    return(0);
+}
+
 void ParserLocation(const vec_string &split, size_t &i,const size_t &size, ServerConf &cf)
 {
     i++;
@@ -175,7 +200,10 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         {
             continue;
         }
-        
+        else if(testSet_method(split, i, size, loc))
+        {
+            continue;
+        }
         if(split[i] == "}")
             break;
         i++;
