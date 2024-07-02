@@ -1,6 +1,8 @@
 #include "SubServ.hpp"
 
-SubServ::SubServ(void)
+
+
+SubServ::SubServ(int port) : _port(port)
 {
 	return ;
 }

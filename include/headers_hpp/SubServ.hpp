@@ -10,6 +10,7 @@ class	SubServ
 {
 	public:
 							SubServ(void);
+							SubServ(int port);
 							~SubServ(void);
 							SubServ(const SubServ &otherSubServ);
 		SubServ				&operator=(const SubServ &otherSubServ);
