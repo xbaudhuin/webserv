@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define PORT 4247
+#define PORT 4248
 
 int main(int ac, char **av) {
   int sock = 0;
@@ -17,10 +17,9 @@ int main(int ac, char **av) {
 
   // Host: localhost:4247\nContent-Type: rest/html; charset=utf-8\nConta\n";
   std::string request;
-  request = "\r\n\r\n\nGET / "
-            "HTTP/01.00000009\n";
+  request = "GET /inde HTTP/12.145\n";
   // request += "Hosta:\n";
-  request += "Host: localhost:4247\n\n";
+  request += "Host:bonjour\n\n";
   // request += "Content-Type: rest/html; charset=utf-8\n";
 
   char buffer[2048] = {0};

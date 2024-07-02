@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/06/14 15:36:27 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/02 19:22:06 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -49,10 +49,11 @@ HEADER				=	-I./include/headers_hpp/ \
 								
 DEP_PATH			=	dep/
 
-HEADER_FILES	=	 Config.hpp \
-					 Webserv.hpp \
-					 ServerConf.hpp \
-					 Error.hpp
+HEADER_FILES	=		Config.hpp \
+					 				Webserv.hpp \
+					 				ServerConf.hpp \
+					 				Error.hpp \
+					 				HTTPRequest.hpp 
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -90,7 +91,27 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/Printer.cpp \
 					error_logs/logs.cpp \
 
+REQUEST = requester
+
+SRCS_REQUEST 	=		main/Webserv.cpp \
+									parser/Config.cpp \
+									parser/Split.cpp \
+									parser/CreateSocket.cpp \
+									parser/Parser.cpp \
+									parser/ServerConf.cpp \
+									parser/ServerConfGetter.cpp \
+									parser/UtilsParser.cpp \
+									parser/Location.cpp \
+									parser/ParserLocation.cpp \
+									parser/Printer.cpp \
+									error_logs/logs.cpp \
+									request_parsing/HTTPRequest.cpp \
+									request_parsing/main.cpp 
+
+
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
+
+OBJS_REQUEST	=	$(addprefix ${OBJ_PATH}, ${SRCS_REQUEST:.cpp=.o}) \
 
 ################################################################################
 #                                 RULES                                        #
@@ -101,6 +122,14 @@ all:			${NAME}
 ${NAME}:		${OBJS} ${TXT} Makefile
 		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS} ${HEADER}
 		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
+
+request: ${REQUEST}
+
+${REQUEST}: ${OBJS_REQUEST} ${TXT} Makefile
+		@${CXX} ${CXXFLAGS} -o ${REQUEST} ${OBJS_REQUEST} ${HEADER}
+		@printf "${NEW}${YELLOW}${REQUEST}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
+		
+		
 
 ${OBJ_PATH}%.o:	${SRC_PATH}%.cpp
 		@mkdir -p $(dir $@)
@@ -119,7 +148,7 @@ clean:
 		${RM}  ${OBJ_PATH}
 
 fclean:		clean
-		${RM} ${NAME} ${SRC_PATH}${TXT} ${TXT}
+		${RM} ${NAME} ${REQUEST} ${SRC_PATH}${TXT} ${TXT}
 
 re:			fclean all
 
