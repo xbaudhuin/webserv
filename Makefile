@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/02 19:22:06 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/02 19:23:48 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -49,11 +49,14 @@ HEADER				=	-I./include/headers_hpp/ \
 								
 DEP_PATH			=	dep/
 
-HEADER_FILES	=		Config.hpp \
-					 				Webserv.hpp \
-					 				ServerConf.hpp \
-					 				Error.hpp \
-					 				HTTPRequest.hpp 
+
+HEADER_FILES	=	 Config.hpp \
+					 Webserv.hpp \
+					 ServerConf.hpp \
+					 Error.hpp \
+					 SubServ.hpp \
+					 Typedef.hpp \
+					 Utils.hpp
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -79,6 +82,7 @@ AR						=	ar rcs
 
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
+					exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \

@@ -8,10 +8,8 @@
 #include <limits>
 #include <arpa/inet.h>
 #include "Location.hpp"
-
-typedef std::vector<std::string> vec_string;
-typedef std::multimap<int, std::string> map_err_pages;
-typedef std::vector<Location> vec_location;
+#include "Typedef.hpp"
+#include "Utils.hpp"
 
 class ServerConf
 {
@@ -64,10 +62,6 @@ class ServerConf
         void setRank(size_t rank);
         void addRoot(const std::string &dir);
 };
-
-typedef std::vector<std::pair<vec_string, ServerConf> > map_confs;
-vec_string split(const std::string &str, const std::string &charset);
-vec_string tokenizer(std::string &str, const std::string &charset, const std::string &tokens);
 
 //  std::numeric_limits<uint32_t>::max()
 

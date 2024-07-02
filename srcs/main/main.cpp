@@ -9,16 +9,10 @@ int main(int argc, char **argv, char **env)
         dup2(fd, STDERR_FILENO);
         close(fd);
     }
-    Webserv serv;
     try
     {
+        Webserv serv(argv[1]);
         serv.addEnv(env);
-        std::string config;
-        if(argv[1])
-            config = argv[1];
-        else
-            config = "./config/good_config/test.conf";
-        serv.parseConfig(config);
     }
     catch(const std::exception& e)
     {

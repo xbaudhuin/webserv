@@ -7,21 +7,27 @@
 #include <sstream>
 #include <fcntl.h>
 #include <unistd.h>
+#include "SubServ.hpp"
+#include "Typedef.hpp"
+#include "Utils.hpp"
+
 
 class Webserv
 {
     private:
+		mapSubServs	_subServs;
         vec_string env;
         char **env_char;
         Config conf;
+        Webserv();
+        void parseConfig(const std::string &conf);
 
     public:
-        Webserv();
+        Webserv(const char* s);
         Webserv(const Webserv& rhs);
         Webserv& operator=(const Webserv &rhs);
         ~Webserv();
         void addEnv(char **env);
-        void parseConfig(const std::string &conf);
         char ** getEnv(void);
 };
 

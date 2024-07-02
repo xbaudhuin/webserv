@@ -19,7 +19,7 @@ Config& Config::operator=(const Config &rhs)
     return(*this);
 }
 
-map_confs Config::getMapConfs(void)
+vec_confs Config::getMapConfs(void)
 {
     return(this->confs);
 }
@@ -70,6 +70,7 @@ void Config::parse(vec_string split)
             catch(const std::exception& e)
             {
                 writeInsideLog(e, errorParsing);
+                // throw;
             }
         }
     }
