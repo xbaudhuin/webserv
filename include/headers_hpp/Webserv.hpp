@@ -7,10 +7,14 @@
 #include <sstream>
 #include <fcntl.h>
 #include <unistd.h>
+#include "SubServ.hpp"
+
+typedef std::map<int, SubServ> mapSubServs; /* key = port */
 
 class Webserv
 {
     private:
+		mapSubServs	_subServs;
         vec_string env;
         char **env_char;
         Config conf;
