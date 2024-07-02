@@ -4,11 +4,13 @@
 #include <vector>
 #include <iostream>
 #include "ServerConf.hpp"
+#include "Typedef.hpp"
+#include "Utils.hpp"
 
 class Config
 {
     private:
-        map_confs confs;
+        vec_confs confs;
 
     public:
         Config();
@@ -16,13 +18,8 @@ class Config
         Config& operator=(const Config &rhs);
         ~Config();
         void parse(vec_string split); 
-        map_confs getMapConfs(void);
+        vec_confs getMapConfs(void);
 
 };
-
-ServerConf parser(const vec_string &split, size_t &i, const size_t &size);
-void ParserLocation(const vec_string &split, size_t &i,const size_t &size, ServerConf &cf);
-void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t &i);
-void printConfig(const map_confs &conf);
 
 #endif
