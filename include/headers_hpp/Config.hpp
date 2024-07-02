@@ -19,7 +19,6 @@ class Config
         ~Config();
         void parse(vec_string split); 
         vec_confs getMapConfs(void);
-
 };
 
 #endif

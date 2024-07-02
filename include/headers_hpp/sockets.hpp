@@ -14,5 +14,6 @@
 # include <string.h>
 # include <sys/epoll.h>
 # include <algorithm>
+# include <cstring>
 
 #endif

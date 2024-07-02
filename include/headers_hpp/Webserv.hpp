@@ -10,11 +10,13 @@
 #include "SubServ.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
+# include "sockets.hpp"
 
 
 class Webserv
 {
     private:
+		int			_epollFd;
 		mapSubServs	_subServs;
         vec_string env;
         char **env_char;
@@ -29,6 +31,7 @@ class Webserv
         ~Webserv();
         void addEnv(char **env);
         char ** getEnv(void);
+		int addSocketToEpoll(int socketFd);
 };
 
 #endif

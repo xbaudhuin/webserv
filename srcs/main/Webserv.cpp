@@ -64,3 +64,18 @@ void Webserv::parseConfig(const std::string &conf)
     config.close();
     this->conf.parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
 }
+
+int	Webserv::addSocketToEpoll(int socketFd)
+{
+	struct epoll_event	epollEvent;
+	int					status;
+	
+	std::memset(&epollEvent, 0, sizeof (epollEvent));
+	epollEvent.events = EPOLLIN;
+	epollEvent.data.fd = socketFd;
+	status = epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketFd, &epollEvent);
+	if (status != 0)
+	{
+		std::cerr << "webserv: Webserv::addSocketToEpoll: epoll_ctl: " << strerror(errno) << std::endl;
+	}
+}
