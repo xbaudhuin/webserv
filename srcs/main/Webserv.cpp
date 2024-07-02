@@ -4,6 +4,17 @@ Webserv::Webserv()
 {
 }
 
+Webserv::Webserv(const char* file)
+{
+    std::string config;
+    if(file)
+        config = file;
+    else
+        config = "./config/good_config/test.conf";
+    this->parseConfig(config);
+}
+
+
 Webserv::Webserv(const Webserv& rhs)
 {
     this->operator=(rhs);

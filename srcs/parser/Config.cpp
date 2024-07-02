@@ -70,6 +70,7 @@ void Config::parse(vec_string split)
             catch(const std::exception& e)
             {
                 writeInsideLog(e, errorParsing);
+                // throw;
             }
         }
     }
