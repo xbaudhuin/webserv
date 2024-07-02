@@ -8,12 +8,12 @@ Location::Location(){
     this->limit_body_size = 0;
     this->code_redirection = 0;
     this->_exact_match = 0;
-    this->index_file = "";
     this->available_extension.push_back("py");
     this->available_extension.push_back("sh");
     this->_get = 1;
     this->_post = 0;
     this->_delete = 1;
+    this->_root_check = 0;
 }
 
 Location::Location(const Location &rhs){
@@ -36,6 +36,7 @@ Location& Location::operator=(const Location &rhs){
         this->_get = rhs._get;
         this->_post = rhs._post;
         this->_delete = rhs._delete;
+        this->_root_check = rhs._root_check;
     }
     return(*this);
 }
@@ -63,7 +64,7 @@ std::string Location::getRedirection(void) const{
     return(this->redirection);
 }
 
-std::string Location::getIndexFile(void) const{
+vec_string Location::getIndexFile(void) const{
     return(this->index_file);
 }
 
@@ -141,6 +142,7 @@ void Location::addLimitBodySize(const std::string &limit)
 }
 
 void Location::addUrl(const std::string &url, std::string root){
+    (void)root;
     bool isfile = 0;
     size_t check = url.size();
     if(check <= 0)
@@ -166,17 +168,23 @@ void Location::addUrl(const std::string &url, std::string root){
     }
     if(isfile && !this->_exact_match)
     {
-        this->url = (root.erase(0)) + "/";
-        this->setIndexFile(root + url);
+        this->url = "/";
+        this->setIndexFile(url);
+        // std::cout << "COUCOU 0:" << this->url << " && " << this->index_file <<std::endl;
+
     }
     else
     {
         this->url = url;
-        this->setIndexFile("");
+        // this->setIndexFile("");
     }
 }
 
 void Location::addRoot(const std::string &root){
+    // static int i = 0;
+    // std::cout << i << std::endl;
+    if(this->_root_check > 0)
+        throw std::logic_error("Error:\nInvalid root directive inside Location block, root was already set once");
     size_t check = root.size();
     if(check <= 0)
         throw std::logic_error("Error:\nCouldnt set root, invalid path passed as parameter");
@@ -187,6 +195,7 @@ void Location::addRoot(const std::string &root){
     else
         s = root;
     this->root = s;
+    this->_root_check++;
 }
 
 void Location::addRedirection(const std::string &code, const std::string &redirect){
@@ -226,7 +235,7 @@ void Location::setExactMatch(void){
 
 void Location::setIndexFile(const std::string &file)
 {
-    this->index_file = file;
+    this->index_file.push_back(file);
 }
 
 void Location::setCgi(const std::string &extension, const std::string &executable)
@@ -250,4 +259,10 @@ void Location::setMethod(const std::string &method, const std::string &status){
     else if(method == "DELETE")
         this->_delete = stat;
     else throw std::logic_error("Error:\nUnknown method passed inside the set_method directive");
+}
+
+void Location::fixUrl(const std::string &url){
+    // std::cout << "Here: " <<url << " && " << this->url << std::endl;
+    this->url = url + this->url;
+    // std::cout << "Here2: " << this->url << std::endl;
 }

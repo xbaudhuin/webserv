@@ -43,7 +43,11 @@ void printConfig(const vec_confs &cf)
             if(loc[i].getRoot().size() >  0)
                 cout << "Root: " << loc[i].getRoot() << "\n\t";
             if(loc[i].getIndexFile().size() > 0)
-                cout << "Index File: " << loc[i].getIndexFile() << "\n\t";
+                for (size_t j = 0; j < loc[i].getIndexFile().size(); j++)
+                {
+                    cout << "Index File[" << j << "]: " << loc[i].getIndexFile()[j] << "\n\t";
+                }
+            
             if(loc[i].getCgi().size() > 0)
             {
                 for (size_t j = 0; j < loc[i].getCgi().size(); j++)

@@ -210,13 +210,13 @@ void ServerConf::addLocation(const Location &loc)
 void ServerConf::addRoot(const std::string &dir)
 {
     std::string check = dir;
-    if(check[0] != '.')
-        check.insert(0, ".");
+    // if(check[0] != '.')
+    //     check.insert(0, ".");
     std::string save = check;
     vec_string s = tokenizer(check, " ", "/");
     check = save;
-    if(s[0] != ".")
-        throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
+    // if(s[0] != ".")
+    //     throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
     if(check[check.size() - 1] == '/')
         check.erase(check.end() - 1);
     this->root = check;
