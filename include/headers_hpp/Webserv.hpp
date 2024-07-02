@@ -7,13 +7,16 @@
 #include <sstream>
 #include <fcntl.h>
 #include <unistd.h>
+#include "SubServ.hpp"
 
 class Webserv
 {
     private:
-        vec_string env;
-        char **env_char;
-        Config conf;
+        vec_string 				env;
+		int						_epollSocket;
+        char 					**env_char;
+        Config					conf;
+		std::map<int, SubServ>	_subServs;
 
     public:
         Webserv();
