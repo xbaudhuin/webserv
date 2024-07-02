@@ -18,8 +18,8 @@ class	SubServ
 	protected:
 
 	private:
-		int					_port;
-		int					_serverSocket;
+		// int					_port;
+		// int					_serverSocket;
 		std::vector<int>	_clientSockets;
 
 };

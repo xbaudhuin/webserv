@@ -3,9 +3,9 @@
 
 using std::cout;
 
-void printConfig(const map_confs &cf)
+void printConfig(const vec_confs &cf)
 {
-    map_confs::const_iterator it = cf.begin();
+    vec_confs::const_iterator it = cf.begin();
     while(it != cf.end())
     {
         for (size_t i = 0; i < it->first.size(); i++)
