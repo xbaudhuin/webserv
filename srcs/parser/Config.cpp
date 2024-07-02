@@ -19,7 +19,7 @@ Config& Config::operator=(const Config &rhs)
     return(*this);
 }
 
-map_confs Config::getMapConfs(void)
+vec_confs Config::getMapConfs(void)
 {
     return(this->confs);
 }

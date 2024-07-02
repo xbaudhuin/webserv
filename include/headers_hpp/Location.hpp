@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <vector>
+#include "Typedef.hpp"
+#include "Utils.hpp"
 
 class Location
 {

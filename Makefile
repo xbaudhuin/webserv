@@ -52,7 +52,10 @@ DEP_PATH			=	dep/
 HEADER_FILES	=	 Config.hpp \
 					 Webserv.hpp \
 					 ServerConf.hpp \
-					 Error.hpp
+					 Error.hpp \
+					 SubServ.hpp \
+					 Typedef.hpp \
+					 Utils.hpp
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -78,6 +81,7 @@ AR						=	ar rcs
 
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
+					exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \

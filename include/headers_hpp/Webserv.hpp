@@ -8,8 +8,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "SubServ.hpp"
+#include "Typedef.hpp"
+#include "Utils.hpp"
 
-typedef std::map<int, SubServ> mapSubServs; /* key = port */
 
 class Webserv
 {
