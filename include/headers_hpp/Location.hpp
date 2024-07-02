@@ -2,15 +2,20 @@
 # define LOCATION_HPP
 
 #include <iostream>
+#include <vector>
 
 class Location
 {
     private:
         std::string url;
-        /* GET */
+        bool _post;
+        bool _get;
+        bool _delete;
         /* POST */
         /* DELETE */
         /* FAST_CGI */
+        std::vector<std::string> available_extension;
+        std::vector<std::pair<std::string, std::string> > cgi;
         /* TYPE_FILE IF EXIST */
         bool _exact_match;
         std::string root;
@@ -35,6 +40,10 @@ class Location
         int getRedirCode(void) const;
         bool getAutoIndex(void) const;
         bool isExactMatch(void) const;
+        bool getPostStatus(void) const;
+        bool getGetSatus(void) const;
+        bool getDeleteStatus(void) const;
+        std::vector<std::pair<std::string, std::string> > getCgi(void) const;
 
         /* setters */
         void addLimitBodySize(const std::string &limit);
@@ -44,6 +53,8 @@ class Location
         void setAutoIndex(const std::string &check);
         void setExactMatch(void);
         void setIndexFile(const std::string &file);
+        void setCgi(const std::string &extension, const std::string &executable);
+        void setMethod(const std::string &method, const std::string &status);
 };
 
 #endif
