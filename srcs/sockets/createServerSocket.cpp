@@ -31,6 +31,6 @@ int	createServerSocket(int port)
 		close(serverSocket);
 		return (-1);
 	}
-	std::cout << "webserv: created server socket on port " << port << std::endl;
+	std::cout << "webserv: created server socket on fd " << serverSocket << " for port " << port << std::endl;
 	return (serverSocket);
 }

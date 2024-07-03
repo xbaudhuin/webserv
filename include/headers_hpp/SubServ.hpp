@@ -18,7 +18,7 @@ class	SubServ
 		mapConfs			_portConfs;
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int socketFd);
-
+		int					tests(void);
 
 	protected:
 

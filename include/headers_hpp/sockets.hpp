@@ -15,5 +15,8 @@
 # include <sys/epoll.h>
 # include <algorithm>
 # include <cstring>
+# include <iterator>
+
+int	createServerSocket(int port);
 
 #endif

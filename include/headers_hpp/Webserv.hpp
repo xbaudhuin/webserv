@@ -18,11 +18,12 @@ class Webserv
     private:
 		int			_epollFd;
 		mapSubServs	_subServs;
-        vec_string env;
-        char **env_char;
-        Config conf;
+        vec_string 	env;
+        char 		**env_char;
+        Config 		conf;
+		std::map<int, int> fdToPort;
         Webserv();
-        void parseConfig(const std::string &conf);
+        void 		parseConfig(const std::string &conf);
 
     public:
         Webserv(const char* s);
