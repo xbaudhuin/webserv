@@ -1,27 +1,34 @@
 #include "HTTPRequest.hpp"
 #include "Error.hpp"
 #include "ServerConf.hpp"
+#include "Utils.hpp"
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <limits>
 #include <ostream>
 #include <stdexcept>
 
-const char *HTTPRequest::validMethods[] = {"GET",     "POST",    "DELETE", "HEAD", "PUT",
-                              "CONNECT", "OPTIONS", "TRACE",  "PATCH"};
+const char *HTTPRequest::_validMethods[] = {"GET",     "POST",  "DELETE",
+                                            "HEAD",    "PUT",   "CONNECT",
+                                            "OPTIONS", "TRACE", "PATCH"};
 
-const size_t HTTPRequest::methodSize = 9;
+const size_t HTTPRequest::_methodSize = 9;
 
-const char *HTTPRequest::whiteSpaces = " \t";
+const char *HTTPRequest::_whiteSpaces = " \t";
+
+const size_t HTTPRequest::_uriMaxSize = 8000;
+
+const size_t HTTPRequest::_headerMaxSize = 8000;
 
 HTTPRequest::HTTPRequest(void) { return; }
 
-HTTPRequest::HTTPRequest(std::istringstream &request)
-    : statusCode(200), _method(""), _uri(""), _version(0), _host(""), _body("")
-       {
-  parseRequest(request);
+HTTPRequest::HTTPRequest(int fd)
+    : _socket(fd), _statusCode(200), _method(""), _uri(""), _version(0), _host(""),
+      _body("") {
+  return;
 }
 
 HTTPRequest::~HTTPRequest(void) { return; }
@@ -44,46 +51,63 @@ HTTPRequest &HTTPRequest::operator=(HTTPRequest const &rhs) {
   return (*this);
 }
 
-void trimWhitespace(std::string &str, const char *whiteSpaces){
+void trimWhitespace(std::string &str, const char *whiteSpaces) {
   str.erase(0, str.find_first_not_of(whiteSpaces));
   str.erase(str.find_last_not_of(whiteSpaces) + 1);
 }
 
-
 void HTTPRequest::removeReturnCarriage(std::string &line) {
-  if (line[0] == '\r')
-    line.erase(0, 1);
+  if (line.size() - 1 == '\r')
+    line.erase(line.size() - 1);
   return;
+}
+
+int HTTPRequest::parseUri(const std::string &uri) {
+  if (uri[0] != '/')
+    return (400);
+  if (uri.size() > _uriMaxSize)
+    return (414);
+  size_t pos = uri.find_first_of('?');
+  _uri = uri.substr(0, pos);
+  if (_uri.size() > 2048)
+
+    if (pos != uri.npos) {
+      std::string query = uri.substr(pos + 1);
+      if (query.empty() == false)
+        _queryUri = split(query, "+&");
+    }
+  return (200);
 }
 
 size_t HTTPRequest::parseRequestLine(const std::string &requestLine) {
   vec_string split_request = split(requestLine, " ");
   if (split_request.size() != 3) {
-    std::cout << RED << "StatusCode(split.size()): " << "400" <<  RESET  << std::endl;
+    std::cout << RED << "StatusCode(split.size()): " << "400" << RESET
+              << std::endl;
     return (400);
   }
   _method = split_request[0];
   size_t i = 0;
-  for (; i < methodSize && _method != validMethods[i]; i++) {
+  for (; i < _methodSize && _method != _validMethods[i]; i++) {
   }
-  if (i == methodSize) {
+  if (i == _methodSize) {
     return (405);
   } else if (i > 2) {
     return (401);
   }
-  _uri = split_request[1];
-  if (_uri[0] != '/') {
-    std::cout << RED << "StatusCode(uri): " << "400" <<  RESET << std::endl;
-    return (400);
+  _statusCode = parseUri(split_request[1]);
+  if (_statusCode >= 300) {
+    return (_statusCode);
   }
   if (split_request[2].compare(0, 5, "HTTP/") != 0 ||
       split_request[2].size() < 8) {
-    std::cout << RED << "StatusCode(split_compare): " << "400" <<  RESET << std::endl;
+    std::cout << RED << "StatusCode(split_compare): " << "400" << RESET
+              << std::endl;
     return (400);
   }
   std::string version = split_request[2].substr(5);
   if (std::isdigit(version[0]) == false) {
-    std::cout << RED << "StatusCode(isdigit): " << "400" <<  RESET << std::endl;
+    std::cout << RED << "StatusCode(isdigit): " << "400" << RESET << std::endl;
     return (400);
   }
   for (i = 1; std::isdigit(version[i]); i++) {
@@ -92,14 +116,14 @@ size_t HTTPRequest::parseRequestLine(const std::string &requestLine) {
     return (405);
   }
   if (version[i] != '.') {
-    std::cout << RED << "StatusCode(i): " << "400" <<  RESET << std::endl;
+    std::cout << RED << "StatusCode(i): " << "400" << RESET << std::endl;
     return (400);
   }
   i++;
   char *after = NULL;
   long int nb = std::strtol(version.c_str() + i, &after, 10);
   if (nb < 0 || nb > 999 || *after != '\0') {
-    std::cout << RED << "StatusCode(nb): " << "400" <<  RESET << std::endl;
+    std::cout << RED << "StatusCode(nb): " << "400" << RESET << std::endl;
     return (400);
   }
   std::cout << "VERSION = " << nb << "\n";
@@ -110,42 +134,66 @@ size_t HTTPRequest::parseRequestLine(const std::string &requestLine) {
   return (200);
 }
 
+void HTTPRequest::getServerconf(const mapConfs mapServerConf,
+                                ServerConf &defaultServer) {
+  try {
+    _server = &(mapServerConf.at(_host));
+  } catch (std::exception &e) {
+    _server = &defaultServer;
+  }
+}
+
 unsigned char ToLower(char c) {
   return (std::tolower(static_cast<unsigned char>(c)));
 }
 
 bool HTTPRequest::insertInMap(std::string &line) {
-  std::transform(line.begin(), line.end(), line.begin(),
-                ToLower);
+  std::transform(line.begin(), line.end(), line.begin(), ToLower);
   size_t pos = line.find_first_of(':');
   std::string key = line.substr(0, pos);
   std::string value = line.substr(pos + 1);
-  trimWhitespace(value, whiteSpaces);
+  if (value.size() > _headerMaxSize){
+    return (false); 
+  }
+  trimWhitespace(value, _whiteSpaces);
   std::cout << "KEY = " << key << std::endl;
-  std::cout << "VALUE = " << value << std::endl; 
+  std::cout << "VALUE = " << value << std::endl;
 
   if (pos != line.npos) {
-    if (_headers.insert(std::make_pair(key, value)).second ==
-            false &&
+    if (_headers.insert(std::make_pair(key, value)).second == false &&
         key == "host")
       return (false);
   }
   return (true);
 }
 
-void HTTPRequest::parseRequest(std::istringstream &request) {
-  std::string line;
-  for (; std::getline(request, line);) {
-    std::cout << "current line = " << line << "\n";
-    if (line.empty() == false || line != "\r")
+int HTTPRequest::readRequest(void){
+  std::string *buf[BUFSIZ];
+  ssize_t read = recv(_socket, buf, BUFSIZ, 0);
+  if (read == -1)
+  {
+    std::cout << RED << "initial recv return -1 on " << _socket << RESET << std::endl;
+    return (-1);
+  }
+  if (read == 0){
+    std::cout << RED << "initial recv return 0 on " << _socket << RESET << std::endl;
+    return (0);
+  }
+
+}
+
+void HTTPRequest::parseRequest(std::istringstream &request, const mapConfs &map,
+                               ServerConf &defaultServer) {
+  std::string requestLine, line;
+  for (; std::getline(request, requestLine);) {
+    std::cout << "current line = " << requestLine << "\n";
+    if (requestLine.empty() == false || requestLine != "\r")
       break;
   }
   if (request.eof())
     throw std::logic_error("webserv: HTTPRequest::ParseRequest: Empty request");
-  removeReturnCarriage(line);
-  statusCode = parseRequestLine(line);
-  if (statusCode >= 400)
-    return;
+  removeReturnCarriage(requestLine);
+
   std::cout << GREEN << "finished requestLine\n" << RESET;
   for (; std::getline(request, line);) {
     removeReturnCarriage(line);
@@ -153,23 +201,30 @@ void HTTPRequest::parseRequest(std::istringstream &request) {
     if (line.empty() == true)
       break;
     if (insertInMap(line) == false) {
-      statusCode = 400;
+      _statusCode = 400;
       return;
     }
   }
-  _host = _headers.at("host");
-  try {
-    int size = std::strtol(_headers.at("content-lenght").c_str(), NULL, 10);
-    //read(size) and add body
+  if (_headers.count("host") == 0) {
+    _statusCode = 400;
+    return;
   }
-  catch (std::exception &e){
-}
+  _host = _headers.at("host");
+  getServerconf(map, defaultServer);
+  _statusCode = parseRequestLine(requestLine);
+  if (_statusCode >= 400)
+    return;
+  try {
+    // int size = std::strtol(_headers.at("content-lenght").c_str(), NULL, 10);
+    // read(size) and add body
+  } catch (std::exception &e) {
+  }
   if (line.empty() == false)
-    throw (std::logic_error(""));
+    throw(std::logic_error(""));
 }
 
-void HTTPRequest::print(){
-  std::cout << "status code = " << statusCode << "\n";
+void HTTPRequest::print() {
+  std::cout << "status code = " << _statusCode << "\n";
   std::cout << "method      = " << _method << "\n";
   std::cout << "uri         = " << _uri << "\n";
   std::cout << "_version    = " << _version << "\n";

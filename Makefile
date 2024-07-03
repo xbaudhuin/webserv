@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/02 19:23:48 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/03 13:38:35 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -98,17 +98,18 @@ SRCS_MAIN		=	main/main.cpp \
 REQUEST = requester
 
 SRCS_REQUEST 	=		main/Webserv.cpp \
-									parser/Config.cpp \
-									parser/Split.cpp \
-									parser/CreateSocket.cpp \
-									parser/Parser.cpp \
-									parser/ServerConf.cpp \
-									parser/ServerConfGetter.cpp \
-									parser/UtilsParser.cpp \
-									parser/Location.cpp \
-									parser/ParserLocation.cpp \
-									parser/Printer.cpp \
-									error_logs/logs.cpp \
+					exec/SubServ.cpp \
+					parser/Config.cpp \
+					parser/Split.cpp \
+					parser/CreateSocket.cpp \
+					parser/Parser.cpp \
+					parser/ServerConf.cpp \
+					parser/ServerConfGetter.cpp \
+					parser/UtilsParser.cpp \
+					parser/Location.cpp \
+					parser/ParserLocation.cpp \
+					parser/Printer.cpp \
+					error_logs/logs.cpp \
 									request_parsing/HTTPRequest.cpp \
 									request_parsing/main.cpp 
 
@@ -146,7 +147,7 @@ compile:	${OBJS}
 		@printf "\n"
 
 ${TXT}:
-		@echo "-Iinclude/\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
+		@echo "-Iinclude/headers_hpp\n-I/include/headers_h\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
 
 clean:	
 		${RM}  ${OBJ_PATH}
