@@ -77,5 +77,26 @@ int	Webserv::addSocketToEpoll(int socketFd)
 	if (status != 0)
 	{
 		std::cerr << "webserv: Webserv::addSocketToEpoll: epoll_ctl: " << strerror(errno) << std::endl;
+		return (1);
 	}
+	std::cout << "webserv: successfully add socket fd " << socketFd << " to epoll fd " << this->_epollFd << std::endl;
+	return (0);
+}
+
+int	Webserv::removeFdFromIdMap(int socketFd)
+{
+	SubServ	subservTemp;
+
+	try
+	{
+		subservTemp = this->idMap.at(socketFd);
+		this->idMap.erase(socketFd);
+		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd" << std::endl;
+		return (1);
+	}
+	return (0);
 }

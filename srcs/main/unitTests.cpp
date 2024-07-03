@@ -4,11 +4,18 @@
 int	testRemoveClientSocket()
 {
 	SubServ	myServ(4245);
-	myServ.tests();
-	return (0);
+	return (myServ.tests());
+}
+
+int	testRemoveFDFromIdMap()
+{
+	Webserv	myServ("config/good_config/test.conf");
+	myServ.
+	return (true);
 }
 
 int	main()
 {
 	testRemoveClientSocket();
+	testRemoveFDFromIdMap();
 }

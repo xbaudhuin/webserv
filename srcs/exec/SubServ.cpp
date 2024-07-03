@@ -74,6 +74,30 @@ int	SubServ::removeClientSocket(int clientSocket)
 	}
 }
 
+bool	SubServ::isClientSocket(int socketFd)
+{
+	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), socketFd) != this->_clientSockets.end())
+	{
+		return (false);
+	}
+	else
+	{
+		return (true);
+	}
+}
+
+bool	SubServ::isServerSocket(int socketFd)
+{
+	if (socketFd == this->_serverSocket)
+	{
+		return (true);
+	}
+	else
+	{
+		return (false);
+	}
+}
+
 int	SubServ::tests(void)
 {
 	int		socket1;

@@ -105,6 +105,18 @@ OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 SRCS_TESTS		=	main/unitTests.cpp \
 					exec/SubServ.cpp \
 					sockets/createServerSocket.cpp \
+					main/Webserv.cpp \
+					parser/Config.cpp \
+					parser/Split.cpp \
+					parser/CreateSocket.cpp \
+					parser/Parser.cpp \
+					parser/ServerConf.cpp \
+					parser/ServerConfGetter.cpp \
+					parser/UtilsParser.cpp \
+					parser/Location.cpp \
+					parser/ParserLocation.cpp \
+					parser/Printer.cpp \
+					error_logs/logs.cpp \
 
 OBJS_TESTS		=	$(addprefix ${OBJ_PATH}, ${SRCS_TESTS:.cpp=.o}) \
 

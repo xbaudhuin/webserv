@@ -16,23 +16,24 @@
 class Webserv
 {
     private:
-		int			_epollFd;
-		mapSubServs	_subServs;
-        vec_string 	env;
-        char 		**env_char;
-        Config 		conf;
-		std::map<int, int> fdToPort;
+		int						_epollFd;
+		mapSubServs				_subServs;
+        vec_string 				env;
+        char 					**env_char;
+        Config 					conf;
+		std::map<int, SubServ&>	idMap;
         Webserv();
-        void 		parseConfig(const std::string &conf);
+        void 				parseConfig(const std::string &conf);
 
     public:
-        Webserv(const char* s);
-        Webserv(const Webserv& rhs);
-        Webserv& operator=(const Webserv &rhs);
-        ~Webserv();
-        void addEnv(char **env);
-        char ** getEnv(void);
-		int addSocketToEpoll(int socketFd);
+      		 	 Webserv(const char *s);
+      		 	 Webserv(const Webserv &rhs);
+      		 	 Webserv& operator=(const Webserv &rhs);
+       		 	~Webserv();
+        void	addEnv(char **env);
+        char	** getEnv(void);
+		int		addSocketToEpoll(int socketFd);
+		int		removeFdFromIdMap(int socketFd);
 };
 
 #endif

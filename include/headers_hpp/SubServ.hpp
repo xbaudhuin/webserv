@@ -18,6 +18,8 @@ class	SubServ
 		mapConfs			_portConfs;
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int socketFd);
+		bool				isClientSocket(int socketFd);
+		bool				isServerSocket(int socketFd);
 		int					tests(void);
 
 	protected:
