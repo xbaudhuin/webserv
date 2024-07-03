@@ -12,6 +12,13 @@ Webserv::Webserv(const char* file)
     else
         config = "./config/good_config/test.conf";
     this->parseConfig(config);
+
+	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
+	if (this->_epollFd == -1)
+	{
+		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
+		throw std::logic_error("webserv: Webserv: failure in constructor");
+	}
 }
 
 
@@ -32,6 +39,7 @@ Webserv& Webserv::operator=(const Webserv &rhs)
 
 Webserv::~Webserv()
 {
+	close(this->_epollFd);
 }
 
 void Webserv::addEnv(char **env)

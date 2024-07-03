@@ -10,8 +10,8 @@ int	testRemoveClientSocket()
 int	testRemoveFDFromIdMap()
 {
 	Webserv	myServ("config/good_config/test.conf");
-	myServ.
-	return (true);
+	
+	return (0);
 }
 
 int	main()
