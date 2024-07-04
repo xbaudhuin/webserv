@@ -12,6 +12,13 @@ Webserv::Webserv(const char* file)
     else
         config = "./config/good_config/test.conf";
     this->parseConfig(config);
+
+	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
+	if (this->_epollFd == -1)
+	{
+		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
+		throw std::logic_error("webserv: Webserv: failure in constructor");
+	}
 }
 
 
@@ -32,6 +39,7 @@ Webserv& Webserv::operator=(const Webserv &rhs)
 
 Webserv::~Webserv()
 {
+	close(this->_epollFd);
 }
 
 void Webserv::addEnv(char **env)
@@ -123,5 +131,42 @@ void Webserv::parseConfig(const std::string &conf)
     strm << config.rdbuf();
     std::string str = strm.str();
     config.close();
+   //this->conf.parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
     this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
+}
+
+int	Webserv::addSocketToEpoll(int socketFd)
+{
+	struct epoll_event	epollEvent;
+	int					status;
+	
+	std::memset(&epollEvent, 0, sizeof (epollEvent));
+	epollEvent.events = EPOLLIN;
+	epollEvent.data.fd = socketFd;
+	status = epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketFd, &epollEvent);
+	if (status != 0)
+	{
+		std::cerr << "webserv: Webserv::addSocketToEpoll: epoll_ctl: " << strerror(errno) << std::endl;
+		return (1);
+	}
+	std::cout << "webserv: successfully add socket fd " << socketFd << " to epoll fd " << this->_epollFd << std::endl;
+	return (0);
+}
+
+int	Webserv::removeFdFromIdMap(int socketFd)
+{
+	SubServ	subservTemp;
+
+	try
+	{
+		subservTemp = this->idMap.at(socketFd);
+		this->idMap.erase(socketFd);
+		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd" << std::endl;
+		return (1);
+	}
+	return (0);
 }

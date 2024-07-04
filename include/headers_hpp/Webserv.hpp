@@ -11,27 +11,32 @@
 #include "ServerConf.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
+# include "sockets.hpp"
 
 
 class Webserv
 {
     private:
+		int						_epollFd;
 		mapSubServs	_subServs;
         vec_string env;
         char **env_char;
         // Config conf;
         vec_confs confs;
+		std::map<int, SubServ&>	idMap;
         Webserv();
         void parseConfig(const std::string &conf);
         void parse(vec_string split); 
 
     public:
-        Webserv(const char* s);
-        Webserv(const Webserv& rhs);
-        Webserv& operator=(const Webserv &rhs);
-        ~Webserv();
-        void addEnv(char **env);
-        char ** getEnv(void);
+      		 	 Webserv(const char *s);
+      		 	 Webserv(const Webserv &rhs);
+      		 	 Webserv& operator=(const Webserv &rhs);
+       		 	~Webserv();
+        void	addEnv(char **env);
+        char	** getEnv(void);
+		int		addSocketToEpoll(int socketFd);
+		int		removeFdFromIdMap(int socketFd);
 };
 
 #endif

@@ -55,7 +55,9 @@ HEADER_FILES	=	 Config.hpp \
 					 Error.hpp \
 					 SubServ.hpp \
 					 Typedef.hpp \
-					 Utils.hpp
+					 Utils.hpp \
+					 SubServ.hpp \
+					 sockets.hpp \
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -97,6 +99,28 @@ SRCS_MAIN		=	main/main.cpp \
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 
 ################################################################################
+#                                    TESTS                                     #
+################################################################################
+
+SRCS_TESTS		=	main/unitTests.cpp \
+					exec/SubServ.cpp \
+					sockets/createServerSocket.cpp \
+					main/Webserv.cpp \
+					parser/Config.cpp \
+					parser/Split.cpp \
+					parser/CreateSocket.cpp \
+					parser/Parser.cpp \
+					parser/ServerConf.cpp \
+					parser/ServerConfGetter.cpp \
+					parser/UtilsParser.cpp \
+					parser/Location.cpp \
+					parser/ParserLocation.cpp \
+					parser/Printer.cpp \
+					error_logs/logs.cpp \
+
+OBJS_TESTS		=	$(addprefix ${OBJ_PATH}, ${SRCS_TESTS:.cpp=.o}) \
+
+################################################################################
 #                                 RULES                                        #
 ################################################################################
 					
@@ -118,6 +142,10 @@ compile:	${OBJS}
 
 ${TXT}:
 		@echo "-Iinclude/\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
+
+test:		${OBJS_TESTS} ${TXT} Makefile
+		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS_TESTS} ${HEADER}
+		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 
 clean:	
 		${RM}  ${OBJ_PATH}
