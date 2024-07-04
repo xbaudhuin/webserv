@@ -154,7 +154,9 @@ void ServerConf::addErrorPage(const std::string &url, const std::vector<int> err
     size_t size = err.size();
     for(size_t i = 0; i < size; i++)
     {
-        this->err_pages.insert(std::make_pair(err[i], url));
+        if(this->err_pages.find(err[i]) != this->err_pages.end())
+            this->err_pages.erase(err[i]);
+        this->err_pages[err[i]] = url;
     }
 }
 
