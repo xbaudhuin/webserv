@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "SubServ.hpp"
+#include "ServerConf.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
 
@@ -18,9 +19,11 @@ class Webserv
 		mapSubServs	_subServs;
         vec_string env;
         char **env_char;
-        Config conf;
+        // Config conf;
+        vec_confs confs;
         Webserv();
         void parseConfig(const std::string &conf);
+        void parse(vec_string split); 
 
     public:
         Webserv(const char* s);
