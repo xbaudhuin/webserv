@@ -42,7 +42,7 @@ uint64_t ServerConf::getLimitBodySize(void) const
     return(this->limit_body_size);
 }
 
-vec_location ServerConf::getLocations(void) const{
+vec_location& ServerConf::getLocations(void){
     return(this->_locations);
 }
 

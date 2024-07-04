@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "SubServ.hpp"
+#include "ServerConf.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
 # include "sockets.hpp"
@@ -17,13 +18,15 @@ class Webserv
 {
     private:
 		int						_epollFd;
-		mapSubServs				_subServs;
-        vec_string 				env;
-        char 					**env_char;
-        Config 					conf;
+		mapSubServs	_subServs;
+        vec_string env;
+        char **env_char;
+        // Config conf;
+        vec_confs confs;
 		std::map<int, SubServ&>	idMap;
         Webserv();
-        void 				parseConfig(const std::string &conf);
+        void parseConfig(const std::string &conf);
+        void parse(vec_string split); 
 
     public:
       		 	 Webserv(const char *s);
