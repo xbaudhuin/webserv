@@ -22,10 +22,11 @@ class Location
         bool _exact_match;
         std::string root;
         std::string redirection;
-        std::string index_file;
+        vec_string index_file;
         int code_redirection;
         bool _directory_listing;
         uint64_t limit_body_size;
+        int _root_check;
 
     public:
         Location();
@@ -38,7 +39,7 @@ class Location
         std::string getUrl(void) const;
         std::string getRoot(void) const;
         std::string getRedirection(void) const;
-        std::string getIndexFile(void) const;
+        vec_string getIndexFile(void) const;
         int getRedirCode(void) const;
         bool getAutoIndex(void) const;
         bool isExactMatch(void) const;
@@ -57,6 +58,8 @@ class Location
         void setIndexFile(const std::string &file);
         void setCgi(const std::string &extension, const std::string &executable);
         void setMethod(const std::string &method, const std::string &status);
+        void fixUrl(const std::string &url);
+        void fixIndex(const std::string &root);
 };
 
 #endif

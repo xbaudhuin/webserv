@@ -12,6 +12,13 @@ Webserv::Webserv(const char* file)
     else
         config = "./config/good_config/test.conf";
     this->parseConfig(config);
+
+	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
+	if (this->_epollFd == -1)
+	{
+		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
+		throw std::logic_error("webserv: Webserv: failure in constructor");
+	}
 }
 
 
@@ -25,13 +32,14 @@ Webserv& Webserv::operator=(const Webserv &rhs)
     if(this != &rhs)
     {
         this->env = rhs.env;
-        this->conf = rhs.conf;
+        this->confs = rhs.confs;
     }
     return(*this);
 }
 
 Webserv::~Webserv()
 {
+	close(this->_epollFd);
 }
 
 void Webserv::addEnv(char **env)
@@ -49,6 +57,67 @@ char** Webserv::getEnv()
     return(this->env_char);
 }
 
+bool checkNumberBrackets(const vec_string &split)
+{
+    size_t size = split.size();
+    size_t count = 0;
+    for (size_t i = 0; i < size; i++)
+    {
+        if(split[i] == "{")
+        {
+            count++;
+        }
+        else if(split[i] == "}")
+        {
+            if(count == 0 )
+                return 1;
+            count--;
+        }
+    }
+    return 0;
+    
+}
+
+void Webserv::parse(vec_string split)
+{
+    int check = 0;
+    size_t size = split.size();
+    // for(size_t jt = 0; jt < size; jt++)
+    // {
+    //     std::cout << split[jt] << std::endl;
+    // }
+    if(checkNumberBrackets(split))
+        return(errorParsing("Issue with the file, uneven number of {}"));
+    for(size_t i = 0; i < size; i++)
+    {
+        if(split[i] == "server")
+        {
+            i++;
+            try
+            {
+                ServerConf newConf = parser(split, i, size);
+                vec_string name = newConf.getServerNames();
+                this->confs.push_back(std::make_pair(name, newConf));
+                check++;
+            }
+            catch(const std::exception& e)
+            {
+                writeInsideLog(e, errorParsing);
+                // throw;
+            }
+        }
+    }
+    // std::cout << "Test: " << this->confs.size() << std::endl;
+    if(check)
+    {
+        std::cout << "Coucou" << std::endl;
+        printConfig(this->confs);  
+    }
+    else
+        throw std::invalid_argument("Webserv: Error: No configuration found");
+
+}
+
 void Webserv::parseConfig(const std::string &conf)
 {
     std::ifstream config;
@@ -62,5 +131,42 @@ void Webserv::parseConfig(const std::string &conf)
     strm << config.rdbuf();
     std::string str = strm.str();
     config.close();
-    this->conf.parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
+   //this->conf.parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
+    this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
+}
+
+int	Webserv::addSocketToEpoll(int socketFd)
+{
+	struct epoll_event	epollEvent;
+	int					status;
+	
+	std::memset(&epollEvent, 0, sizeof (epollEvent));
+	epollEvent.events = EPOLLIN;
+	epollEvent.data.fd = socketFd;
+	status = epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketFd, &epollEvent);
+	if (status != 0)
+	{
+		std::cerr << "webserv: Webserv::addSocketToEpoll: epoll_ctl: " << strerror(errno) << std::endl;
+		return (1);
+	}
+	std::cout << "webserv: successfully add socket fd " << socketFd << " to epoll fd " << this->_epollFd << std::endl;
+	return (0);
+}
+
+int	Webserv::removeFdFromIdMap(int socketFd)
+{
+	SubServ	subservTemp;
+
+	try
+	{
+		subservTemp = this->idMap.at(socketFd);
+		this->idMap.erase(socketFd);
+		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd" << std::endl;
+		return (1);
+	}
+	return (0);
 }
