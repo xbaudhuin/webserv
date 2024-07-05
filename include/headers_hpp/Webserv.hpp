@@ -23,7 +23,7 @@ class Webserv
         char **env_char;
         // Config conf;
         vec_confs confs;
-		std::map<int, SubServ&>	idMap;
+		std::map<int, SubServ*>	idMap;
         Webserv();
         void parseConfig(const std::string &conf);
         void parse(vec_string split);
