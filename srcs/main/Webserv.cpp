@@ -78,7 +78,7 @@ bool checkNumberBrackets(const vec_string &split)
     
 }
 
-void Webserv::createMaps()
+void Webserv::createMaps(void)
 {
     size_t size = this->confs.size();
     for (size_t i = 0; i < size; i++)
