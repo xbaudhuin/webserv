@@ -5,15 +5,16 @@
 # include <vector>
 # include "sockets.hpp"
 
-typedef std::map<std::string, ServerConf&> mapConfs;
+typedef std::map<std::string, ServerConf*> mapConfs;
 
 class	SubServ
 {
 	public:
 							SubServ(void);
-							SubServ(int port);
+							// SubServ(int port);
+							SubServ(ServerConf &conf);
 							~SubServ(void);
-							SubServ(const SubServ &otherSubServ);
+							// SubServ(const SubServ &otherSubServ);
 		SubServ				&operator=(const SubServ &otherSubServ);
 		mapConfs			_portConfs;
 		int					acceptNewConnection(void);
@@ -25,6 +26,7 @@ class	SubServ
 	protected:
 
 	private:
+		const ServerConf			*_main;
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;

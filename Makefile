@@ -86,6 +86,7 @@ AR						=	ar rcs
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					exec/SubServ.cpp \
+					exec/SubServ2.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -96,6 +97,7 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/Location.cpp \
 					parser/ParserLocation.cpp \
 					parser/Printer.cpp \
+					sockets/createServerSocket.cpp \
 					error_logs/logs.cpp \
 
 REQUEST = requester

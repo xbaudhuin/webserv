@@ -14,6 +14,10 @@ int main(int argc, char **argv, char **env)
         Webserv serv(argv[1]);
         serv.addEnv(env);
     }
+    catch(const std::runtime_error &e)
+    {
+        return 1;
+    }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';

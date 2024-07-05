@@ -10,7 +10,7 @@ class ServerConf;
 class Location;
 
 typedef std::map<int, SubServ> mapSubServs; /* key = port */
-typedef std::map<std::string, ServerConf&> mapConfs;
+typedef std::map<std::string, ServerConf*> mapConfs;
 typedef std::vector<std::string> vec_string;
 typedef std::map<int, std::string> map_err_pages;
 typedef std::vector<Location> vec_location;
