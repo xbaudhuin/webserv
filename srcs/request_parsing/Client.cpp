@@ -1,45 +1,40 @@
-#include "HTTPRequest.hpp"
+#include "Client.hpp"
 #include "Error.hpp"
 #include "ServerConf.hpp"
+#include "SubServ.hpp"
 #include "Utils.hpp"
-#include <algorithm>
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
-#include <exception>
-#include <limits>
-#include <ostream>
-#include <stdexcept>
 
-const char *HTTPRequest::_validMethods[] = {"GET",     "POST",  "DELETE",
-                                            "HEAD",    "PUT",   "CONNECT",
-                                            "OPTIONS", "TRACE", "PATCH"};
+const char *Client::_validMethods[] = {"GET",     "POST",  "DELETE",
+                                       "HEAD",    "PUT",   "CONNECT",
+                                       "OPTIONS", "TRACE", "PATCH"};
 
-const size_t HTTPRequest::_methodSize = 9;
+const size_t Client::_methodSize = 9;
 
-const char *HTTPRequest::_whiteSpaces = " \t";
+const char *Client::_whiteSpaces = " \t";
 
-const size_t HTTPRequest::_uriMaxSize = 8000;
+const size_t Client::_uriMaxSize = 8000;
 
-const size_t HTTPRequest::_headerMaxSize = 8000;
+const size_t Client::_headerMaxSize = 8000;
 
-HTTPRequest::HTTPRequest(void) { return; }
-
-HTTPRequest::HTTPRequest(int fd)
-    : _socket(fd), _statusCode(200), _method(""), _uri(""), _version(0), _host(""),
-      _body("") {
+Client::Client(const int fd, const mapConfs &mapConfs,
+               const ServerConf *defaultConf)
+    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
+      _statusCode(200), _method(""), _uri(""), _version(0), _host(""),
+      _body(""), _buffer(""), _bodySize(-1), _requestSize(0) {
   return;
 }
 
-HTTPRequest::~HTTPRequest(void) { return; }
+Client::~Client(void) { return; }
 
-HTTPRequest::HTTPRequest(HTTPRequest const &copy) {
+Client::Client(Client const &copy)
+    : _socket(copy._socket), _mapConf(copy._mapConf),
+      _defaultConf(copy._defaultConf) {
   if (this != &copy)
     *this = copy;
   return;
 }
 
-HTTPRequest &HTTPRequest::operator=(HTTPRequest const &rhs) {
+Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
     _method = rhs._method;
     _uri = rhs._uri;
@@ -56,13 +51,7 @@ void trimWhitespace(std::string &str, const char *whiteSpaces) {
   str.erase(str.find_last_not_of(whiteSpaces) + 1);
 }
 
-void HTTPRequest::removeReturnCarriage(std::string &line) {
-  if (line.size() - 1 == '\r')
-    line.erase(line.size() - 1);
-  return;
-}
-
-int HTTPRequest::parseUri(const std::string &uri) {
+int Client::parseUri(const std::string &uri) {
   if (uri[0] != '/')
     return (400);
   if (uri.size() > _uriMaxSize)
@@ -79,7 +68,7 @@ int HTTPRequest::parseUri(const std::string &uri) {
   return (200);
 }
 
-size_t HTTPRequest::parseRequestLine(const std::string &requestLine) {
+size_t Client::parseRequestLine(const std::string &requestLine) {
   vec_string split_request = split(requestLine, " ");
   if (split_request.size() != 3) {
     std::cout << RED << "StatusCode(split.size()): " << "400" << RESET
@@ -134,26 +123,17 @@ size_t HTTPRequest::parseRequestLine(const std::string &requestLine) {
   return (200);
 }
 
-void HTTPRequest::getServerconf(const mapConfs mapServerConf,
-                                ServerConf &defaultServer) {
-  try {
-    _server = &(mapServerConf.at(_host));
-  } catch (std::exception &e) {
-    _server = &defaultServer;
-  }
-}
-
 unsigned char ToLower(char c) {
   return (std::tolower(static_cast<unsigned char>(c)));
 }
 
-bool HTTPRequest::insertInMap(std::string &line) {
+bool Client::insertInMap(std::string &line) {
   std::transform(line.begin(), line.end(), line.begin(), ToLower);
   size_t pos = line.find_first_of(':');
   std::string key = line.substr(0, pos);
   std::string value = line.substr(pos + 1);
-  if (value.size() > _headerMaxSize){
-    return (false); 
+  if (value.size() > _headerMaxSize) {
+    return (false);
   }
   trimWhitespace(value, _whiteSpaces);
   std::cout << "KEY = " << key << std::endl;
@@ -167,63 +147,105 @@ bool HTTPRequest::insertInMap(std::string &line) {
   return (true);
 }
 
-int HTTPRequest::readRequest(void){
-  std::string *buf[BUFSIZ];
+void Client::readRequest(void) {
+  char buf[BUFSIZ] = {0};
   ssize_t read = recv(_socket, buf, BUFSIZ, 0);
-  if (read == -1)
-  {
-    std::cout << RED << "initial recv return -1 on " << _socket << RESET << std::endl;
-    return (-1);
+  if (read == -1) {
+    std::cout << RED << "initial recv return -1 on " << _socket << RESET
+              << std::endl;
+    return;
   }
-  if (read == 0){
-    std::cout << RED << "initial recv return 0 on " << _socket << RESET << std::endl;
-    return (0);
+  if (read == 0) {
+    std::cout << RED << "initial recv return 0 on " << _socket << RESET
+              << std::endl;
+    return;
   }
-
-}
-
-void HTTPRequest::parseRequest(std::istringstream &request, const mapConfs &map,
-                               ServerConf &defaultServer) {
-  std::string requestLine, line;
-  for (; std::getline(request, requestLine);) {
-    std::cout << "current line = " << requestLine << "\n";
-    if (requestLine.empty() == false || requestLine != "\r")
+  _buffer += buf;
+  size_t start = _requestSize;
+  while (true) {
+    start = _buffer.find_first_of('\r', start);
+    if (start == _buffer.npos)
       break;
+    if (_buffer[start + 1] == '\n')
+      _buffer.erase(start, 1);
   }
-  if (request.eof())
-    throw std::logic_error("webserv: HTTPRequest::ParseRequest: Empty request");
-  removeReturnCarriage(requestLine);
-
-  std::cout << GREEN << "finished requestLine\n" << RESET;
-  for (; std::getline(request, line);) {
-    removeReturnCarriage(line);
-    std::cout << YELLOW << "current line = " << line << "\n" << RESET;
-    if (line.empty() == true)
-      break;
-    if (insertInMap(line) == false) {
-      _statusCode = 400;
+  if (_bodySize > 0) {
+    if (_bodySize > read) {
+      _requestSize += read;
+      _bodySize -= read;
       return;
     }
+    _requestSize += _bodySize;
+    _bodySize = -1;
+    std::string request = _buffer.substr(0, _requestSize);
+    _buffer = _buffer.substr(_requestSize, _buffer.size() - _requestSize);
+    parseRequest(request);
   }
+  parseBuffer();
+}
+
+void Client::parseBuffer(void) {
+  size_t pos = _buffer.find("\n\n");
+  if (pos == _buffer.npos) {
+    return;
+  }
+  std::string request = _buffer.substr(0, pos);
+  pos++;
+  _buffer = _buffer.substr(pos, _buffer.size() - pos);
+  parseRequest(request);
+  parseBuffer();
+}
+
+std::string Client::getDate(void) {
+  time_t rawtime;
+
+  time(&rawtime);
+  tm *gmtTime = gmtime(&currentTime);
+  char buffer[80] = {0};
+  strftime(buffer, sizeof(buffer), "Date: %a, %d, %b, %Y, %H:%M:%S GMT\r\n");
+  return (buffer);
+}
+
+void Client::sendResponse(int statusCode) {
+  std::string response;
+  response += "HTTP/1.1 ";
+  {
+    std::ostringstream ss;
+    ss << statusCode;
+    response += ss.str();
+  }
+  response += "reasonPhrase\r\n";
+  response += "Webserv: 1.0.0\r\n";
+  response += getDate();
+}
+
+void Client::parseRequest(std::string &buffer) {
+  if (buffer.empty() == true)
+    return;
+  vec_string request = split(buffer, "\n");
+  if (request.size() < 2) {
+    _statusCode = 400;
+    return;
+  }
+  std::string requestLine;
   if (_headers.count("host") == 0) {
     _statusCode = 400;
     return;
   }
   _host = _headers.at("host");
-  getServerconf(map, defaultServer);
   _statusCode = parseRequestLine(requestLine);
   if (_statusCode >= 400)
     return;
   try {
-    // int size = std::strtol(_headers.at("content-lenght").c_str(), NULL, 10);
-    // read(size) and add body
+    // int size = std::strtol(_headers.at("content-lenght").c_str(), NULL,
+    // 10); read(size) and add body
   } catch (std::exception &e) {
   }
   if (line.empty() == false)
     throw(std::logic_error(""));
 }
 
-void HTTPRequest::print() {
+void Client::print() {
   std::cout << "status code = " << _statusCode << "\n";
   std::cout << "method      = " << _method << "\n";
   std::cout << "uri         = " << _uri << "\n";

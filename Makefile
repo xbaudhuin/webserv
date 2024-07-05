@@ -56,7 +56,8 @@ HEADER_FILES	=	 Config.hpp \
 					 Error.hpp \
 					 SubServ.hpp \
 					 Typedef.hpp \
-					 Utils.hpp
+					 Utils.hpp \
+					 Client.hpp
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -110,7 +111,7 @@ SRCS_REQUEST 	=		main/Webserv.cpp \
 					parser/ParserLocation.cpp \
 					parser/Printer.cpp \
 					error_logs/logs.cpp \
-									request_parsing/HTTPRequest.cpp \
+									request_parsing/Client.cpp \
 									request_parsing/main.cpp 
 
 
