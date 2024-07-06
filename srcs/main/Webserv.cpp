@@ -95,6 +95,20 @@ void Webserv::createMaps(void)
         }
     }
     std::cout << this->_subServs.size() << std::endl;
+#ifdef PRINT
+    mapSubServs::iterator it = this->_subServs.begin();
+    while(it != this->_subServs.end())
+    {
+        mapConfs::iterator ite = it->second._portConfs.begin();
+        while (ite != it->second._portConfs.end())
+        {
+            std::cout << (*ite->second) << std::endl;
+            ite++;
+        }
+        
+        it++;
+    }
+#endif
 }
 
 void Webserv::parse(vec_string split)
@@ -129,8 +143,8 @@ void Webserv::parse(vec_string split)
     // std::cout << "Test: " << this->confs.size() << std::endl;
     if(check)
     {
-        std::cout << "Coucou" << std::endl;
-        printConfig(this->confs);  
+        // std::cout << "Coucou" << std::endl;
+        // printConfig(this->confs);  
     }
     else
         throw std::invalid_argument("Webserv: Error: No configuration found");

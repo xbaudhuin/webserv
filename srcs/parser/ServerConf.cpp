@@ -7,7 +7,72 @@ ServerConf::ServerConf()
     socket = -1;
     limit_body_size = 0;
     rank = -1;
-    root = "./html";
+    root = "/html";
+    err_pages[100] = "/100.html";
+    err_pages[101] = "/101.html";
+    err_pages[102] = "/102.html";
+    err_pages[103] = "/103.html";
+    err_pages[200] = "/200.html";
+    err_pages[201] = "/201.html";
+    err_pages[202] = "/202.html";
+    err_pages[203] = "/203.html";
+    err_pages[204] = "/204.html";
+    err_pages[205] = "/205.html";
+    err_pages[206] = "/206.html";
+    err_pages[207] = "/207.html";
+    err_pages[208] = "/208.html";
+    err_pages[226] = "/226.html";
+    err_pages[300] = "/300.html";
+    err_pages[301] = "/301.html";
+    err_pages[302] = "/302.html";
+    err_pages[303] = "/303.html";
+    err_pages[304] = "/304.html";
+    err_pages[305] = "/305.html";
+    err_pages[306] = "/306.html";
+    err_pages[307] = "/307.html";
+    err_pages[308] = "/308.html";
+    err_pages[400] = "/400.html";
+    err_pages[401] = "/401.html";
+    err_pages[402] = "/402.html";
+    err_pages[403] = "/403.html";
+    err_pages[404] = "/404.html";
+    err_pages[405] = "/405.html";
+    err_pages[406] = "/406.html";
+    err_pages[407] = "/407.html";
+    err_pages[408] = "/408.html";
+    err_pages[409] = "/409.html";
+    err_pages[410] = "/410.html";
+    err_pages[411] = "/411.html";
+    err_pages[412] = "/412.html";
+    err_pages[413] = "/413.html";
+    err_pages[414] = "/414.html";
+    err_pages[415] = "/415.html";
+    err_pages[416] = "/416.html";
+    err_pages[417] = "/417.html";
+    err_pages[418] = "/418.html";
+    err_pages[421] = "/421.html";
+    err_pages[422] = "/422.html";
+    err_pages[423] = "/423.html";
+    err_pages[424] = "/424.html";
+    err_pages[425] = "/425.html";
+    err_pages[426] = "/426.html";
+    err_pages[428] = "/428.html";
+    err_pages[429] = "/429.html";
+    err_pages[431] = "/431.html";
+    err_pages[451] = "/451.html";
+    err_pages[500] = "/500.html";
+    err_pages[501] = "/501.html";
+    err_pages[502] = "/502.html";
+    err_pages[503] = "/503.html";
+    err_pages[504] = "/504.html";
+    err_pages[505] = "/505.html";
+    err_pages[506] = "/506.html";
+    err_pages[507] = "/507.html";
+    err_pages[508] = "/508.html";
+    err_pages[510] = "/510.html";
+    err_pages[511] = "/511.html";
+
+    // err_pages[code] = "/html/code.html";
 }
 
 ServerConf::ServerConf(const ServerConf &rhs)
@@ -41,7 +106,7 @@ void ServerConf::addServerName(const std::string &name)
     this->server_names.push_back(name);
 }
 
-vec_string ServerConf::getServerNames()
+vec_string& ServerConf::getServerNames()
 {
     return(this->server_names);
 }
@@ -222,4 +287,74 @@ void ServerConf::addRoot(const std::string &dir)
     if(check[check.size() - 1] == '/')
         check.erase(check.end() - 1);
     this->root = check;
+}
+
+std::ostream& operator<<(std::ostream& out, const ServerConf& cf)
+{
+    ServerConf serv = cf;
+    for (size_t i = 0; i < serv.getServerNames().size(); i++)
+    {
+        out << BLUE << "Server Name n["<< i << "]: " << serv.getServerNames()[i] << RESET << std::endl;
+    }
+    out << YELLOW << "Root: " << serv.getRoot() << std::endl;
+    map_err_pages err = serv.getErrPages();
+    map_err_pages::iterator err_it = err.begin();
+    out << PURP2 << "Error pages: " << RESET << std::endl;
+    while (err_it != err.end())
+    {
+      out << PURP2 << "Code Error: " << err_it->first << " && url: " << err_it->second << RESET << std::endl;
+      err_it++;
+    }
+    out << GREEN << "Max body size: " << serv.getLimitBodySize() << RESET << std::endl;
+    uint32_t ip = ntohl(serv.getHost());
+    out << ORANGE << "IP: " 
+              << ((ip >> 24) & 0xFF) << "."
+              << ((ip >> 16) & 0xFF) << "."
+              << ((ip >> 8) & 0xFF) << "."
+              << (ip & 0xFF) << std::endl;
+    out << "Port: " << serv.getPort() << RESET <<std::endl;
+    vec_location loc = serv.getLocations();
+    size_t size_loc = loc.size();
+    out << YELLOW << "Now printing locations:" << std::endl;
+    for (size_t i = 0; i < size_loc; i++)
+    {
+        out << "Loc[" << i << "]:\n\t";
+        if(loc[i].getUrl().size() >  0)
+            out << "Url: " << loc[i].getUrl() << "\n\t";
+        out << "Exact Match: " << (loc[i].isExactMatch() ? "YES" : "NO") << "\n\t";
+        if(loc[i].getRoot().size() >  0)
+            out << "Root: " << loc[i].getRoot() << "\n\t";
+        if(loc[i].getIndexFile().size() > 0)
+            for (size_t j = 0; j < loc[i].getIndexFile().size(); j++)
+            {
+                out << "Index File[" << j << "]: " << loc[i].getIndexFile()[j] << "\n\t";
+            }
+        
+        if(loc[i].getCgi().size() > 0)
+        {
+            for (size_t j = 0; j < loc[i].getCgi().size(); j++)
+            {
+                out << "Cgi File: " << loc[i].getCgi()[j].second << "\n\t";
+            }
+        }                
+        if(loc[i].getRedirection().size() > 0)
+            out << "Redirection URL and CODE: " << loc[i].getRedirection() << " && " << loc[i].getRedirCode() << "\n\t";
+        out << "Limit body size: " << loc[i].getLimitBodySize() << "\n\t";
+        out << "Method GET status: " << (loc[i].getGetSatus() ? "on" : "off") << "\n\t";
+        out << "Method POST status: " << (loc[i].getPostStatus() ? "on" : "off") << "\n\t";
+        out << "Method DELETE status: " << (loc[i].getDeleteStatus() ? "on" : "off") << "\n\t";
+        out << "Directory Listing Status: " << loc[i].getAutoIndex() << std::endl;
+    }
+    out << RESET << "\t\tRank: " << serv.getRank() << "\n"<< std::endl;       
+    return(out);
+}
+
+void ServerConf::setRootToErrorPages(){
+    map_err_pages::iterator it = this->err_pages.begin();
+    while (it != this->err_pages.end())
+    {
+        it->second.insert(0, this->root);
+        it++;
+    }
+    
 }
