@@ -35,18 +35,18 @@ class Location
         ~Location();
 
         /* getters */
-        uint64_t getLimitBodySize(void) const;
-        std::string getUrl(void) const;
-        std::string getRoot(void) const;
-        std::string getRedirection(void) const;
-        vec_string getIndexFile(void) const;
-        int getRedirCode(void) const;
-        bool getAutoIndex(void) const;
-        bool isExactMatch(void) const;
-        bool getPostStatus(void) const;
-        bool getGetSatus(void) const;
-        bool getDeleteStatus(void) const;
-        std::vector<std::pair<std::string, std::string> > getCgi(void) const;
+        const uint64_t& getLimitBodySize(void) const;
+        const std::string& getUrl(void) const;
+        const std::string& getRoot(void) const;
+        const std::string& getRedirection(void) const;
+        const vec_string& getIndexFile(void) const;
+        const int& getRedirCode(void) const;
+        const bool& getAutoIndex(void) const;
+        const bool& isExactMatch(void) const;
+        const bool& getPostStatus(void) const;
+        const bool& getGetSatus(void) const;
+        const bool& getDeleteStatus(void) const;
+        const std::vector<std::pair<std::string, std::string> >& getCgi(void) const;
 
         /* setters */
         void addLimitBodySize(const std::string &limit);
@@ -59,7 +59,8 @@ class Location
         void setCgi(const std::string &extension, const std::string &executable);
         void setMethod(const std::string &method, const std::string &status);
         void fixUrl(const std::string &url);
-        void fixIndex(const std::string &root);
+        void fixRoot();
+        void fixIndexFile();
 };
 
 #endif

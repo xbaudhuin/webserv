@@ -48,51 +48,51 @@ Location::~Location(){
 
 /* getters */
 
-uint64_t Location::getLimitBodySize(void) const{
+const uint64_t& Location::getLimitBodySize(void) const{
     return(this->limit_body_size);
 }
 
-std::string Location::getUrl(void) const{
+const std::string& Location::getUrl(void) const{
     return(this->url);
 }
 
-std::string Location::getRoot(void) const{
+const std::string& Location::getRoot(void) const{
     return(this->root);    
 }
 
-std::string Location::getRedirection(void) const{
+const std::string& Location::getRedirection(void) const{
     return(this->redirection);
 }
 
-vec_string Location::getIndexFile(void) const{
+const vec_string& Location::getIndexFile(void) const{
     return(this->index_file);
 }
 
-int Location::getRedirCode(void) const{
+const int& Location::getRedirCode(void) const{
     return(this->code_redirection);
 }
 
-bool Location::getAutoIndex(void) const{
+const bool& Location::getAutoIndex(void) const{
     return(this->_directory_listing);
 }
 
-bool Location::isExactMatch(void) const{
+const bool& Location::isExactMatch(void) const{
     return(this->_exact_match);
 }
 
-bool Location::getGetSatus(void) const{
+const bool& Location::getGetSatus(void) const{
     return(this->_get);
 }
 
-bool Location::getPostStatus(void) const{
+const bool& Location::getPostStatus(void) const{
     return(this->_post);
 }
 
-bool Location::getDeleteStatus(void) const{
+const bool& Location::getDeleteStatus(void) const{
     return(this->_delete);
 }
 
-std::vector<std::pair<std::string, std::string> > Location::getCgi(void) const{
+const std::vector<std::pair<std::string, std::string> >& Location::getCgi(void) const{
     return(this->cgi);
 }
 
@@ -170,19 +170,15 @@ void Location::addUrl(const std::string &url, std::string root){
     {
         this->url = "/";
         this->setIndexFile(url);
-        // std::cout << "COUCOU 0:" << this->url << " && " << this->index_file <<std::endl;
 
     }
     else
     {
         this->url = url;
-        // this->setIndexFile("");
     }
 }
 
 void Location::addRoot(const std::string &root){
-    // static int i = 0;
-    // std::cout << i << std::endl;
     if(this->_root_check > 0)
         throw std::logic_error("Error:\nInvalid root directive inside Location block, root was already set once");
     size_t check = root.size();
@@ -262,7 +258,27 @@ void Location::setMethod(const std::string &method, const std::string &status){
 }
 
 void Location::fixUrl(const std::string &url){
-    // std::cout << "Here: " <<url << " && " << this->url << std::endl;
     this->url = url + this->url;
-    // std::cout << "Here2: " << this->url << std::endl;
+}
+
+void Location::fixRoot(void){
+    if(this->root.size() > 0)
+    {
+        std::string s = this->url;
+        if(s[s.size() - 1] == '/')
+        {
+            s = s.substr(0, s.size() - 1);
+        }
+        this->root.insert(0, s);
+    }
+}
+
+void Location::fixIndexFile(void){
+    for (size_t i = 0; i < this->index_file.size(); i++)
+    {
+        std::string s = this->url;
+        if(this->index_file[i][0] == '/')
+            this->index_file[i].erase(0, 1);
+        this->index_file[i].insert(0, s);
+    }
 }

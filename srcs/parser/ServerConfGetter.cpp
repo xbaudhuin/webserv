@@ -1,20 +1,18 @@
 #include "ServerConf.hpp"
 
-std::string ServerConf::getIndexErrorPage(int errorCode)
+std::string &ServerConf::getIndexErrorPage(int errorCode)
 {
     (void)errorCode;
     map_err_pages::iterator it = this->err_pages.find(errorCode);
-    if(it == this->err_pages.end())
-        return("");
     return(it->second);
 }
 
-uint32_t ServerConf::getHost(void) const
+const uint32_t &ServerConf::getHost(void) const
 {
     return(this->host);
 }
 
-int ServerConf::getPort(void) const
+const int &ServerConf::getPort(void) const
 {
     return(this->port);
 }
@@ -27,17 +25,17 @@ void ServerConf::setMainServerName(void)
     this->server_name = name;
 }
 
-std::string ServerConf::getMainServerName(void) const
+const std::string &ServerConf::getMainServerName(void) const
 {
     return(this->server_name);
 }
 
-map_err_pages ServerConf::getErrPages(void) const
+const map_err_pages &ServerConf::getErrPages(void) const
 {
     return(this->err_pages);
 }
 
-uint64_t ServerConf::getLimitBodySize(void) const
+const uint64_t &ServerConf::getLimitBodySize(void) const
 {
     return(this->limit_body_size);
 }
@@ -46,7 +44,7 @@ vec_location& ServerConf::getLocations(void){
     return(this->_locations);
 }
 
-Location ServerConf::getPreciseLocation(const std::string &url) const
+const Location& ServerConf::getPreciseLocation(const std::string &url) const
 {
     size_t size = this->_locations.size();
     for (size_t i = 0; i < size; i++)
@@ -58,11 +56,11 @@ Location ServerConf::getPreciseLocation(const std::string &url) const
     return(this->_locations[0]);
 }
 
-size_t ServerConf::getRank(void) const
+const size_t &ServerConf::getRank(void) const
 {
     return(this->rank);
 }
 
-std::string ServerConf::getRoot(void) const{
+const std::string &ServerConf::getRoot(void) const{
     return(this->root);
 }
