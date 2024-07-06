@@ -33,25 +33,26 @@ private:
   const int _socket;
   const mapConfs &_mapConf;
   const ServerConf *_defaultConf;
-  size_t time;
+  time_t _time;
   size_t _statusCode;
   std::string _method;
   std::string _uri;
   std::vector<std::string> _queryUri;
   size_t _version;
   std::string _host;
-  std::map<std::string, std::string> _headers; // map or vecotr?
+  std::map<std::string, std::string> _headers;
   std::string _body;
   size_t _requestSize;
   int _bodySize;
-  ServerConf *_server;
   std::string _buffer;
+  std::string _responseBody;
 
   static const char *_validMethods[];
   static const size_t _methodSize;
   static const char *_whiteSpaces;
   static const size_t _uriMaxSize;
   static const size_t _headerMaxSize;
+  static const std::map<std::string, char> uriEncoding;
 
   // Constructor
   void parseBuffer(void);
@@ -60,8 +61,14 @@ private:
   bool insertInMap(std::string &line);
   size_t parseRequestLine(const std::string &requestLine);
   int parseUri(const std::string &uri);
+  void uriDecoder(std::string &uri);
   void readRequest(void);
+  const ServerConf *getServerConf(void);
+  void getResponseBody(void);
   void sendResponse(int statusCode);
+
+  time_t getTime(void);
+  bool isTimedOut(void);
 };
 
 #endif //! CLIENT_HPP

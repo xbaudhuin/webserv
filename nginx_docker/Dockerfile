@@ -1,6 +1,8 @@
 # Use the official Nginx base image
 FROM nginx:latest
 
+ENV SPACE="index space.html"
+
 RUN apt-get update && apt-get upgrade -y && apt-get install vim -y
 # Copy your custom nginx.conf to the container
 
@@ -10,6 +12,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy your website content to the default Nginx public directory
 COPY index.html /usr/share/nginx/html/index.html
+COPY ${SPACE} /usr/share/nginx/html/${SPACE}
 
 RUN mkdir -p /usr/share/nginx/html2
 RUN mkdir -p /usr/share/nginx/html2/404.html

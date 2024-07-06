@@ -3,6 +3,7 @@
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
 #include "Utils.hpp"
+#include <ostream>
 
 const char *Client::_validMethods[] = {"GET",     "POST",  "DELETE",
                                        "HEAD",    "PUT",   "CONNECT",
@@ -16,11 +17,116 @@ const size_t Client::_uriMaxSize = 8000;
 
 const size_t Client::_headerMaxSize = 8000;
 
+std::map<std::string, char> initMap() {
+  std::map<std::string, char> m;
+
+  m["%20"] = ' ';
+  m["%21"] = '!';
+  m["%22"] = '"';
+  m["%23"] = '#';
+  m["%24"] = '$';
+  m["%25"] = '%';
+  m["%26"] = '&';
+  m["%27"] = '\'';
+  m["%28"] = '(';
+  m["%29"] = ')';
+  m["%2A"] = '*';
+  m["%2B"] = '+';
+  m["%2C"] = ',';
+  m["%2D"] = '-';
+  m["%2E"] = '.';
+  m["%2F"] = '/';
+  m["%30"] = '0';
+  m["%31"] = '1';
+  m["%32"] = '2';
+  m["%33"] = '3';
+  m["%34"] = '4';
+  m["%35"] = '5';
+  m["%36"] = '6';
+  m["%37"] = '7';
+  m["%38"] = '8';
+  m["%39"] = '9';
+  m["%3A"] = ':';
+  m["%3B"] = ';';
+  m["%3C"] = '<';
+  m["%3D"] = '=';
+  m["%3E"] = '>';
+  m["%3F"] = '?';
+  m["%40"] = '@';
+  m["%41"] = 'A';
+  m["%42"] = 'B';
+  m["%43"] = 'C';
+  m["%44"] = 'D';
+  m["%45"] = 'E';
+  m["%46"] = 'F';
+  m["%47"] = 'G';
+  m["%48"] = 'H';
+  m["%49"] = 'I';
+  m["%4A"] = 'J';
+  m["%4B"] = 'K';
+  m["%4C"] = 'L';
+  m["%4D"] = 'M';
+  m["%4E"] = 'N';
+  m["%4F"] = 'O';
+  m["%50"] = 'P';
+  m["%51"] = 'Q';
+  m["%52"] = 'R';
+  m["%53"] = 'S';
+  m["%54"] = 'T';
+  m["%55"] = 'U';
+  m["%56"] = 'V';
+  m["%57"] = 'W';
+  m["%58"] = 'X';
+  m["%59"] = 'Y';
+  m["%5A"] = 'Z';
+  m["%5B"] = '[';
+  m["%5C"] = '\\';
+  m["%5D"] = ']';
+  m["%5E"] = '^';
+  m["%5F"] = '_';
+  m["%60"] = '`';
+  m["%61"] = 'a';
+  m["%62"] = 'b';
+  m["%63"] = 'c';
+  m["%64"] = 'd';
+  m["%65"] = 'e';
+  m["%66"] = 'f';
+  m["%67"] = 'g';
+  m["%68"] = 'h';
+  m["%69"] = 'i';
+  m["%6A"] = 'j';
+  m["%6B"] = 'k';
+  m["%6C"] = 'l';
+  m["%6D"] = 'm';
+  m["%6E"] = 'n';
+  m["%6F"] = 'o';
+  m["%70"] = 'p';
+  m["%71"] = 'q';
+  m["%72"] = 'r';
+  m["%73"] = 's';
+  m["%74"] = 't';
+  m["%75"] = 'u';
+  m["%76"] = 'v';
+  m["%77"] = 'w';
+  m["%78"] = 'x';
+  m["%79"] = 'y';
+  m["%7A"] = 'z';
+  m["%7B"] = '{';
+  m["%7C"] = '|';
+  m["%7D"] = '}';
+  m["%7E"] = '~';
+  m["%7F"] = '\x7F';
+  return m;
+}
+
+const std::map<std::string, char> Client::uriEncoding = initMap();
+
 Client::Client(const int fd, const mapConfs &mapConfs,
                const ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
       _statusCode(200), _method(""), _uri(""), _version(0), _host(""),
-      _body(""), _buffer(""), _bodySize(-1), _requestSize(0) {
+      _body(""), _requestSize(0), _bodySize(-1), _buffer("") {
+  _time = getTime();
   return;
 }
 
@@ -46,9 +152,39 @@ Client &Client::operator=(Client const &rhs) {
   return (*this);
 }
 
+time_t Client::getTime(void) { return (std::time(0)); }
+
+bool Client::isTimedOut(void) {
+  time_t current;
+  double timeOut = std::difftime(current, _time);
+  if (timeOut >= 60.0)
+    return (true);
+  return (false);
+}
+
 void trimWhitespace(std::string &str, const char *whiteSpaces) {
   str.erase(0, str.find_first_not_of(whiteSpaces));
   str.erase(str.find_last_not_of(whiteSpaces) + 1);
+}
+
+void Client::uriDecoder(std::string &uri) {
+  size_t pos = 0;
+  while (true) {
+    pos = uri.find_first_of('%');
+    if (pos == uri.npos)
+      break;
+    if (pos + 2 > uri.size()) {
+      _statusCode = 400;
+      return;
+    }
+    std::string key = uri.substr(pos, 3);
+    std::map<std::string, char>::const_iterator it = uriEncoding.find(key);
+    if (it == uriEncoding.end()) {
+      _statusCode = 400;
+      return;
+    }
+    uri.replace(pos, 3, 1, (*it).second);
+  }
 }
 
 int Client::parseUri(const std::string &uri) {
@@ -58,13 +194,19 @@ int Client::parseUri(const std::string &uri) {
     return (414);
   size_t pos = uri.find_first_of('?');
   _uri = uri.substr(0, pos);
+  uriDecoder(_uri);
   if (_uri.size() > 2048)
-
-    if (pos != uri.npos) {
-      std::string query = uri.substr(pos + 1);
-      if (query.empty() == false)
-        _queryUri = split(query, "+&");
+    return (414);
+  if (pos != uri.npos) {
+    std::string query = uri.substr(pos + 1);
+    if (query.empty() == false)
+      _queryUri = split(query, "+&");
+    for (vec_string::iterator it = _queryUri.begin(); it != _queryUri.end();
+         it++) {
+      uriDecoder(*it);
     }
+  }
+
   return (200);
 }
 
@@ -170,16 +312,25 @@ void Client::readRequest(void) {
       _buffer.erase(start, 1);
   }
   if (_bodySize > 0) {
+    std::cout << RED << "adding buffer to previous body\n" << RESET;
+    std::cout << YELLOW << "buf:\n" << buf << RESET;
+    std::cout << YELLOW << "\nbuffer after adding buf:\n"
+              << _buffer << RESET << std::endl;
     if (_bodySize > read) {
       _requestSize += read;
       _bodySize -= read;
+      std::cout << RED << "return: body not complete, still have to read: "
+                << _bodySize << RESET << std::endl;
       return;
+    } else {
+      _requestSize += _bodySize;
+      _bodySize = -1;
+      _body = _buffer.substr(0, _requestSize);
+      _buffer = _buffer.substr(_requestSize, _buffer.size() - _requestSize);
+      std::cout << RED << "separating body form buffer:\n" << RESET;
+      std::cout << YELLOW << "body:\n" << _body << RESET;
+      std::cout << YELLOW << "\nbuffer:\n" << _buffer << RESET << std::endl;
     }
-    _requestSize += _bodySize;
-    _bodySize = -1;
-    std::string request = _buffer.substr(0, _requestSize);
-    _buffer = _buffer.substr(_requestSize, _buffer.size() - _requestSize);
-    parseRequest(request);
   }
   parseBuffer();
 }
@@ -187,11 +338,15 @@ void Client::readRequest(void) {
 void Client::parseBuffer(void) {
   size_t pos = _buffer.find("\n\n");
   if (pos == _buffer.npos) {
+    std::cout << RED << "No empty line in buffer" << RESET << std::endl;
     return;
   }
   std::string request = _buffer.substr(0, pos);
   pos++;
   _buffer = _buffer.substr(pos, _buffer.size() - pos);
+  std::cout << RED << "separating request from buffer\n" << RESET;
+  std::cout << GREEN << "request:\n" << request << RESET;
+  std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   parseRequest(request);
   parseBuffer();
 }
@@ -200,9 +355,9 @@ std::string Client::getDate(void) {
   time_t rawtime;
 
   time(&rawtime);
-  tm *gmtTime = gmtime(&currentTime);
+  tm *gmtTime = gmtime(&rawtime);
   char buffer[80] = {0};
-  strftime(buffer, sizeof(buffer), "Date: %a, %d, %b, %Y, %H:%M:%S GMT\r\n");
+  std::strftime(buffer, 80, "Date: %a, %d, %b, %Y, %H:%M:%S GMT\r\n", gmtTime);
   return (buffer);
 }
 
@@ -217,6 +372,35 @@ void Client::sendResponse(int statusCode) {
   response += "reasonPhrase\r\n";
   response += "Webserv: 1.0.0\r\n";
   response += getDate();
+  response += "Content-Type: text/html\r\n";
+  response += "Content-Length: 157\r\n";
+  response += "Connection: ";
+  if (statusCode >= 400 || _version == 0) {
+    response += "close\r\n";
+  } else {
+    response += "keep-alive\r\n";
+  }
+  response += "\r\n";
+  response += _responseBody;
+  std::cout << GREEN << "response:\n" << response << RESET << std::endl;
+  return;
+}
+
+const ServerConf *Client::getServerConf(void) {
+  mapConfs::const_iterator it;
+  it = _mapConf.find(_host);
+  if (it != _mapConf.end())
+    return ((*it).second);
+  return (_defaultConf);
+}
+
+void Client::getResponseBody(void) {
+  const ServerConf *server = getServerConf();
+
+  std::string path = server->getPreciseLocation(
+
+  );
+  std::ifstream file();
 }
 
 void Client::parseRequest(std::string &buffer) {
@@ -236,13 +420,7 @@ void Client::parseRequest(std::string &buffer) {
   _statusCode = parseRequestLine(requestLine);
   if (_statusCode >= 400)
     return;
-  try {
-    // int size = std::strtol(_headers.at("content-lenght").c_str(), NULL,
-    // 10); read(size) and add body
-  } catch (std::exception &e) {
-  }
-  if (line.empty() == false)
-    throw(std::logic_error(""));
+  getResponseBody();
 }
 
 void Client::print() {
