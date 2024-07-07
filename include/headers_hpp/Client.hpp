@@ -16,7 +16,7 @@ class ServerConf;
 class Client {
 public:
   // Constructor
-  Client(const int fd, const mapConfs &map, const ServerConf *defaultServer);
+  Client(const int fd, const mapConfs &map, ServerConf *defaultServer);
   Client(Client const &copy);
 
   // Destructor
@@ -32,7 +32,9 @@ protected:
 private:
   const int _socket;
   const mapConfs &_mapConf;
-  const ServerConf *_defaultConf;
+  ServerConf *_defaultConf;
+  ServerConf *_server;
+  Location *_location;
   time_t _time;
   size_t _statusCode;
   std::string _method;
@@ -63,7 +65,7 @@ private:
   int parseUri(const std::string &uri);
   void uriDecoder(std::string &uri);
   void readRequest(void);
-  const ServerConf *getServerConf(void);
+  ServerConf *getServerConf(void);
   void getResponseBody(void);
   void sendResponse(int statusCode);
 

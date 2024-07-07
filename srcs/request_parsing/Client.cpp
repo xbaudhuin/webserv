@@ -121,11 +121,10 @@ std::map<std::string, char> initMap() {
 
 const std::map<std::string, char> Client::uriEncoding = initMap();
 
-Client::Client(const int fd, const mapConfs &mapConfs,
-               const ServerConf *defaultConf)
-    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
-      _statusCode(200), _method(""), _uri(""), _version(0), _host(""),
-      _body(""), _requestSize(0), _bodySize(-1), _buffer("") {
+Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
+    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
+      _location(NULL), _statusCode(200), _method(""), _uri(""), _version(0),
+      _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer("") {
   _time = getTime();
   return;
 }
@@ -206,7 +205,12 @@ int Client::parseUri(const std::string &uri) {
       uriDecoder(*it);
     }
   }
-
+  _server = getServerConf();
+  std::cout << YELLOW << "server = " << _server->getHost()
+            << " on port: " << _server->getPort() << RESET << std::endl;
+  _location = const_cast<Location *>(&(_server->getPreciseLocation(_uri)));
+  std::cout << YELLOW << "location = " << _location->getUrl() << RESET
+            << std::endl;
   return (200);
 }
 
@@ -386,7 +390,7 @@ void Client::sendResponse(int statusCode) {
   return;
 }
 
-const ServerConf *Client::getServerConf(void) {
+ServerConf *Client::getServerConf(void) {
   mapConfs::const_iterator it;
   it = _mapConf.find(_host);
   if (it != _mapConf.end())
@@ -395,7 +399,6 @@ const ServerConf *Client::getServerConf(void) {
 }
 
 void Client::getResponseBody(void) {
-  const ServerConf *server = getServerConf();
 
   std::string path = server->getPreciseLocation(
 
