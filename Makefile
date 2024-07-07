@@ -23,6 +23,8 @@ CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
 
 debug 				= 	0
 
+print				=	0
+
 ifeq ($(debug), 1)
 	CXX = g++
 	CXXFLAGS += -g
@@ -41,6 +43,10 @@ endif
 ifeq ($(debug), 4)
 	CXX = g++
 	CXXFLAGS += -g3 -fsanitize=address
+endif
+
+ifeq ($(print), 1)
+	CXXFLAGS += -D PRINT=1
 endif
 
 TXT						=	compile_flags.txt

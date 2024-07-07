@@ -16,5 +16,4 @@ typedef std::map<int, std::string> map_err_pages;
 typedef std::vector<Location> vec_location;
 typedef std::vector<std::pair<vec_string, ServerConf> > vec_confs;
 
-
 #endif
