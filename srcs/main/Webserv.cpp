@@ -78,6 +78,39 @@ bool checkNumberBrackets(const vec_string &split)
     
 }
 
+void Webserv::createMaps(void)
+{
+    size_t size = this->confs.size();
+    for (size_t i = 0; i < size; i++)
+    {
+        mapSubServs::iterator it = this->_subServs.find(this->confs[i].second.getPort());
+        if(it == this->_subServs.end())
+        {
+            this->_subServs.insert(std::make_pair(this->confs[i].second.getPort(), SubServ(this->confs[i].second)));
+        }
+        else
+        {
+            std::string name = this->confs[i].second.getServerNames()[0];
+            this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+        }
+    }
+    std::cout << this->_subServs.size() << std::endl;
+#ifdef PRINT
+    mapSubServs::iterator it = this->_subServs.begin();
+    while(it != this->_subServs.end())
+    {
+        mapConfs::iterator ite = it->second._portConfs.begin();
+        while (ite != it->second._portConfs.end())
+        {
+            std::cout << (*ite->second) << std::endl;
+            ite++;
+        }
+        
+        it++;
+    }
+#endif
+}
+
 void Webserv::parse(vec_string split)
 {
     int check = 0;
@@ -110,13 +143,14 @@ void Webserv::parse(vec_string split)
     // std::cout << "Test: " << this->confs.size() << std::endl;
     if(check)
     {
-        std::cout << "Coucou" << std::endl;
-        printConfig(this->confs);  
+        // std::cout << "Coucou" << std::endl;
+        // printConfig(this->confs);  
     }
     else
         throw std::invalid_argument("Webserv: Error: No configuration found");
-
+    this->createMaps();
 }
+
 
 void Webserv::parseConfig(const std::string &conf)
 {
@@ -155,11 +189,11 @@ int	Webserv::addSocketToEpoll(int socketFd)
 
 int	Webserv::removeFdFromIdMap(int socketFd)
 {
-	SubServ	subservTemp;
+	// SubServ	subservTemp;
 
 	try
 	{
-		subservTemp = this->idMap.at(socketFd);
+		this->idMap.at(socketFd);
 		this->idMap.erase(socketFd);
 		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
 	}

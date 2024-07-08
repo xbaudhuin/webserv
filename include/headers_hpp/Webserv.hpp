@@ -26,6 +26,9 @@ class Webserv
         Webserv();
         void                    parseConfig(const std::string &conf);
         void                    parse(vec_string split); 
+		std::map<int, SubServ*>	idMap;
+        Webserv();
+        void createMaps(void);
 
     public:
       		 	 Webserv(const char *s);

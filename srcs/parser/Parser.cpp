@@ -170,10 +170,13 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     }
     cf.setMainServerName();
     cf.setRank(rank);
+    cf.setRootToErrorPages();
     for (size_t i = 0; i < cf.getLocations().size(); i++)
     {
         // std::cout << RED << cf.getLocations()[i].getUrl() << RESET << std::endl;
         cf.getLocations()[i].fixUrl(cf.getRoot());
+        cf.getLocations()[i].fixRoot();
+        cf.getLocations()[i].fixIndexFile();
         // std::cout << RED << cf.getLocations()[i].getUrl() << RESET <<std::endl;
     }
     

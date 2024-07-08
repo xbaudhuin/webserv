@@ -87,6 +87,7 @@ int testMaxBodySize(const vec_string &split, size_t &i, const size_t &size, Loca
 
 int testIndex(const vec_string &split, size_t &i, const size_t &size, Location &loc)
 {
+    (void)size;
     if (split[i] == "index")
     {
         i++;
@@ -94,12 +95,13 @@ int testIndex(const vec_string &split, size_t &i, const size_t &size, Location &
         {
             throw std::logic_error("Error inside the index directive");
         }
-        if(i + 1 < size && split[i + 1] != ";")
+        // i++;
+        while(split[i] != ";")
         {
-            throw std::logic_error("Error inside the index directive, ';' not found");
+            loc.setIndexFile(split[i]);
+            i++;
         }
-        loc.setIndexFile(split[i]);
-        i+=2;
+        i++;
         return(1);
     }
     return(0);
@@ -132,6 +134,7 @@ int testCgi(const vec_string &split, size_t &i, const size_t &size, Location &lo
 
 int testSet_method(const vec_string &split, size_t &i, const size_t &size, Location &loc)
 {
+    (void)size;
     if(split[i] == "set_method")
     {
         i++;
@@ -144,11 +147,18 @@ int testSet_method(const vec_string &split, size_t &i, const size_t &size, Locat
         {
             throw std::logic_error("Error inside the set_method directive, wrong format");
         }
-        if(i + 1 < size && split[i + 1] != ";")
+        int j = i;
+        i--;
+        while(split[j] != ";")
         {
-            throw std::logic_error("Error inside the set_method directive, ';' not found");
+            j++;
         }
-        loc.setMethod(split[i - 1], split[i]);
+        j--;
+        while (split[i] != split[j])
+        {
+            loc.setMethod(split[i], split[j]);
+            i++;
+        }
         i+=2;
         return(1);
     }
