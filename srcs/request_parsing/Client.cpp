@@ -3,6 +3,7 @@
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
 #include "Utils.hpp"
+#include <exception>
 #include <ostream>
 
 const char *Client::_validMethods[] = {"GET",     "POST",  "DELETE",
@@ -208,9 +209,15 @@ int Client::parseUri(const std::string &uri) {
   _server = getServerConf();
   std::cout << YELLOW << "server = " << _server->getHost()
             << " on port: " << _server->getPort() << RESET << std::endl;
+  try {
   _location = const_cast<Location *>(&(_server->getPreciseLocation(_uri)));
   std::cout << YELLOW << "location = " << _location->getUrl() << RESET
             << std::endl;
+  }
+  catch (std::exception &e){
+    _location = NULL;
+    return (404);
+  }
   return (200);
 }
 
@@ -269,17 +276,17 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   return (200);
 }
 
-unsigned char ToLower(char c) {
+unsigned char toLower(char c) {
   return (std::tolower(static_cast<unsigned char>(c)));
 }
 
-bool Client::insertInMap(std::string &line) {
-  std::transform(line.begin(), line.end(), line.begin(), ToLower);
+size_t Client::insertInMap(std::string &line) {
+  std::transform(line.begin(), line.end(), line.begin(), toLower);
   size_t pos = line.find_first_of(':');
   std::string key = line.substr(0, pos);
   std::string value = line.substr(pos + 1);
   if (value.size() > _headerMaxSize) {
-    return (false);
+    return (400);
   }
   trimWhitespace(value, _whiteSpaces);
   std::cout << "KEY = " << key << std::endl;
@@ -287,10 +294,10 @@ bool Client::insertInMap(std::string &line) {
 
   if (pos != line.npos) {
     if (_headers.insert(std::make_pair(key, value)).second == false &&
-        key == "host")
-      return (false);
+        key == "host" )
+      return (400);
   }
-  return (true);
+  return (200);
 }
 
 void Client::readRequest(void) {
@@ -400,9 +407,6 @@ ServerConf *Client::getServerConf(void) {
 
 void Client::getResponseBody(void) {
 
-  std::string path = server->getPreciseLocation(
-
-  );
   std::ifstream file();
 }
 
@@ -412,17 +416,17 @@ void Client::parseRequest(std::string &buffer) {
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
-    return;
   }
-  std::string requestLine;
-  if (_headers.count("host") == 0) {
-    _statusCode = 400;
-    return;
-  }
-  _host = _headers.at("host");
-  _statusCode = parseRequestLine(requestLine);
+  _statusCode = parseRequestLine(request[0]);
   if (_statusCode >= 400)
     return;
+  for (size_t it = 1; it < request.size();it++){
+    insertInMap(request[it]);
+  }
+  if (_headers.count("host") == 0) {
+    _statusCode = 400;
+  }
+  _host = _headers.at("host");
   getResponseBody();
 }
 

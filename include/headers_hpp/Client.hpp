@@ -60,7 +60,7 @@ private:
   void parseBuffer(void);
   std::string getDate(void);
   void parseRequest(std::string &request);
-  bool insertInMap(std::string &line);
+  size_t insertInMap(std::string &line);
   size_t parseRequestLine(const std::string &requestLine);
   int parseUri(const std::string &uri);
   void uriDecoder(std::string &uri);
