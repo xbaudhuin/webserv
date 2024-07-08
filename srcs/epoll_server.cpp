@@ -95,7 +95,7 @@ void	read_data_from_socket(int sender_fd, int epoll_fd, std::vector<int> &client
 			}
 		}
 		ss.clear();
-	}	
+	}
 }
 
 void	add_client_socket_to_epoll(int epoll_fd, int client_socket, std::vector<int> &client_sockets)
