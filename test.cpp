@@ -97,6 +97,30 @@ int main(int argc, char **argv)
 {
     (void)argv;
     (void)argc;
+    std::string s = "/html/html2/coucou";
+    size_t pos = s.size();
+    int i = 0;
+    pos = s.find_last_of("/", pos);
+    std::string s1 = s.substr(0, pos + 1);
+    std::string s2;
+    if(s1 == s)
+        std::cout << "TWINNING !" << std::endl;
+    else
+    {
+        std::cout << "EWW A FILE!" << std::endl;
+        s2 = s.substr(pos, s.size());
+    }
+    while (pos != std::string::npos)
+    {   
+        pos = s.find_last_of("/", pos);
+        std::string s1 = s.substr(0, pos + 1);
+        std::cout << s1 << " && " << pos << std::endl;
+        if(s2.size() > 0)
+            std::cout << s2 << std::endl;
+        pos--;
+    }
+    
+
     // try
     // {
     //     test t;
