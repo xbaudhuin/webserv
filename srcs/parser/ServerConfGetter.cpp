@@ -44,7 +44,7 @@ vec_location& ServerConf::getLocations(void){
     return(this->_locations);
 }
 
-const Location& ServerConf::getPreciseLocation(const std::string &url) const
+Location& ServerConf::getPreciseLocation(const std::string &url)
 {
     size_t size = this->_locations.size();
     for (size_t i = 0; i < size; i++)
