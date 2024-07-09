@@ -44,7 +44,6 @@ const ServerConf	*SubServ::getConf(const std::string &serverName)
 	{
 		return (this->_main);
 	}
-	
 }
 
 int	SubServ::acceptNewConnection(void)

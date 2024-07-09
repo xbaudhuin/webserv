@@ -277,3 +277,8 @@ int		Webserv::closeClientConnection(int clientSocket)
 	}
 	return (status);
 }
+
+int	Webserv::getEpollFd(void)
+{
+	return (this->_epollFd);
+}

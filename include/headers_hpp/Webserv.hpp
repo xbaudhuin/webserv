@@ -40,6 +40,7 @@ class Webserv
 		int		addSocketToEpoll(int socketFd);
 		int		removeFdFromIdMap(int socketFd);
 		int		closeClientConnection(int clientSocket);
+		int		getEpollFd(void);
 		
 };
 
