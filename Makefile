@@ -90,7 +90,6 @@ AR						=	ar rcs
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					exec/SubServ.cpp \
-					exec/SubServ2.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
