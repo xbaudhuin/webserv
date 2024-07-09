@@ -5,10 +5,12 @@ SubServ::SubServ()
 	return ;
 }
 
-// SubServ::SubServ(int port) : _port(port)
-// {
-// 	return ;
-// }
+SubServ::SubServ(ServerConf &serv) : _main(&serv)
+{
+    this->_portConfs[serv.getServerNames()[0]] = &serv;
+    this->_port = serv.getPort();
+}
+
 
 SubServ::~SubServ(void)
 {
@@ -96,6 +98,17 @@ bool	SubServ::isServerSocket(int socketFd)
 	{
 		return (false);
 	}
+}
+
+int	SubServ::initServerSocket(void)
+{
+	this->_serverSocket = createServerSocket(this->_port);
+	return (this->_serverSocket);
+}
+
+int	SubServ::getPort(void)
+{
+	return (this->_port);
 }
 
 int	SubServ::tests(void)

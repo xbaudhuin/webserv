@@ -22,13 +22,12 @@ class Webserv
         vec_string              env;
         char                    **env_char;
         vec_confs               confs;
-		std::map<int, SubServ&>	idMap;
         Webserv();
         void                    parseConfig(const std::string &conf);
         void                    parse(vec_string split); 
 		std::map<int, SubServ*>	idMap;
-        Webserv();
-        void createMaps(void);
+        void 					createMaps(void);
+		void					setServerSockets(void);
 
     public:
       		 	 Webserv(const char *s);
@@ -39,6 +38,7 @@ class Webserv
         char	** getEnv(void);
 		int		addSocketToEpoll(int socketFd);
 		int		removeFdFromIdMap(int socketFd);
+		
 };
 
 #endif

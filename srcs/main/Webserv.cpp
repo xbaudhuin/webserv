@@ -12,7 +12,6 @@ Webserv::Webserv(const char* file)
     else
         config = "./config/good_config/test.conf";
     this->parseConfig(config);
-
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
 	{
@@ -189,8 +188,6 @@ int	Webserv::addSocketToEpoll(int socketFd)
 
 int	Webserv::removeFdFromIdMap(int socketFd)
 {
-	// SubServ	subservTemp;
-
 	try
 	{
 		this->idMap.at(socketFd);
@@ -203,4 +200,22 @@ int	Webserv::removeFdFromIdMap(int socketFd)
 		return (1);
 	}
 	return (0);
+}
+
+void	Webserv::setServerSockets(void)
+{
+	mapSubServs::iterator	iter;
+	int						serverSocket;
+
+	iter = this->_subServs.begin();
+	while (iter != this->_subServs.end())
+	{
+		serverSocket = (*iter).second.initServerSocket();
+		if (serverSocket == -1)
+			throw std::logic_error("Can not create server socket");
+		if (this->addSocketToEpoll(serverSocket) != 0)
+			throw std::logic_error("Can not add socket to epoll");
+		this->idMap[serverSocket] = &((*iter).second);
+		iter++;
+	}
 }
