@@ -15,6 +15,8 @@ Webserv::Webserv(const char* file)
 	}
 #ifdef PRINT
     this->parseConfig(config);
+#endif
+#if PRINT == 2
     vec_string v;
     v.push_back("/coucou/");
     v.push_back("/");

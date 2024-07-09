@@ -53,7 +53,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     {
         if(this->_locations[i].isExactMatch() && this->_locations[i].getUrl() == s)
         {
-#ifdef PRINT
+#if PRINT == 2
             std::cout << YELLOW << "✨ JACKPOT ✨" << RESET << std::endl;
             std::cout << RED << "FOUND IN PRECISE LOCATION" << std::endl;
             std::cout << s << RESET << std::endl;
@@ -67,14 +67,14 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     std::string s2;
     if(s1 == s)
     {
-#ifdef PRINT
+#if PRINT == 2
         std::cout << BLUE << "TWINNING !" << RESET << std::endl;
 #endif   
     }
     else
     {
         s2 = s.substr(pos, s.size());
-#ifdef PRINT
+#if PRINT == 2
         std::cout << GREEN << "EWW A FILE!" << std::endl;
         std::cout << "This is the ugly file: " << s2 << RESET << std::endl;
 #endif
@@ -87,7 +87,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         {
             if(this->_locations[i].getUrl() == s)
             {
-#ifdef PRINT
+#if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;
                 std::cout << s1 << RESET << std::endl;
 #endif
