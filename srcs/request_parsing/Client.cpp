@@ -210,7 +210,9 @@ int Client::parseUri(const std::string &uri) {
   std::cout << YELLOW << "server = " << _server->getHost()
             << " on port: " << _server->getPort() << RESET << std::endl;
   try {
-  _location = const_cast<Location *>(&(_server->getPreciseLocation(_uri)));
+
+  // _location = const_cast<Location *>(&(_server->getPreciseLocation(_uri)));
+
   std::cout << YELLOW << "location = " << _location->getUrl() << RESET
             << std::endl;
   }
@@ -398,11 +400,50 @@ void Client::sendResponse(int statusCode) {
 }
 
 ServerConf *Client::getServerConf(void) {
-  mapConfs::const_iterator it;
-  it = _mapConf.find(_host);
-  if (it != _mapConf.end())
-    return ((*it).second);
-  return (_defaultConf);
+  // mapConfs::const_iterator it;
+  // it = _mapConf.find(_host);
+  // if (it != _mapConf.end())
+  //   return ((*it).second);
+  // return (_defaultConf);
+   ServerConf *cf= new ServerConf;
+    cf->addPortOrHost("127.0.0.1:443");
+    cf->addServerName("Webserv");
+    Location loc;
+    loc.addUrl("/coucou/test/", "");
+    loc.setAutoIndex("on");
+    loc.setMethod("POST", "on");
+    loc.setMethod("DELETE", "on");
+    loc.setMethod("GET", "on");
+    loc.setIndexFile("index.html");
+    loc.fixUrl("/html");
+    loc.fixIndexFile();
+    loc.fixRoot();
+    cf->addLocation(loc);
+    Location test;
+    test.addUrl("/coucou/test/test2/", "");
+    test.setAutoIndex("on");
+    test.setMethod("POST", "on");
+    test.setMethod("DELETE", "on");
+    test.setMethod("GET", "on");
+    test.setIndexFile("index.html");
+    test.fixUrl("/html");
+    test.fixIndexFile();
+    test.fixRoot();
+    cf->addLocation(test);
+    Location loc2;
+    loc2.addUrl("/coucou/test2/", "");
+    loc2.setAutoIndex("on");
+    loc2.setMethod("POST", "on");
+    loc2.setMethod("DELETE", "on");
+    loc2.setMethod("GET", "on");
+    loc2.setIndexFile("index.html");
+    loc2.fixUrl("/html");
+    loc2.fixIndexFile();
+    loc2.fixRoot();
+    cf->addLocation(loc2);
+    cf->setRootToErrorPages();
+    std::cout << *cf << std::endl;
+  return (cf);
 }
 
 void Client::getResponseBody(void) {
