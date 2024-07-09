@@ -14,9 +14,11 @@ const size_t Client::_methodSize = 9;
 
 const char *Client::_whiteSpaces = " \t";
 
-const size_t Client::_uriMaxSize = 8000;
+const size_t Client::_uriMaxSize = 8192;
 
-const size_t Client::_headerMaxSize = 8000;
+const size_t Client::_headerMaxSize = 8192;
+
+const size_t Client::_headersMaxBuffer = 32768;
 
 std::map<std::string, char> initMap() {
   std::map<std::string, char> m;
@@ -124,7 +126,7 @@ const std::map<std::string, char> Client::uriEncoding = initMap();
 
 Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _location(NULL), _statusCode(200), _method(""), _uri(""), _version(0),
+      _location(NULL), _statusCode(0), _method(""), _uri(""), _version(0),
       _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer("") {
   _time = getTime();
   return;
@@ -198,21 +200,13 @@ int Client::parseUri(const std::string &uri) {
   if (_uri.size() > 2048)
     return (414);
   if (pos != uri.npos) {
-    std::string query = uri.substr(pos + 1);
-    if (query.empty() == false)
-      _queryUri = split(query, "+&");
-    for (vec_string::iterator it = _queryUri.begin(); it != _queryUri.end();
-         it++) {
-      uriDecoder(*it);
+    _queryUri = uri.substr(pos + 1);
     }
-  }
   _server = getServerConf();
   std::cout << YELLOW << "server = " << _server->getHost()
             << " on port: " << _server->getPort() << RESET << std::endl;
   try {
-
-  // _location = const_cast<Location *>(&(_server->getPreciseLocation(_uri)));
-
+    _location = &(_server->getLocations()[0]);
   std::cout << YELLOW << "location = " << _location->getUrl() << RESET
             << std::endl;
   }
@@ -220,7 +214,7 @@ int Client::parseUri(const std::string &uri) {
     _location = NULL;
     return (404);
   }
-  return (200);
+  return (0);
 }
 
 size_t Client::parseRequestLine(const std::string &requestLine) {
@@ -302,39 +296,64 @@ size_t Client::insertInMap(std::string &line) {
   return (200);
 }
 
-void Client::readRequest(void) {
-  char buf[BUFSIZ] = {0};
-  ssize_t read = recv(_socket, buf, BUFSIZ, 0);
-  if (read == -1) {
-    std::cout << RED << "initial recv return -1 on " << _socket << RESET
-              << std::endl;
-    return;
-  }
-  if (read == 0) {
-    std::cout << RED << "initial recv return 0 on " << _socket << RESET
-              << std::endl;
-    return;
-  }
-  _buffer += buf;
-  size_t start = _requestSize;
-  while (true) {
-    start = _buffer.find_first_of('\r', start);
-    if (start == _buffer.npos)
-      break;
-    if (_buffer[start + 1] == '\n')
-      _buffer.erase(start, 1);
-  }
-  if (_bodySize > 0) {
+// void Client::readRequest(void) {
+//   char buf[BUFSIZ] = {0};
+//   ssize_t read = recv(_socket, buf, BUFSIZ, 0);
+//   if (read == -1) {
+//     std::cout << RED << "initial recv return -1 on " << _socket << RESET
+//               << std::endl;
+//     return;
+//   }
+//   if (read == 0) {
+//     std::cout << RED << "initial recv return 0 on " << _socket << RESET
+//               << std::endl;
+//     return;
+//   }
+//   _buffer += buf;
+//   size_t start = _requestSize;
+//   while (true) {
+//     start = _buffer.find_first_of('\r', start);
+//     if (start == _buffer.npos)
+//       break;
+//     if (_buffer[start + 1] == '\n')
+//       _buffer.erase(start, 1);
+//   }
+//   if (_bodySize > 0) {
+//     std::cout << RED << "adding buffer to previous body\n" << RESET;
+//     std::cout << YELLOW << "buf:\n" << buf << RESET;
+//     std::cout << YELLOW << "\nbuffer after adding buf:\n"
+//               << _buffer << RESET << std::endl;
+//     if (_bodySize > read) {
+//       _requestSize += read;
+//       _bodySize -= read;
+//       std::cout << RED << "return: body not complete, still have to read: "
+//                 << _bodySize << RESET << std::endl;
+//       return;
+//     } else {
+//       _requestSize += _bodySize;
+//       _bodySize = -1;
+//       _body = _buffer.substr(0, _requestSize);
+//       _buffer = _buffer.substr(_requestSize, _buffer.size() - _requestSize);
+//       std::cout << RED << "separating body form buffer:\n" << RESET;
+//       std::cout << YELLOW << "body:\n" << _body << RESET;
+//       std::cout << YELLOW << "\nbuffer:\n" << _buffer << RESET << std::endl;
+//     }
+//   }
+//   parseBuffer();
+// }
+
+bool Client::addBuffer(std::string &buffer) {
+ if (_bodySize > 0) {
     std::cout << RED << "adding buffer to previous body\n" << RESET;
-    std::cout << YELLOW << "buf:\n" << buf << RESET;
+    std::cout << YELLOW << "buf:\n" << buffer << RESET;
     std::cout << YELLOW << "\nbuffer after adding buf:\n"
               << _buffer << RESET << std::endl;
-    if (_bodySize > read) {
-      _requestSize += read;
-      _bodySize -= read;
+    if (_bodySize > buffer.size()) {
+      _requestSize += buffer.size();
+      _bodySize -= buffer.size();
       std::cout << RED << "return: body not complete, still have to read: "
                 << _bodySize << RESET << std::endl;
-      return;
+      return (0);
     } else {
       _requestSize += _bodySize;
       _bodySize = -1;
@@ -343,16 +362,13 @@ void Client::readRequest(void) {
       std::cout << RED << "separating body form buffer:\n" << RESET;
       std::cout << YELLOW << "body:\n" << _body << RESET;
       std::cout << YELLOW << "\nbuffer:\n" << _buffer << RESET << std::endl;
+      return (1);
     }
   }
-  parseBuffer();
-}
-
-void Client::parseBuffer(void) {
   size_t pos = _buffer.find("\n\n");
   if (pos == _buffer.npos) {
     std::cout << RED << "No empty line in buffer" << RESET << std::endl;
-    return;
+    return (0);
   }
   std::string request = _buffer.substr(0, pos);
   pos++;
@@ -361,7 +377,7 @@ void Client::parseBuffer(void) {
   std::cout << GREEN << "request:\n" << request << RESET;
   std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   parseRequest(request);
-  parseBuffer();
+  return (_readyToSend);
 }
 
 std::string Client::getDate(void) {
@@ -457,6 +473,8 @@ void Client::parseRequest(std::string &buffer) {
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
+    _readyToSend = true;
+    return ;
   }
   _statusCode = parseRequestLine(request[0]);
   if (_statusCode >= 400)
@@ -466,9 +484,10 @@ void Client::parseRequest(std::string &buffer) {
   }
   if (_headers.count("host") == 0) {
     _statusCode = 400;
+    _readyToSend = 1;
+    return ;
   }
   _host = _headers.at("host");
-  getResponseBody();
 }
 
 void Client::print() {

@@ -39,7 +39,7 @@ private:
   size_t _statusCode;
   std::string _method;
   std::string _uri;
-  std::vector<std::string> _queryUri;
+  std::string _queryUri;
   size_t _version;
   std::string _host;
   std::map<std::string, std::string> _headers;
@@ -54,10 +54,11 @@ private:
   static const char *_whiteSpaces;
   static const size_t _uriMaxSize;
   static const size_t _headerMaxSize;
+  static const size_t _headersMaxBuffer;
   static const std::map<std::string, char> uriEncoding;
 
   // Constructor
-  void parseBuffer(void);
+  bool addBuffer(std::string &buffer);
   std::string getDate(void);
   void parseRequest(std::string &request);
   size_t insertInMap(std::string &line);

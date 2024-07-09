@@ -16,7 +16,7 @@ private:
   /* DELETE */
   /* FAST_CGI */
   std::vector<std::string> available_extension;
-  std::vector<std::pair<std::string, std::string>> cgi;
+  std::vector<std::pair<std::string, std::string> > cgi;
   /* TYPE_FILE IF EXIST */
   bool _exact_match;
   std::string root;
@@ -45,7 +45,7 @@ public:
   const bool &getPostStatus(void) const;
   const bool &getGetSatus(void) const;
   const bool &getDeleteStatus(void) const;
-  const std::vector<std::pair<std::string, std::string>> &getCgi(void) const;
+  const std::vector<std::pair<std::string, std::string> > &getCgi(void) const;
 
   /* setters */
   void addLimitBodySize(const std::string &limit);
