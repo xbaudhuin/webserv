@@ -54,14 +54,13 @@ int	create_server_socket(int port)
 void	read_data_from_socket(int sender_fd, int epoll_fd, std::vector<int> &client_sockets)
 {
 	#define BUFSIZ_2 4096
-	char				buffer[BUFSIZ_2];
+	char				buffer[BUFSIZ];
 	int					bytes_read;
 	int					status;
 	int					dest_fd;
 	std::stringstream	ss;
 
-	sleep(5);
-	bytes_read = recv(sender_fd, buffer, BUFSIZ_2 - 1, 0);
+	bytes_read = recv(sender_fd, buffer, BUFSIZ - 1, 0);
 	if (bytes_read <= 0)
 	{
 		if (bytes_read == 0)
@@ -78,12 +77,12 @@ void	read_data_from_socket(int sender_fd, int epoll_fd, std::vector<int> &client
 		std::cout << "[" << sender_fd << "] Got message: " << buffer;
 		std::cout << "bytes read = " << bytes_read << std::endl;
 		ss << "[" << sender_fd << "] says: " << buffer;
-		if (bytes_read <= BUFSIZ - 1)
-		{
-			bytes_read = recv(sender_fd, buffer, BUFSIZ_2 - 1, 0);
-			buffer[bytes_read] = '\0';
-			ss << buffer;
-		}
+		// if (bytes_read <= BUFSIZ - 1)
+		// {
+		// 	bytes_read = recv(sender_fd, buffer, BUFSIZ_2 - 1, 0);
+		// 	buffer[bytes_read] = '\0';
+		// 	ss << buffer;
+		// }
 		for (size_t i = 0; i < client_sockets.size(); i++)
 		{
 			dest_fd = client_sockets[i];
@@ -186,11 +185,8 @@ int	main()
 			else
 			{
 				read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);
-				//std::cout << "[server]: I m gonna sleep 3 seconds" << std::endl;
-				//sleep(1);
 			}
 		}
-		//sleep(10);
 	}
 	close(server_socket);
 	return (0);
