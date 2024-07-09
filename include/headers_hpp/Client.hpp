@@ -27,6 +27,7 @@ public:
 
   // method
   void print();
+  bool addBuffer(std::string &buffer);
 
 protected:
 private:
@@ -55,10 +56,9 @@ private:
   static const size_t _uriMaxSize;
   static const size_t _headerMaxSize;
   static const size_t _headersMaxBuffer;
-  static const std::map<std::string, char> uriEncoding;
+  static const std::map<std::string, char> _uriEncoding;
 
   // Constructor
-  bool addBuffer(std::string &buffer);
   std::string getDate(void);
   void parseRequest(std::string &request);
   size_t insertInMap(std::string &line);

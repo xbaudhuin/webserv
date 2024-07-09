@@ -3,6 +3,7 @@
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
 #include "Utils.hpp"
+#include <cstdlib>
 #include <exception>
 #include <ostream>
 
@@ -122,7 +123,7 @@ std::map<std::string, char> initMap() {
   return m;
 }
 
-const std::map<std::string, char> Client::uriEncoding = initMap();
+const std::map<std::string, char> Client::_uriEncoding = initMap();
 
 Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
@@ -158,6 +159,7 @@ time_t Client::getTime(void) { return (std::time(0)); }
 
 bool Client::isTimedOut(void) {
   time_t current;
+  time(&current);
   double timeOut = std::difftime(current, _time);
   if (timeOut >= 60.0)
     return (true);
@@ -180,8 +182,8 @@ void Client::uriDecoder(std::string &uri) {
       return;
     }
     std::string key = uri.substr(pos, 3);
-    std::map<std::string, char>::const_iterator it = uriEncoding.find(key);
-    if (it == uriEncoding.end()) {
+    std::map<std::string, char>::const_iterator it = _uriEncoding.find(key);
+    if (it == _uriEncoding.end()) {
       _statusCode = 400;
       return;
     }
@@ -201,19 +203,8 @@ int Client::parseUri(const std::string &uri) {
     return (414);
   if (pos != uri.npos) {
     _queryUri = uri.substr(pos + 1);
-    }
-  _server = getServerConf();
-  std::cout << YELLOW << "server = " << _server->getHost()
-            << " on port: " << _server->getPort() << RESET << std::endl;
-  try {
-    _location = &(_server->getLocations()[0]);
-  std::cout << YELLOW << "location = " << _location->getUrl() << RESET
-            << std::endl;
   }
-  catch (std::exception &e){
-    _location = NULL;
-    return (404);
-  }
+
   return (0);
 }
 
@@ -234,7 +225,7 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
     return (401);
   }
   _statusCode = parseUri(split_request[1]);
-  if (_statusCode >= 300) {
+  if (_statusCode > 0) {
     return (_statusCode);
   }
   if (split_request[2].compare(0, 5, "HTTP/") != 0 ||
@@ -269,7 +260,7 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
     _version = 1;
   else
     _version = 0;
-  return (200);
+  return (0);
 }
 
 unsigned char toLower(char c) {
@@ -277,6 +268,8 @@ unsigned char toLower(char c) {
 }
 
 size_t Client::insertInMap(std::string &line) {
+  if (line.size() > _headerMaxSize)
+    return (431);
   std::transform(line.begin(), line.end(), line.begin(), toLower);
   size_t pos = line.find_first_of(':');
   std::string key = line.substr(0, pos);
@@ -290,10 +283,10 @@ size_t Client::insertInMap(std::string &line) {
 
   if (pos != line.npos) {
     if (_headers.insert(std::make_pair(key, value)).second == false &&
-        key == "host" )
+        key == "host")
       return (400);
   }
-  return (200);
+  return (0);
 }
 
 // void Client::readRequest(void) {
@@ -343,12 +336,12 @@ size_t Client::insertInMap(std::string &line) {
 // }
 
 bool Client::addBuffer(std::string &buffer) {
- if (_bodySize > 0) {
+  if (_bodySize > 0) {
     std::cout << RED << "adding buffer to previous body\n" << RESET;
     std::cout << YELLOW << "buf:\n" << buffer << RESET;
     std::cout << YELLOW << "\nbuffer after adding buf:\n"
               << _buffer << RESET << std::endl;
-    if (_bodySize > buffer.size()) {
+    if (_bodySize > static_cast<int>(buffer.size())) {
       _requestSize += buffer.size();
       _bodySize -= buffer.size();
       std::cout << RED << "return: body not complete, still have to read: "
@@ -365,7 +358,23 @@ bool Client::addBuffer(std::string &buffer) {
       return (1);
     }
   }
-  size_t pos = _buffer.find("\n\n");
+  size_t start = 0;
+  std::cout << GREEN << "start = " << start << RESET << std::endl;
+  while (true) {
+    start = buffer.find_first_of('\r', start);
+    if (start == buffer.npos) {
+      std::cout << RED << "No \\r found" << RESET << std::endl;
+      break;
+    }
+    std::cout << GREEN << "found at start = " << start << RESET << std::endl;
+    if (buffer[start + 1] == '\n') {
+      std::cout << GREEN << "erasing 1 \\r" << RESET << std::endl;
+      buffer.erase(start, 1);
+    }
+  }
+  _buffer += buffer;
+  std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
+  size_t pos = _buffer.find("\n\n", _requestSize);
   if (pos == _buffer.npos) {
     std::cout << RED << "No empty line in buffer" << RESET << std::endl;
     return (0);
@@ -377,7 +386,9 @@ bool Client::addBuffer(std::string &buffer) {
   std::cout << GREEN << "request:\n" << request << RESET;
   std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   parseRequest(request);
-  return (_readyToSend);
+  if (_statusCode != 0)
+    return (true);
+  return (false);
 }
 
 std::string Client::getDate(void) {
@@ -416,56 +427,21 @@ void Client::sendResponse(int statusCode) {
 }
 
 ServerConf *Client::getServerConf(void) {
-  // mapConfs::const_iterator it;
-  // it = _mapConf.find(_host);
-  // if (it != _mapConf.end())
-  //   return ((*it).second);
-  // return (_defaultConf);
-   ServerConf *cf= new ServerConf;
-    cf->addPortOrHost("127.0.0.1:443");
-    cf->addServerName("Webserv");
-    Location loc;
-    loc.addUrl("/coucou/test/", "");
-    loc.setAutoIndex("on");
-    loc.setMethod("POST", "on");
-    loc.setMethod("DELETE", "on");
-    loc.setMethod("GET", "on");
-    loc.setIndexFile("index.html");
-    loc.fixUrl("/html");
-    loc.fixIndexFile();
-    loc.fixRoot();
-    cf->addLocation(loc);
-    Location test;
-    test.addUrl("/coucou/test/test2/", "");
-    test.setAutoIndex("on");
-    test.setMethod("POST", "on");
-    test.setMethod("DELETE", "on");
-    test.setMethod("GET", "on");
-    test.setIndexFile("index.html");
-    test.fixUrl("/html");
-    test.fixIndexFile();
-    test.fixRoot();
-    cf->addLocation(test);
-    Location loc2;
-    loc2.addUrl("/coucou/test2/", "");
-    loc2.setAutoIndex("on");
-    loc2.setMethod("POST", "on");
-    loc2.setMethod("DELETE", "on");
-    loc2.setMethod("GET", "on");
-    loc2.setIndexFile("index.html");
-    loc2.fixUrl("/html");
-    loc2.fixIndexFile();
-    loc2.fixRoot();
-    cf->addLocation(loc2);
-    cf->setRootToErrorPages();
-    std::cout << *cf << std::endl;
-  return (cf);
+  mapConfs::const_iterator it;
+  it = _mapConf.find(_host);
+  if (it != _mapConf.end()) {
+    std::cout << YELLOW << "found via host: " << _host
+              << "; server name: " << ((*it).second)->getMainServerName()
+              << RESET << std::endl;
+    return ((*it).second);
+  }
+  std::cout << YELLOW << "return default server" << RESET << std::endl;
+  return (_defaultConf);
+
+  // return (cf);
 }
 
-void Client::getResponseBody(void) {
-
-  std::ifstream file();
-}
+// void Client::getResponseBody(void) { std::ifstream file(); }
 
 void Client::parseRequest(std::string &buffer) {
   if (buffer.empty() == true)
@@ -473,21 +449,56 @@ void Client::parseRequest(std::string &buffer) {
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
-    _readyToSend = true;
-    return ;
+    return;
   }
+  _requestSize = request[0].size();
   _statusCode = parseRequestLine(request[0]);
   if (_statusCode >= 400)
     return;
-  for (size_t it = 1; it < request.size();it++){
-    insertInMap(request[it]);
+  for (size_t it = 1; it < request.size(); it++) {
+    _requestSize += request[it].size();
+    if (_requestSize > _headersMaxBuffer) {
+      _statusCode = 413;
+      return;
+    }
+    _statusCode = insertInMap(request[it]);
+    if (_statusCode != 0)
+      return;
   }
   if (_headers.count("host") == 0) {
     _statusCode = 400;
-    _readyToSend = 1;
-    return ;
+    return;
   }
+  std::cout << RED << "Before at" << RESET << std::endl;
   _host = _headers.at("host");
+  std::cout << YELLOW << "HERE: " << "host : " << _headers.at("host") << RESET
+            << std::endl;
+  _server = getServerConf();
+  std::cout << YELLOW << "serverName = " << _server->getMainServerName()
+            << " on port: " << _server->getPort() << RESET << std::endl;
+  try {
+    _location = &(_server->getLocations()[0]);
+    std::cout << YELLOW << "location = " << _location->getUrl() << RESET
+              << std::endl;
+  } catch (std::exception &e) {
+    _location = NULL;
+    _statusCode = 404;
+    return;
+  }
+  // check if request ok by ServerConf
+  std::map<std::string, std::string>::iterator it =
+      _headers.find("content-lenght");
+  if (it != _headers.end()) {
+    _bodySize = std::strtol(((*it).second).c_str(), NULL, 10);
+    if (errno == ERANGE || _bodySize < 0 ||
+        _bodySize > static_cast<int>(_server->getLimitBodySize())) {
+      _statusCode = 413;
+      return;
+    }
+  }
+  // if cookie parse_cookie
+  _statusCode = 200;
+  return;
 }
 
 void Client::print() {
