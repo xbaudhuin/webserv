@@ -10,7 +10,9 @@ Webserv::Webserv(const char* file)
     if(file)
         config = file;
     else
+	{
         config = "./config/good_config/test.conf";
+	}
     this->parseConfig(config);
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
@@ -18,6 +20,7 @@ Webserv::Webserv(const char* file)
 		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
+	this->setServerSockets();
 }
 
 
@@ -38,7 +41,7 @@ Webserv& Webserv::operator=(const Webserv &rhs)
 
 Webserv::~Webserv()
 {
-	close(this->_epollFd);
+	this->closeFds();
 }
 
 void Webserv::addEnv(char **env)
@@ -93,7 +96,7 @@ void Webserv::createMaps(void)
             this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
         }
     }
-    std::cout << this->_subServs.size() << std::endl;
+    //std::cout << this->_subServs.size() << std::endl;
 #ifdef PRINT
     mapSubServs::iterator it = this->_subServs.begin();
     while(it != this->_subServs.end())
@@ -202,6 +205,19 @@ int	Webserv::removeFdFromIdMap(int socketFd)
 	return (0);
 }
 
+void	Webserv::closeFds(void)
+{
+	std::map<int, SubServ*>::iterator	iter;
+
+	iter = this->idMap.begin();
+	while (iter != this->idMap.end())
+	{
+		close((*iter).first);
+		iter++;
+	}
+	close(this->_epollFd);
+}
+
 void	Webserv::setServerSockets(void)
 {
 	mapSubServs::iterator	iter;
@@ -212,9 +228,15 @@ void	Webserv::setServerSockets(void)
 	{
 		serverSocket = (*iter).second.initServerSocket();
 		if (serverSocket == -1)
+		{
+			this->closeFds();
 			throw std::logic_error("Can not create server socket");
+		}
 		if (this->addSocketToEpoll(serverSocket) != 0)
+		{
+			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
+		}
 		this->idMap[serverSocket] = &((*iter).second);
 		iter++;
 	}

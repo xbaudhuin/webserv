@@ -10,7 +10,7 @@ typedef std::map<std::string, ServerConf*> mapConfs;
 class	SubServ
 {
 	public:
-							// SubServ(int port);
+							SubServ(void);
 							SubServ(ServerConf &conf);
 							~SubServ(void);
 							// SubServ(const SubServ &otherSubServ);
@@ -20,14 +20,13 @@ class	SubServ
 		int					removeClientSocket(int socketFd);
 		bool				isClientSocket(int socketFd);
 		bool				isServerSocket(int socketFd);
-		int					tests(void);
-		int					getPort(void);
 		int					initServerSocket(void);
+		const ServerConf	*getMainConf(void);
+		int					getPort(void);
 
 	protected:
 
 	private:
-		SubServ(void);
 		const ServerConf	*_main;
 		int					_port;
 		int					_serverSocket;

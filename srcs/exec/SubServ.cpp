@@ -34,6 +34,11 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 	return(*this);
 }
 
+const ServerConf	*SubServ::getMainConf(void)
+{
+	return (this->_main);
+}
+
 int	SubServ::acceptNewConnection(void)
 {
 	int	clientSocket;
@@ -109,21 +114,4 @@ int	SubServ::initServerSocket(void)
 int	SubServ::getPort(void)
 {
 	return (this->_port);
-}
-
-int	SubServ::tests(void)
-{
-	int		socket1;
-	int		socket2;
-
-	socket1 = createServerSocket(4245);
-	socket2 = createServerSocket(4244);
-	this->_clientSockets.push_back(socket1);
-	this->_clientSockets.push_back(socket2);
-	this->removeClientSocket(15);
-	this->removeClientSocket(socket1);
-	this->removeClientSocket(socket2);
-	close(socket1);
-	close(socket2);
-	return (0);	
 }

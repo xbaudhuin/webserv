@@ -28,6 +28,7 @@ class Webserv
 		std::map<int, SubServ*>	idMap;
         void 					createMaps(void);
 		void					setServerSockets(void);
+		void					closeFds(void);
 
     public:
       		 	 Webserv(const char *s);
