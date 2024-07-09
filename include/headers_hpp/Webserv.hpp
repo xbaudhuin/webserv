@@ -39,6 +39,7 @@ class Webserv
         char	** getEnv(void);
 		int		addSocketToEpoll(int socketFd);
 		int		removeFdFromIdMap(int socketFd);
+		int		closeClientConnection(int clientSocket);
 		
 };
 

@@ -191,18 +191,19 @@ int	Webserv::addSocketToEpoll(int socketFd)
 
 int	Webserv::removeFdFromIdMap(int socketFd)
 {
-	try
+	int	result;
+
+	result = this->idMap.erase(socketFd);
+	if (result == 1)
 	{
-		this->idMap.at(socketFd);
-		this->idMap.erase(socketFd);
 		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
+		return (0);
 	}
-	catch(const std::exception& e)
+	else
 	{
 		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd" << std::endl;
 		return (1);
 	}
-	return (0);
 }
 
 void	Webserv::closeFds(void)
@@ -240,4 +241,39 @@ void	Webserv::setServerSockets(void)
 		this->idMap[serverSocket] = &((*iter).second);
 		iter++;
 	}
+}
+
+int		Webserv::closeClientConnection(int clientSocket)
+{
+	std::map<int, SubServ*>::iterator	iter;
+	int									status = 0;
+
+	iter = this->idMap.find(clientSocket);
+	if (iter == this->idMap.end())
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
+		status = 1;
+	}
+	if ((*iter).second->removeClientSocket(clientSocket) != 0)
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
+		status = 1;
+	}
+	/* Need to erase request related to the client in Xaviers's class*/
+	this->removeFdFromIdMap(clientSocket);
+	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != 0)
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: epoll_ctl: " << strerror(errno) << std::endl;
+		status = 1;
+	}
+	if (close(clientSocket) != 0)
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: close: " << strerror(errno) << std::endl;
+		status = 1;		
+	}
+	if (status == 0)
+	{
+		std::cout << "webserv: successfully closed connection with client on socket fd " << clientSocket << std::endl;
+	}
+	return (status);
 }

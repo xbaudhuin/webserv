@@ -34,9 +34,17 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 	return(*this);
 }
 
-const ServerConf	*SubServ::getMainConf(void)
+const ServerConf	*SubServ::getConf(const std::string &serverName)
 {
-	return (this->_main);
+	try
+	{
+		return ((this->_portConfs.at(serverName)));
+	}
+	catch(const std::exception& e)
+	{
+		return (this->_main);
+	}
+	
 }
 
 int	SubServ::acceptNewConnection(void)
@@ -76,7 +84,7 @@ int	SubServ::removeClientSocket(int clientSocket)
 	}
 	else
 	{
-		std::cerr << "webserv: SubServ::removeClientSocket: trying to remove non existing fd from vector" << std::endl;
+		std::cerr << "webserv: SubServ::removeClientSocket: trying to remove non existing client socket from vector of subserv port " <<  this->_port << std::endl;
 		return (1);
 	}
 }

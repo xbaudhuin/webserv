@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <algorithm>
+#include <map>
 #include <fcntl.h>
 
 
@@ -137,57 +138,67 @@ void	accept_new_connection(int server_socket, int epoll_fd, std::vector<int> &cl
 
 int	main()
 {
-	int	server_socket;
-	std::vector<int>	server_sockets;
-	std::vector<int>	client_sockets;
-	int					epoll_fd;
-	int					status;
-	struct epoll_event	events[MAX_EVENTS];
+	std::map<int, std::string>	myMap;
+	int							nb;
+
+	myMap[5] = "5";
+	myMap[2] = "2";
+
+	nb = myMap.erase(4);
+	std::cout << "nb = " << nb << std::endl;
 
 
-	server_socket = create_server_socket(PORT_1);
-	if (server_socket == -1)
-	{
-		return (1);
-	}
-	if (listen(server_socket, 10) != 0)
-	{
-		std::cerr << "webserv: listen: " << strerror(errno) << std::endl;
-		return (1);
-	}
-	std::cout << "webserv: listening on port " << PORT_1 << " for fd " << server_socket <<  std::endl;
-	epoll_fd = epoll_create1(EPOLL_CLOEXEC);
-	add_client_socket_to_epoll(epoll_fd, server_socket, server_sockets);
-	if (epoll_fd == -1)
-	{
-		std::cerr << "wevserv: epoll_create: " << strerror(errno) << std::endl;
-		return (1);
-	}
-	while (true)
-	{
-		status = epoll_wait(epoll_fd, events, MAX_EVENTS, 2000);
-		if (status == -1)
-		{
-			std::cerr << "webserv: epoll_wait: " << strerror(errno) << std::endl;
-			continue ;
-		}
-		else if (status == 0)
-		{
-			std::cout << "webserv: waiting..." << std::endl;
-			continue ;
-		}
-		for (int i = 0; i < status; i++)
-		{
-			if (std::find(server_sockets.begin(), server_sockets.end(), events[i].data.fd) != server_sockets.end())
-			{
-				accept_new_connection(events[i].data.fd, epoll_fd, client_sockets);
-			}
-			else
-			{
-				read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);
-			}
-		}
-	}
-	close(server_socket);
-	return (0);
+	// int	server_socket;
+	// std::vector<int>	server_sockets;
+	// std::vector<int>	client_sockets;
+	// int					epoll_fd;
+	// int					status;
+	// struct epoll_event	events[MAX_EVENTS];
+
+
+	// server_socket = create_server_socket(PORT_1);
+	// if (server_socket == -1)
+	// {
+	// 	return (1);
+	// }
+	// if (listen(server_socket, 10) != 0)
+	// {
+	// 	std::cerr << "webserv: listen: " << strerror(errno) << std::endl;
+	// 	return (1);
+	// }
+	// std::cout << "webserv: listening on port " << PORT_1 << " for fd " << server_socket <<  std::endl;
+	// epoll_fd = epoll_create1(EPOLL_CLOEXEC);
+	// add_client_socket_to_epoll(epoll_fd, server_socket, server_sockets);
+	// if (epoll_fd == -1)
+	// {
+	// 	std::cerr << "wevserv: epoll_create: " << strerror(errno) << std::endl;
+	// 	return (1);
+	// }
+	// while (true)
+	// {
+	// 	status = epoll_wait(epoll_fd, events, MAX_EVENTS, 2000);
+	// 	if (status == -1)
+	// 	{
+	// 		std::cerr << "webserv: epoll_wait: " << strerror(errno) << std::endl;
+	// 		continue ;
+	// 	}
+	// 	else if (status == 0)
+	// 	{
+	// 		std::cout << "webserv: waiting..." << std::endl;
+	// 		continue ;
+	// 	}
+	// 	for (int i = 0; i < status; i++)
+	// 	{
+	// 		if (std::find(server_sockets.begin(), server_sockets.end(), events[i].data.fd) != server_sockets.end())
+	// 		{
+	// 			accept_new_connection(events[i].data.fd, epoll_fd, client_sockets);
+	// 		}
+	// 		else
+	// 		{
+	// 			read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);
+	// 		}
+	// 	}
+	// }
+	// close(server_socket);
+	// return (0);
 }
