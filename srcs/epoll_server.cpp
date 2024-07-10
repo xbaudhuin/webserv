@@ -98,11 +98,11 @@ void	read_data_from_socket(int sender_fd, int epoll_fd, std::vector<int> &client
 	}
 }
 
-void	add_client_socket_to_epoll(int epoll_fd, int client_socket, std::vector<int> &client_sockets)
+void	add_client_socket_to_epoll(int epoll_fd, int client_socket, std::vector<int> &client_sockets, uint32_t events)
 {
 	struct epoll_event	e_event;
 
-	e_event.events = EPOLLIN;
+	e_event.events = events;
 	e_event.data.fd =client_socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket, &e_event) != 0)
 	{
@@ -124,7 +124,7 @@ void	accept_new_connection(int server_socket, int epoll_fd, std::vector<int> &cl
 		std::cerr << "webserv: accept: " << strerror(errno) << std::endl;
 		return ;
 	}
-	add_client_socket_to_epoll(epoll_fd, client_fd, client_sockets);
+	add_client_socket_to_epoll(epoll_fd, client_fd, client_sockets, EPOLLIN | EPOLLRDHUP);
 	std::cout << "webserv: accepted new client socket on fd " << client_fd << std::endl;
 	string_stream << "webserv: welcome, you are client fd " << client_fd << std::endl;
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
@@ -138,67 +138,61 @@ void	accept_new_connection(int server_socket, int epoll_fd, std::vector<int> &cl
 
 int	main()
 {
-	std::map<int, std::string>	myMap;
-	int							nb;
-
-	myMap[5] = "5";
-	myMap[2] = "2";
-
-	nb = myMap.erase(4);
-	std::cout << "nb = " << nb << std::endl;
+	int	server_socket;
+	std::vector<int>	server_sockets;
+	std::vector<int>	client_sockets;
+	int					epoll_fd;
+	int					status;
+	struct epoll_event	events[MAX_EVENTS];
 
 
-	// int	server_socket;
-	// std::vector<int>	server_sockets;
-	// std::vector<int>	client_sockets;
-	// int					epoll_fd;
-	// int					status;
-	// struct epoll_event	events[MAX_EVENTS];
-
-
-	// server_socket = create_server_socket(PORT_1);
-	// if (server_socket == -1)
-	// {
-	// 	return (1);
-	// }
-	// if (listen(server_socket, 10) != 0)
-	// {
-	// 	std::cerr << "webserv: listen: " << strerror(errno) << std::endl;
-	// 	return (1);
-	// }
-	// std::cout << "webserv: listening on port " << PORT_1 << " for fd " << server_socket <<  std::endl;
-	// epoll_fd = epoll_create1(EPOLL_CLOEXEC);
-	// add_client_socket_to_epoll(epoll_fd, server_socket, server_sockets);
-	// if (epoll_fd == -1)
-	// {
-	// 	std::cerr << "wevserv: epoll_create: " << strerror(errno) << std::endl;
-	// 	return (1);
-	// }
-	// while (true)
-	// {
-	// 	status = epoll_wait(epoll_fd, events, MAX_EVENTS, 2000);
-	// 	if (status == -1)
-	// 	{
-	// 		std::cerr << "webserv: epoll_wait: " << strerror(errno) << std::endl;
-	// 		continue ;
-	// 	}
-	// 	else if (status == 0)
-	// 	{
-	// 		std::cout << "webserv: waiting..." << std::endl;
-	// 		continue ;
-	// 	}
-	// 	for (int i = 0; i < status; i++)
-	// 	{
-	// 		if (std::find(server_sockets.begin(), server_sockets.end(), events[i].data.fd) != server_sockets.end())
-	// 		{
-	// 			accept_new_connection(events[i].data.fd, epoll_fd, client_sockets);
-	// 		}
-	// 		else
-	// 		{
-	// 			read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);
-	// 		}
-	// 	}
-	// }
-	// close(server_socket);
-	// return (0);
+	server_socket = create_server_socket(PORT_1);
+	if (server_socket == -1)
+	{
+		return (1);
+	}
+	if (listen(server_socket, 10) != 0)
+	{
+		std::cerr << "webserv: listen: " << strerror(errno) << std::endl;
+		return (1);
+	}
+	std::cout << "webserv: listening on port " << PORT_1 << " for fd " << server_socket <<  std::endl;
+	epoll_fd = epoll_create1(EPOLL_CLOEXEC);
+	add_client_socket_to_epoll(epoll_fd, server_socket, server_sockets, EPOLLIN);
+	if (epoll_fd == -1)
+	{
+		std::cerr << "wevserv: epoll_create: " << strerror(errno) << std::endl;
+		return (1);
+	}
+	while (true)
+	{
+		status = epoll_wait(epoll_fd, events, MAX_EVENTS, 2000);
+		if (status == -1)
+		{
+			std::cerr << "webserv: epoll_wait: " << strerror(errno) << std::endl;
+			continue ;
+		}
+		else if (status == 0)
+		{
+			std::cout << "webserv: waiting..." << std::endl;
+			continue ;
+		}
+		for (int i = 0; i < status; i++)
+		{
+			if (std::find(server_sockets.begin(), server_sockets.end(), events[i].data.fd) != server_sockets.end())
+			{
+				accept_new_connection(events[i].data.fd, epoll_fd, client_sockets);
+			}
+			else if (events[i].data.fd == EPOLLRDHUP)
+			{
+				std::cout << "test" << std::endl;
+			}
+			else
+			{
+				read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);
+			}
+		}
+	}
+	close(server_socket);
+	return (0);
 }

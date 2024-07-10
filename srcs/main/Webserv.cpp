@@ -13,9 +13,7 @@ Webserv::Webserv(const char* file)
 	{
         config = "./config/good_config/test.conf";
 	}
-#ifdef PRINT
     this->parseConfig(config);
-#endif
 #if PRINT == 2
     vec_string v;
     v.push_back("/coucou/");
@@ -47,6 +45,7 @@ Webserv::Webserv(const char* file)
 		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
+	std::cout << "webserv: epoll successfully created on fd" << this->_epollFd << std::endl;
 	this->setServerSockets();
 }
 
@@ -104,7 +103,6 @@ bool checkNumberBrackets(const vec_string &split)
         }
     }
     return 0;
-    
 }
 
 void Webserv::createMaps(void)
@@ -198,13 +196,13 @@ void Webserv::parseConfig(const std::string &conf)
     this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
 }
 
-int	Webserv::addSocketToEpoll(int socketFd)
+int	Webserv::addSocketToEpoll(int socketFd, uint32_t events)
 {
 	struct epoll_event	epollEvent;
 	int					status;
 	
 	std::memset(&epollEvent, 0, sizeof (epollEvent));
-	epollEvent.events = EPOLLIN;
+	epollEvent.events = events;
 	epollEvent.data.fd = socketFd;
 	status = epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketFd, &epollEvent);
 	if (status != 0)
@@ -260,7 +258,7 @@ void	Webserv::setServerSockets(void)
 			this->closeFds();
 			throw std::logic_error("Can not create server socket");
 		}
-		if (this->addSocketToEpoll(serverSocket) != 0)
+		if (this->addSocketToEpoll(serverSocket, EPOLLIN) != 0)
 		{
 			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
@@ -303,6 +301,20 @@ int		Webserv::closeClientConnection(int clientSocket)
 		std::cout << "webserv: successfully closed connection with client on socket fd " << clientSocket << std::endl;
 	}
 	return (status);
+}
+
+int		changeEpollEvents(int epollFd, int socket, uint32_t	events)
+{
+	struct epoll_event epollEvent;
+
+	epollEvent.events = events;
+	epollEvent.data.fd = socket;
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, socket, &epollEvent) != 0)
+	{
+		std::cerr << "webserv: Webserv::changeEpollEvents: epoll_ctl: " << strerror(errno) << std::endl;
+		return (1);
+	}
+	return (0);	
 }
 
 int	Webserv::getEpollFd(void)
