@@ -219,5 +219,7 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         i++;
     }
     i++;
+    if(loc.getIndexFile().size() == 0)
+        loc.setIndexFile("/index.html");
     cf.addLocation(loc);
 }

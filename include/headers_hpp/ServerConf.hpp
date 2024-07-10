@@ -46,7 +46,7 @@ class ServerConf
         const map_err_pages& getErrPages(void) const;
         const uint64_t& getLimitBodySize(void) const;
         vec_location& getLocations(void);
-        const Location& getPreciseLocation(const std::string &url) const;
+        Location& getPreciseLocation(const std::string &url) ;
         const size_t& getRank(void) const;
         const std::string& getRoot(void) const;
 

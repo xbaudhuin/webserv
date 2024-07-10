@@ -13,7 +13,34 @@ Webserv::Webserv(const char* file)
 	{
         config = "./config/good_config/test.conf";
 	}
+#ifdef PRINT
     this->parseConfig(config);
+#endif
+#if PRINT == 2
+    vec_string v;
+    v.push_back("/coucou/");
+    v.push_back("/");
+    v.push_back("/coucou/file");
+    v.push_back("/error_pages/test/");
+    v.push_back("/error_pages/coucou/html/");
+    v.push_back("/error_pages/test/");
+    v.push_back("/coucou");
+    v.push_back("/notfound/");
+    v.push_back("/no");
+    
+    for (size_t i = 0; i < v.size(); i++)
+    {
+        try
+        {
+            this->confs[0].second.getPreciseLocation(v[i]);
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << PURP2 << e.what() << RESET << '\n';
+        }
+        
+    }
+#endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
 	{
