@@ -5,10 +5,12 @@ SubServ::SubServ()
 	return ;
 }
 
-// SubServ::SubServ(int port) : _port(port)
-// {
-// 	return ;
-// }
+SubServ::SubServ(ServerConf &serv) : _main(&serv)
+{
+    this->_portConfs[serv.getServerNames()[0]] = &serv;
+    this->_port = serv.getPort();
+}
+
 
 SubServ::~SubServ(void)
 {
@@ -30,6 +32,11 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 	{
 	}		
 	return(*this);
+}
+
+const ServerConf	*SubServ::getMainConf(void)
+{
+	return (this->_main);
 }
 
 int	SubServ::acceptNewConnection(void)
@@ -98,19 +105,13 @@ bool	SubServ::isServerSocket(int socketFd)
 	}
 }
 
-int	SubServ::tests(void)
+int	SubServ::initServerSocket(void)
 {
-	int		socket1;
-	int		socket2;
+	this->_serverSocket = createServerSocket(this->_port);
+	return (this->_serverSocket);
+}
 
-	socket1 = createServerSocket(4245);
-	socket2 = createServerSocket(4244);
-	this->_clientSockets.push_back(socket1);
-	this->_clientSockets.push_back(socket2);
-	this->removeClientSocket(15);
-	this->removeClientSocket(socket1);
-	this->removeClientSocket(socket2);
-	close(socket1);
-	close(socket2);
-	return (0);	
+int	SubServ::getPort(void)
+{
+	return (this->_port);
 }

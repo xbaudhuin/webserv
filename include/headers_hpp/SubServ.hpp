@@ -11,7 +11,6 @@ class	SubServ
 {
 	public:
 							SubServ(void);
-							// SubServ(int port);
 							SubServ(ServerConf &conf);
 							~SubServ(void);
 							// SubServ(const SubServ &otherSubServ);
@@ -21,12 +20,14 @@ class	SubServ
 		int					removeClientSocket(int socketFd);
 		bool				isClientSocket(int socketFd);
 		bool				isServerSocket(int socketFd);
-		int					tests(void);
+		int					initServerSocket(void);
+		const ServerConf	*getMainConf(void);
+		int					getPort(void);
 
 	protected:
 
 	private:
-		const ServerConf			*_main;
+		const ServerConf	*_main;
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;

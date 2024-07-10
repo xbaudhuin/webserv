@@ -36,19 +36,19 @@ public:
   /* booleans */
   bool nameExist(const std::string &name);
 
-  /* getters */
-  vec_string &getServerNames();
-  uint32_t &getSocket(void);
-  std::string &getIndexErrorPage(int errorCode);
-  const int &getPort(void) const;
-  const uint32_t &getHost(void) const;
-  const std::string &getMainServerName(void) const;
-  const map_err_pages &getErrPages(void) const;
-  const uint64_t &getLimitBodySize(void) const;
-  vec_location &getLocations(void);
-  const Location &getPreciseLocation(const std::string &url) const;
-  const size_t &getRank(void) const;
-  const std::string &getRoot(void) const;
+        /* getters */
+        vec_string& getServerNames();        
+        uint32_t& getSocket(void);
+        std::string& getIndexErrorPage(int errorCode);
+        const int& getPort(void) const;
+        const uint32_t& getHost(void) const;
+        const std::string& getMainServerName(void) const;
+        const map_err_pages& getErrPages(void) const;
+        const uint64_t& getLimitBodySize(void) const;
+        vec_location& getLocations(void);
+        Location& getPreciseLocation(const std::string &url) ;
+        const size_t& getRank(void) const;
+        const std::string& getRoot(void) const;
 
   /* setters */
   void addErrorPage(const std::string &url, std::vector<int> err);

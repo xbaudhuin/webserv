@@ -175,6 +175,10 @@ void Location::addUrl(const std::string &url, std::string root){
     else
     {
         this->url = url;
+        if(isfile)
+        {
+            this->setIndexFile(url.substr(url.find_last_of("/", url.size()), url.size()));
+        }
     }
 }
 
@@ -258,19 +262,26 @@ void Location::setMethod(const std::string &method, const std::string &status){
 }
 
 void Location::fixUrl(const std::string &url){
-    this->url = url + this->url;
+    std::string s;
+    // std::cout << this->root << std::endl;
+    if(this->root[this->root.size() - 1] == '/')
+        s = this->root.substr(0, this->root.size() - 1);
+    else
+        s = this->root;
+    // s = s.substr(s.find_last_of("/", s.size()), s.size() );
+    this->url = url + s + this->url;
 }
 
 void Location::fixRoot(void){
-    if(this->root.size() > 0)
-    {
-        std::string s = this->url;
-        if(s[s.size() - 1] == '/')
-        {
-            s = s.substr(0, s.size() - 1);
-        }
-        this->root.insert(0, s);
-    }
+    // if(this->root.size() > 0)
+    // {
+    //     std::string s = this->url;
+    //     if(s[s.size() - 1] == '/')
+    //     {
+    //         s = s.substr(0, s.size() - 1);
+    //     }
+    //     this->root.insert(0, s);
+    // }
 }
 
 void Location::fixIndexFile(void){
@@ -279,6 +290,10 @@ void Location::fixIndexFile(void){
         std::string s = this->url;
         if(this->index_file[i][0] == '/')
             this->index_file[i].erase(0, 1);
+        if(s[s.size() - 1] != '/')
+        {
+            s = s.substr(0, s.find_last_of("/", s.size()) + 1);
+        }
         this->index_file[i].insert(0, s);
     }
 }

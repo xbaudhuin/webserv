@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/03 13:38:35 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/10 13:52:01 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,7 +19,7 @@ NAME					=	webserv
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -g3
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
 
 debug 				= 	0
 
@@ -47,6 +47,10 @@ endif
 
 ifeq ($(print), 1)
 	CXXFLAGS += -D PRINT=1
+endif
+
+ifeq ($(print), 2)
+	CXXFLAGS += -D PRINT=2
 endif
 
 TXT						=	compile_flags.txt
@@ -92,7 +96,6 @@ AR						=	ar rcs
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					exec/SubServ.cpp \
-					exec/SubServ2.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
