@@ -28,6 +28,8 @@ public:
   // method
   void print();
   bool addBuffer(std::string &buffer);
+  const std::string &getBuffer(void) const;
+int getBodySize(void) const;
 
 protected:
 private:
@@ -69,6 +71,8 @@ private:
   ServerConf *getServerConf(void);
   void getResponseBody(void);
   void sendResponse(int statusCode);
+  bool checkMethod(void);
+  bool checkIfValid(void);
 
   time_t getTime(void);
   bool isTimedOut(void);

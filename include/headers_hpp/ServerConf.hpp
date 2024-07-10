@@ -1,17 +1,15 @@
 #ifndef SERVER_CONF_HPP
 #define SERVER_CONF_HPP
 
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <limits>
+#include <arpa/inet.h>
 #include "Location.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
-#include <algorithm>
-#include <arpa/inet.h>
-#include <cstdint>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <stdio.h>
-#include <vector>
 
 class ServerConf {
 private:

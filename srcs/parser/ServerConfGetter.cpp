@@ -37,6 +37,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
 {
     size_t size = this->_locations.size();
     std::string s = this->root + url;
+    std::cout << RED << "URI: " << s << RESET << std::endl;
     for (size_t i = 0; i < size; i++)
     {
         if(this->_locations[i].isExactMatch() && this->_locations[i].getUrl() == s)
@@ -71,9 +72,10 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     {   
         pos = s.find_last_of("/", pos);
         std::string s1 = s.substr(0, pos + 1);
+        std::cout << "HERE IDIOT: " << s1 << std::endl;
         for (size_t i = 0; i < size; i++)
         {
-            if(this->_locations[i].getUrl() == s)
+            if(this->_locations[i].getUrl() == s1)
             {
 #if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;

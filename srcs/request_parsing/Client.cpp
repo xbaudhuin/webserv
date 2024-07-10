@@ -3,6 +3,7 @@
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
 #include "Utils.hpp"
+#include <cstddef>
 #include <cstdlib>
 #include <exception>
 #include <ostream>
@@ -220,9 +221,9 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   for (; i < _methodSize && _method != _validMethods[i]; i++) {
   }
   if (i == _methodSize) {
-    return (405);
+    return (400);
   } else if (i > 2) {
-    return (401);
+    return (405);
   }
   _statusCode = parseUri(split_request[1]);
   if (_statusCode > 0) {
@@ -337,26 +338,15 @@ size_t Client::insertInMap(std::string &line) {
 
 bool Client::addBuffer(std::string &buffer) {
   if (_bodySize > 0) {
-    std::cout << RED << "adding buffer to previous body\n" << RESET;
-    std::cout << YELLOW << "buf:\n" << buffer << RESET;
-    std::cout << YELLOW << "\nbuffer after adding buf:\n"
-              << _buffer << RESET << std::endl;
-    if (_bodySize > static_cast<int>(buffer.size())) {
-      _requestSize += buffer.size();
-      _bodySize -= buffer.size();
-      std::cout << RED << "return: body not complete, still have to read: "
-                << _bodySize << RESET << std::endl;
-      return (0);
-    } else {
-      _requestSize += _bodySize;
-      _bodySize = -1;
-      _body = _buffer.substr(0, _requestSize);
-      _buffer = _buffer.substr(_requestSize, _buffer.size() - _requestSize);
-      std::cout << RED << "separating body form buffer:\n" << RESET;
-      std::cout << YELLOW << "body:\n" << _body << RESET;
-      std::cout << YELLOW << "\nbuffer:\n" << _buffer << RESET << std::endl;
+    std::cout << RED << "_bodySize > 0" << RESET << std::endl;
+    std::string tmp_body = buffer.substr(0, _bodySize);
+    _body += tmp_body;
+    _bodySize -= tmp_body.size();
+    if (tmp_body.size() < buffer.size())
+      _buffer = buffer.substr(tmp_body.size());
+    if (_bodySize <= 0)
       return (1);
-    }
+    return (0);
   }
   size_t start = 0;
   std::cout << GREEN << "start = " << start << RESET << std::endl;
@@ -477,7 +467,7 @@ void Client::parseRequest(std::string &buffer) {
   std::cout << YELLOW << "serverName = " << _server->getMainServerName()
             << " on port: " << _server->getPort() << RESET << std::endl;
   try {
-    _location = &(_server->getLocations()[0]);
+    _location = &(_server->getPreciseLocation(_uri));
     std::cout << YELLOW << "location = " << _location->getUrl() << RESET
               << std::endl;
   } catch (std::exception &e) {
@@ -485,28 +475,94 @@ void Client::parseRequest(std::string &buffer) {
     _statusCode = 404;
     return;
   }
-  // check if request ok by ServerConf
+  if (checkIfValid() == false)
+    return;
   std::map<std::string, std::string>::iterator it =
-      _headers.find("content-lenght");
+      _headers.find("content-length");
   if (it != _headers.end()) {
+    if (_method != "POST") {
+      _statusCode = 413;
+      return;
+    }
     _bodySize = std::strtol(((*it).second).c_str(), NULL, 10);
     if (errno == ERANGE || _bodySize < 0 ||
-        _bodySize > static_cast<int>(_server->getLimitBodySize())) {
+        (_bodySize > static_cast<int>(_server->getLimitBodySize()) &&
+         _server->getLimitBodySize() != 0)) {
+      std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
+                << RESET << std::endl;
       _statusCode = 413;
       return;
     }
   }
+  if (_bodySize > 0) {
+    std::cout << PURP << "_bodysize = " << _bodySize
+              << "; body.size() = " << _body.size() << RESET << std::endl;
+    _body = _buffer.substr(0, _bodySize);
+    if (static_cast<int>(_buffer.size()) > _bodySize)
+      _buffer = _buffer.substr(_bodySize);
+    _bodySize -= _body.size();
+    if (_bodySize <= 0)
+      _bodySize = -1;
+  } else
+    std::cout << PURP << "No body" << RESET << std::endl;
+
   // if cookie parse_cookie
   _statusCode = 200;
   return;
 }
 
+bool Client::checkMethod(void) {
+  if (_method == "GET" && _location->getGetSatus() == false) {
+    _statusCode = 405;
+    return (false);
+  } else if (_method == "POST" && _location->getPostStatus() == false) {
+    _statusCode = 405;
+    return (false);
+  } else if (_method == "POST" && _location->getDeleteStatus() == false) {
+    _statusCode = 405;
+    return (false);
+  }
+  return (true);
+}
+
+bool Client::checkIfValid(void) {
+  if (checkMethod() == false)
+    return (false);
+  return (true);
+}
+
+const std::string &Client::getBuffer(void) const { return (_buffer); }
+
+int Client::getBodySize(void) const { return (_bodySize); }
+
 void Client::print() {
+
+  if (_server == NULL)
+    std::cout << RED << "no server\n" << RESET;
+  else
+    std::cout << GREEN "server    = " << _server->getServerNames()[0] << RESET
+              << "\n";
+  if (_location == NULL)
+    std::cout << RED << "no location\n" << RESET;
+  else
+    std::cout << GREEN "location    = " << _location->getUrl() << RESET << "\n";
+  std::cout << "time        = " << _time << "\n";
+  std::cout << "time out ?  = " << isTimedOut() << "\n";
+
+  std::cout << "_socket     = " << _socket << "\n";
   std::cout << "status code = " << _statusCode << "\n";
   std::cout << "method      = " << _method << "\n";
   std::cout << "uri         = " << _uri << "\n";
+  std::cout << "queryUri    = " << _queryUri << "\n";
+  std::cout << "_requestSize= " << _requestSize << "\n";
   std::cout << "_version    = " << _version << "\n";
   std::cout << "_host       = " << _host << "\n";
-  // std::cout << "_headers       = " << _host << "\n";
+  std::cout << "_headers: key = value" << "\n";
+  for (std::map<std::string, std::string>::iterator i = _headers.begin();
+       i != _headers.end(); i++) {
+    std::cout << (*i).first << " = " << (*i).second << "\n";
+  }
   std::cout << "_body       = " << _body << "\n";
+  std::cout << "bodySize    = " << _bodySize << "\n";
+  std::cout << "remain buffer = " << _buffer << std::endl;
 }
