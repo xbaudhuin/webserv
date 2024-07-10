@@ -41,6 +41,7 @@ class Webserv
 		int		removeFdFromIdMap(int socketFd);
 		int		closeClientConnection(int clientSocket);
 		int		getEpollFd(void);
+		int		changeEpollEvents(int epollFd, int socket, uint32_t	events);
 		
 };
 

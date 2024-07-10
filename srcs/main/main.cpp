@@ -13,10 +13,10 @@ int main(int argc, char **argv, char **env)
     {
         Webserv serv(argv[1]);
         serv.addEnv(env);
-		while (1)
-		{
-			// epoll_wait(serv.getEpollFd(), , , 0.5);
-		}
+		// while (1)
+		// {
+		// 	// epoll_wait(serv.getEpollFd(), , , 0.5);
+		// }
     }
     catch(const std::runtime_error &e)
     {
