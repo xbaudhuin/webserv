@@ -85,7 +85,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         std::string s1 = s.substr(0, pos + 1);
         for (size_t i = 0; i < size; i++)
         {
-            if(this->_locations[i].getUrl() == s)
+            if(this->_locations[i].getUrl() == s1)
             {
 #if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;

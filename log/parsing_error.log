@@ -1,2 +1,2 @@
-Error:
-Error_page directive missing the url
+Webserv: Error:
+upload_location set without any cgi specified
