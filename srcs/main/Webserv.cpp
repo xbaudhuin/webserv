@@ -199,37 +199,19 @@ void Webserv::parseConfig(const std::string &conf)
     this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
 }
 
-int	Webserv::addSocketToEpoll(int socketFd, uint32_t events)
-{
-	struct epoll_event	epollEvent;
-	int					status;
-	
-	std::memset(&epollEvent, 0, sizeof (epollEvent));
-	epollEvent.events = events;
-	epollEvent.data.fd = socketFd;
-	status = epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketFd, &epollEvent);
-	if (status != 0)
-	{
-		std::cerr << "webserv: Webserv::addSocketToEpoll: epoll_ctl: " << strerror(errno) << std::endl;
-		return (1);
-	}
-	std::cout << "webserv: successfully add socket fd " << socketFd << " to epoll fd " << this->_epollFd << std::endl;
-	return (0);
-}
-
-int	Webserv::removeFdFromIdMap(int socketFd)
+int	Webserv::removeFdFromIdMap(int fd)
 {
 	int	result;
 
-	result = this->idMap.erase(socketFd);
+	result = this->idMap.erase(fd);
 	if (result == 1)
 	{
-		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
+		std::cout << "webserv: successfully erased socket fd " << fd << " from ID Map" << std::endl;
 		return (0);
 	}
 	else
 	{
-		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd" << std::endl;
+		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd " << fd << std::endl;
 		return (1);
 	}
 }
@@ -241,10 +223,10 @@ void	Webserv::closeFds(void)
 	iter = this->idMap.begin();
 	while (iter != this->idMap.end())
 	{
-		close((*iter).first);
+		protectedClose((*iter).first);
 		iter++;
 	}
-	close(this->_epollFd);
+	protectedClose(this->_epollFd);
 }
 
 void	Webserv::setServerSockets(void)
@@ -255,13 +237,13 @@ void	Webserv::setServerSockets(void)
 	iter = this->_subServs.begin();
 	while (iter != this->_subServs.end())
 	{
-		serverSocket = (*iter).second.initServerSocket();
+		serverSocket = (*iter).second.initPortSocket();
 		if (serverSocket == -1)
 		{
 			this->closeFds();
 			throw std::logic_error("Can not create server socket");
 		}
-		if (this->addSocketToEpoll(serverSocket, EPOLLIN) != 0)
+		if (addSocketToEpoll(this->_epollFd, serverSocket, EPOLLIN) != 0)
 		{
 			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
@@ -282,7 +264,7 @@ int		Webserv::closeClientConnection(int clientSocket)
 		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
 		status = 1;
 	}
-	if ((*iter).second->removeClientSocket(clientSocket) != 0)
+	else if ((*iter).second->removeClientSocket(clientSocket) != 0)
 	{
 		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
 		status = 1;
@@ -294,11 +276,7 @@ int		Webserv::closeClientConnection(int clientSocket)
 		std::cerr << "webserv: Webserv::closeClientConnection: epoll_ctl: " << strerror(errno) << std::endl;
 		status = 1;
 	}
-	if (close(clientSocket) != 0)
-	{
-		std::cerr << "webserv: Webserv::closeClientConnection: close: " << strerror(errno) << std::endl;
-		status = 1;		
-	}
+	status += protectedClose(clientSocket);
 	if (status == 0)
 	{
 		std::cout << "webserv: successfully closed connection with client on socket fd " << clientSocket << std::endl;
@@ -306,21 +284,151 @@ int		Webserv::closeClientConnection(int clientSocket)
 	return (status);
 }
 
-int		changeEpollEvents(int epollFd, int socket, uint32_t	events)
-{
-	struct epoll_event epollEvent;
-
-	epollEvent.events = events;
-	epollEvent.data.fd = socket;
-	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, socket, &epollEvent) != 0)
-	{
-		std::cerr << "webserv: Webserv::changeEpollEvents: epoll_ctl: " << strerror(errno) << std::endl;
-		return (1);
-	}
-	return (0);	
-}
-
 int	Webserv::getEpollFd(void)
 {
 	return (this->_epollFd);
+}
+
+int	Webserv::isClientSocket(int fd)
+{
+	try
+	{
+		return (this->idMap.at(fd)->isClientSocket(fd));
+	}
+	catch(const std::exception& e)
+	{
+		return (false);
+	}
+}
+
+int	Webserv::isServerSocket(int fd)
+{
+	try
+	{
+		return (this->idMap.at(fd)->isServerSocket(fd));
+	}
+	catch(const std::exception& e)
+	{
+		return (false);
+	}
+	
+}
+
+int	Webserv::handlePortEvent(int serverSocket)
+{
+	int	newClient;
+
+	newClient = this->idMap[serverSocket]->acceptNewConnection();
+	if (newClient == -1)
+	{
+		return (1);
+	}
+	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN) != 0)
+	{
+		this->idMap[serverSocket]->removeClientSocket(newClient);
+		protectedClose(newClient);
+		return (1);
+	}
+	try
+	{
+		this->idMap[newClient] = this->idMap[serverSocket];
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
+		/* Send error to client */
+		this->idMap[serverSocket]->removeClientSocket(newClient);
+		protectedClose(newClient);
+		return (1);
+	}
+	return (0);
+}
+
+int	Webserv::receive(int clientSocket)
+{
+	char	buffer[BUFSIZ];
+	int		bytesRead;
+	int		status = 0;
+
+	bytesRead = recv(clientSocket, buffer, BUFSIZ, 0);
+	if (bytesRead < 0)
+	{
+		std::cerr << "webserv: Webserv::receive: recv: " << strerror(errno) << std::endl;
+		this->closeClientConnection(clientSocket);
+		return (1);
+	}
+	else if (bytesRead == 0)
+	{
+		std::cout << "webserv: client on fd " << clientSocket << " closed connection with the server" << std::endl;
+		status = this->closeClientConnection(clientSocket);
+	}
+	else
+	{
+		buffer[bytesRead] = '\0';
+		/* Add buffer to the request */
+		std::cout << "webserv: client on fd " << clientSocket << "says: " << buffer << std::endl;
+	}
+	return (status);
+}
+
+int	Webserv::handleClientEvent(int clientSocket, uint32_t event)
+{
+	if (event == EPOLLIN)
+	{
+		return (this->receive(clientSocket));
+	}
+	else
+	{
+		return (0);
+	}
+}
+
+void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
+{
+	int	fd;
+
+	for (int i = 0; i < nbEvents; i++)
+	{
+		fd = events[i].data.fd;
+		if (this->isServerSocket(fd) == true)
+		{
+			this->handlePortEvent(fd);
+		}
+		else if (this->isClientSocket(fd) == true)
+		{
+			this->handleClientEvent(fd, events[i].events);
+		}
+		else
+		{
+			std::cerr << "webserv: Webserv::handleEvents: file descriptor is neither a server socket nor a client socket" << std::endl;
+		}
+	}
+}
+
+int	Webserv::start(void)
+{
+	int	status;
+	struct epoll_event	events[MAX_EVENTS];
+	
+	std::cout << "webserv: starting server..." << std::endl;
+	while (true)
+	{
+		status = epoll_wait(this->_epollFd, events, MAX_EVENTS, 2000);
+		if (status == -1)
+		{
+			std::cerr << "webserv: Webserv::start: epoll_wait: " << strerror(errno) << std::endl;
+			continue;
+		}
+		else if (status == 0)
+		{
+			std::cout << "webserv: waiting..." << std::endl;
+		}
+		else
+		{
+			this->handleEvents(events, status);
+		}
+		/* Need to check client time out, fork time out, waitPID ect
+		after each epoll_wait() (not only betweeneach event) */
+	}
+	return (0);
 }
