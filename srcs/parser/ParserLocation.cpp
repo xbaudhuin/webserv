@@ -132,6 +132,26 @@ int testCgi(const vec_string &split, size_t &i, const size_t &size, Location &lo
     return(0);
 }
 
+int testUploadLocation(const vec_string &split, size_t &i, const size_t &size, Location &loc)
+{
+    if (split[i] == "upload_location")
+    {
+        i++;
+        if(split[i].find_first_of("{};", 0) != std::string::npos)
+        {
+            throw std::logic_error("Error inside the upload_location directive");
+        }
+        if(i + 1 < size && split[i + 1] != ";")
+        {
+            throw std::logic_error("Error inside the upload_location directive, ';' not found");
+        }
+        loc.setUploadLocation(split[i]);
+        i+=2;
+        return(1);
+    }
+    return(0);
+}
+
 int testSet_method(const vec_string &split, size_t &i, const size_t &size, Location &loc)
 {
     (void)size;
@@ -214,12 +234,19 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         {
             continue;
         }
+        else if (testUploadLocation(split, i, size, loc))
+        {
+            continue;
+        }
         if(split[i] == "}")
             break;
+        throw std::logic_error("Webserv: Error:\nUnkown Directive Found in Location Block");
         i++;
     }
     i++;
     if(loc.getIndexFile().size() == 0)
         loc.setIndexFile("/index.html");
+    if(loc.getCgi().size() == 0 && loc.getUploadLocation().size() > 0)
+        throw std::logic_error("Webserv: Error:\nupload_location set without any cgi specified");
     cf.addLocation(loc);
 }
