@@ -28,13 +28,13 @@ int	createServerSocket(int port)
 	if (bind(serverSocket, (struct sockaddr *)&socketAddress, sizeof (socketAddress)) != 0)
 	{
 		std::cerr << "webserv: bind: " << strerror(errno) << std::endl;
-		close(serverSocket);
+		protectedClose(serverSocket);
 		return (-1);
 	}
 	if (listen(serverSocket, BACKLOG_LISTEN) != 0)
 	{
 		std::cerr << "webserv: createServerSocket: listen: " << strerror(errno) << std::endl;
-		close(serverSocket);
+		protectedClose(serverSocket);
 		return (-1);
 	}
 	std::cout << "webserv: created server socket on fd " << serverSocket << " for port " << port << std::endl;

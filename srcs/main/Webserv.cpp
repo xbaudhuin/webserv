@@ -223,10 +223,10 @@ void	Webserv::closeFds(void)
 	iter = this->idMap.begin();
 	while (iter != this->idMap.end())
 	{
-		close((*iter).first);
+		protectedClose((*iter).first);
 		iter++;
 	}
-	close(this->_epollFd);
+	protectedClose(this->_epollFd);
 }
 
 void	Webserv::setServerSockets(void)
@@ -276,11 +276,7 @@ int		Webserv::closeClientConnection(int clientSocket)
 		std::cerr << "webserv: Webserv::closeClientConnection: epoll_ctl: " << strerror(errno) << std::endl;
 		status = 1;
 	}
-	if (close(clientSocket) != 0)
-	{
-		std::cerr << "webserv: Webserv::closeClientConnection: close: " << strerror(errno) << std::endl;
-		status = 1;		
-	}
+	status += protectedClose(clientSocket);
 	if (status == 0)
 	{
 		std::cout << "webserv: successfully closed connection with client on socket fd " << clientSocket << std::endl;
@@ -330,7 +326,7 @@ int	Webserv::handlePortEvent(int serverSocket)
 	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN) != 0)
 	{
 		this->idMap[serverSocket]->removeClientSocket(newClient);
-		close(newClient);
+		protectedClose(newClient);
 		return (1);
 	}
 	try
@@ -342,10 +338,49 @@ int	Webserv::handlePortEvent(int serverSocket)
 		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
 		/* Send error to client */
 		this->idMap[serverSocket]->removeClientSocket(newClient);
-		close(newClient);
+		protectedClose(newClient);
 		return (1);
 	}
 	return (0);
+}
+
+int	Webserv::receive(int clientSocket)
+{
+	char	buffer[BUFSIZ];
+	int		bytesRead;
+	int		status = 0;
+
+	bytesRead = recv(clientSocket, buffer, BUFSIZ, 0);
+	if (bytesRead < 0)
+	{
+		std::cerr << "webserv: Webserv::receive: recv: " << strerror(errno) << std::endl;
+		this->closeClientConnection(clientSocket);
+		return (1);
+	}
+	else if (bytesRead == 0)
+	{
+		std::cout << "webserv: client on fd " << clientSocket << " closed connection with the server" << std::endl;
+		status = this->closeClientConnection(clientSocket);
+	}
+	else
+	{
+		buffer[bytesRead] = '\0';
+		/* Add buffer to the request */
+		std::cout << "webserv: client on fd " << clientSocket << "says: " << buffer << std::endl;
+	}
+	return (status);
+}
+
+int	Webserv::handleClientEvent(int clientSocket, uint32_t event)
+{
+	if (event == EPOLLIN)
+	{
+		return (this->receive(clientSocket));
+	}
+	else
+	{
+		return (0);
+	}
 }
 
 void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
@@ -361,7 +396,7 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 		}
 		else if (this->isClientSocket(fd) == true)
 		{
-			std::cout << "test" << std::endl;
+			this->handleClientEvent(fd, events[i].events);
 		}
 		else
 		{

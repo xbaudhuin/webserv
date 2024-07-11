@@ -63,7 +63,7 @@ int	SubServ::acceptNewConnection(void)
 	catch(const std::exception& e)
 	{
 		/* Send error to client ; */
-		close(clientSocket);
+		protectedClose(clientSocket);
 		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
 		return (-1);
 	}
@@ -93,11 +93,11 @@ bool	SubServ::isClientSocket(int fd)
 {
 	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end())
 	{
-		return (false);
+		return (true);
 	}
 	else
 	{
-		return (true);
+		return (false);
 	}
 }
 
