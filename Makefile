@@ -105,6 +105,8 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/ParserLocation.cpp \
 					parser/Printer.cpp \
 					sockets/createServerSocket.cpp \
+					sockets/addSocketToEpoll.cpp \
+					sockets/changeEpollEvents.cpp \
 					error_logs/logs.cpp \
 					error_pages/singleton.cpp \
 

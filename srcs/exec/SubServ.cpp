@@ -88,9 +88,9 @@ int	SubServ::removeClientSocket(int clientSocket)
 	}
 }
 
-bool	SubServ::isClientSocket(int socketFd)
+bool	SubServ::isClientSocket(int fd)
 {
-	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), socketFd) != this->_clientSockets.end())
+	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end())
 	{
 		return (false);
 	}
@@ -100,9 +100,9 @@ bool	SubServ::isClientSocket(int socketFd)
 	}
 }
 
-bool	SubServ::isServerSocket(int socketFd)
+bool	SubServ::isServerSocket(int fd)
 {
-	if (socketFd == this->_serverSocket)
+	if (fd == this->_serverSocket)
 	{
 		return (true);
 	}
@@ -112,7 +112,7 @@ bool	SubServ::isServerSocket(int socketFd)
 	}
 }
 
-int	SubServ::initServerSocket(void)
+int	SubServ::initPortSocket(void)
 {
 	this->_serverSocket = createServerSocket(this->_port);
 	return (this->_serverSocket);

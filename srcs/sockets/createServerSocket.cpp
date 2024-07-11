@@ -1,4 +1,4 @@
-#include "sockets.hpp"
+#include "Webserv.hpp"
 
 static struct sockaddr_in	getSocketAddress(in_addr_t	rawAddress, int rawPort)
 {
@@ -22,12 +22,18 @@ int	createServerSocket(int port)
 	serverSocket = socket(socketAddress.sin_family, SOCK_STREAM, 0);
 	if (serverSocket ==-1)
 	{
-		std::cerr << "webserv: socket: " << strerror(errno) << std::endl;
+		std::cerr << "webserv: createServerSocket: socket: " << strerror(errno) << std::endl;
 		return (-1);
 	}
-	if (bind(serverSocket, (struct sockaddr *)&socketAddress, sizeof (socketAddress)) == -1)
+	if (bind(serverSocket, (struct sockaddr *)&socketAddress, sizeof (socketAddress)) != 0)
 	{
 		std::cerr << "webserv: bind: " << strerror(errno) << std::endl;
+		close(serverSocket);
+		return (-1);
+	}
+	if (listen(serverSocket, BACKLOG_LISTEN) != 0)
+	{
+		std::cerr << "webserv: createServerSocket: listen: " << strerror(errno) << std::endl;
 		close(serverSocket);
 		return (-1);
 	}
