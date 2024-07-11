@@ -175,7 +175,7 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     {
         // std::cout << RED << cf.getLocations()[i].getUrl() << RESET << std::endl;
         cf.getLocations()[i].fixUrl(cf.getRoot());
-        cf.getLocations()[i].fixRoot();
+        cf.getLocations()[i].fixCgi();
         cf.getLocations()[i].fixIndexFile();
         // std::cout << RED << cf.getLocations()[i].getUrl() << RESET <<std::endl;
     }

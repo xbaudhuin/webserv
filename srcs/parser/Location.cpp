@@ -14,6 +14,7 @@ Location::Location(){
     this->_post = 0;
     this->_delete = 1;
     this->_root_check = 0;
+    this->upload_location = "";
 }
 
 Location::Location(const Location &rhs){
@@ -37,6 +38,7 @@ Location& Location::operator=(const Location &rhs){
         this->_post = rhs._post;
         this->_delete = rhs._delete;
         this->_root_check = rhs._root_check;
+        this->upload_location = rhs.upload_location;
     }
     return(*this);
 }
@@ -80,7 +82,7 @@ const bool& Location::isExactMatch(void) const{
     return(this->_exact_match);
 }
 
-const bool& Location::getGetSatus(void) const{
+const bool& Location::getGetStatus(void) const{
     return(this->_get);
 }
 
@@ -270,18 +272,15 @@ void Location::fixUrl(const std::string &url){
         s = this->root;
     // s = s.substr(s.find_last_of("/", s.size()), s.size() );
     this->url = url + s + this->url;
+    if(this->upload_location.size() > 0)
+        this->upload_location.insert(0, url);
 }
 
-void Location::fixRoot(void){
-    // if(this->root.size() > 0)
-    // {
-    //     std::string s = this->url;
-    //     if(s[s.size() - 1] == '/')
-    //     {
-    //         s = s.substr(0, s.size() - 1);
-    //     }
-    //     this->root.insert(0, s);
-    // }
+void Location::fixCgi(void){
+    for (size_t i = 0; i < this->cgi.size(); i++)
+    {
+        this->cgi[i].second = this->url + this->cgi[i].second;
+    }
 }
 
 void Location::fixIndexFile(void){
@@ -296,4 +295,48 @@ void Location::fixIndexFile(void){
         }
         this->index_file[i].insert(0, s);
     }
+
+}
+
+std::string Location::getUploadLocation() const{
+    return(this->upload_location);
+}
+
+void Location::setUploadLocation(const std::string &check)
+{
+    if (check[0] != '/')
+        throw std::logic_error("Webserv: Error:\nupload_location parameter isn't a correct path, missing /");
+    if (check[check.size() - 1] != '/')
+        throw std::logic_error("Webserv: Error:\nupload_location parameter isn't a correct path, missing /");
+    this->upload_location = check;
+}
+
+std::ostream& operator<<(std::ostream& out, const Location& loc){
+    if(loc.getUrl().size() >  0)
+        out << "Url: " << loc.getUrl() << "\n\t";
+    out << "Exact Match: " << (loc.isExactMatch() ? "YES" : "NO") << "\n\t";
+    if(loc.getRoot().size() >  0)
+        out << "Root: " << loc.getRoot() << "\n\t";
+    if(loc.getIndexFile().size() > 0)
+        for (size_t j = 0; j < loc.getIndexFile().size(); j++)
+        {
+            out << "Index File[" << j << "]: " << loc.getIndexFile()[j] << "\n\t";
+        }
+    if(loc.getCgi().size() > 0)
+    {
+        for (size_t j = 0; j < loc.getCgi().size(); j++)
+        {
+            out << "Cgi File: " << loc.getCgi()[j].second << "\n\t";
+        }
+    }
+    if(loc.getUploadLocation().size() > 0)
+        out << "Cgi Upload Location: " << loc.getUploadLocation() << "\n\t";
+    if(loc.getRedirection().size() > 0)
+        out << "Redirection URL and CODE: " << loc.getRedirection() << " && " << loc.getRedirCode() << "\n\t";
+    out << "Limit body size: " << loc.getLimitBodySize() << "\n\t";
+    out << "Method GET status: " << (loc.getGetStatus() ? "on" : "off") << "\n\t";
+    out << "Method POST status: " << (loc.getPostStatus() ? "on" : "off") << "\n\t";
+    out << "Method DELETE status: " << (loc.getDeleteStatus() ? "on" : "off") << "\n\t";
+    out << "Directory Listing Status: " << loc.getAutoIndex() << std::endl;
+    return(out);
 }
