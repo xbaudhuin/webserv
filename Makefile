@@ -106,6 +106,7 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/Printer.cpp \
 					sockets/createServerSocket.cpp \
 					error_logs/logs.cpp \
+					error_pages/singleton.cpp \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 

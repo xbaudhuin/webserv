@@ -27,6 +27,7 @@ class Location
         bool _directory_listing;
         uint64_t limit_body_size;
         int _root_check;
+        std::string upload_location;
 
     public:
         Location();
@@ -44,9 +45,10 @@ class Location
         const bool& getAutoIndex(void) const;
         const bool& isExactMatch(void) const;
         const bool& getPostStatus(void) const;
-        const bool& getGetSatus(void) const;
+        const bool& getGetStatus(void) const;
         const bool& getDeleteStatus(void) const;
         const std::vector<std::pair<std::string, std::string> >& getCgi(void) const;
+        std::string getUploadLocation(void) const;
 
         /* setters */
         void addLimitBodySize(const std::string &limit);
@@ -58,9 +60,12 @@ class Location
         void setIndexFile(const std::string &file);
         void setCgi(const std::string &extension, const std::string &executable);
         void setMethod(const std::string &method, const std::string &status);
+        void setUploadLocation(const std::string & location);
         void fixUrl(const std::string &url);
-        void fixRoot();
+        void fixCgi();
         void fixIndexFile();
 };
+
+std::ostream& operator<<(std::ostream& out, const Location& cf);
 
 #endif

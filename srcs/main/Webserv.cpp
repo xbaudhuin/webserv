@@ -16,7 +16,7 @@ Webserv::Webserv(const char* file)
     this->parseConfig(config);
 #if PRINT == 2
     vec_string v;
-    v.push_back("/coucou/");
+    v.push_back("/coucou/test/index.html");
     v.push_back("/");
     v.push_back("/coucou/file");
     v.push_back("/error_pages/test/");
@@ -38,6 +38,9 @@ Webserv::Webserv(const char* file)
         }
         
     }
+#endif
+#ifdef PRINT
+    std::cout << findErrorPage(403, this->confs[0].second.getErrPages()) << std::endl;
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
@@ -174,7 +177,7 @@ void Webserv::parse(vec_string split)
         // printConfig(this->confs);  
     }
     else
-        throw std::invalid_argument("Webserv: Error: No configuration found");
+        throw std::invalid_argument("Webserv: Error:\nNo configuration found");
     this->createMaps();
 }
 
