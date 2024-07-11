@@ -31,7 +31,8 @@ class Webserv
         void 					createMaps(void);
 		void					setServerSockets(void);
 		void					closeFds(void);
-		void					handleEvents(struct epoll_event *events, int nbEvents);
+		int						handlePortEvent(int serverSocket);
+		void					handleEvents(const struct epoll_event *events, int nbEvents);
 
     public:
       		 	 Webserv(const char *s);

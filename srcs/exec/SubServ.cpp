@@ -67,6 +67,7 @@ int	SubServ::acceptNewConnection(void)
 		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
 		return (-1);
 	}
+	std::cout << "wevserv: new client connection accepted on port " << this->_port << " to socket fd " << clientSocket << std::endl;
 	return (clientSocket);
 }
 

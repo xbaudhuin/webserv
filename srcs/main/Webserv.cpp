@@ -264,7 +264,7 @@ int		Webserv::closeClientConnection(int clientSocket)
 		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
 		status = 1;
 	}
-	if ((*iter).second->removeClientSocket(clientSocket) != 0)
+	else if ((*iter).second->removeClientSocket(clientSocket) != 0)
 	{
 		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
 		status = 1;
@@ -318,10 +318,56 @@ int	Webserv::isServerSocket(int fd)
 	
 }
 
-void	Webserv::handleEvents(struct epoll_event *events, int nbEvents)
+int	Webserv::handlePortEvent(int serverSocket)
 {
-	std::cout << "Nb event = " << nbEvents << std::endl;
-	(void)events;
+	int	newClient;
+
+	newClient = this->idMap[serverSocket]->acceptNewConnection();
+	if (newClient == -1)
+	{
+		return (1);
+	}
+	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN) != 0)
+	{
+		this->idMap[serverSocket]->removeClientSocket(newClient);
+		close(newClient);
+		return (1);
+	}
+	try
+	{
+		this->idMap[newClient] = this->idMap[serverSocket];
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
+		/* Send error to client */
+		this->idMap[serverSocket]->removeClientSocket(newClient);
+		close(newClient);
+		return (1);
+	}
+	return (0);
+}
+
+void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
+{
+	int	fd;
+
+	for (int i = 0; i < nbEvents; i++)
+	{
+		fd = events[i].data.fd;
+		if (this->isServerSocket(fd) == true)
+		{
+			this->handlePortEvent(fd);
+		}
+		else if (this->isClientSocket(fd) == true)
+		{
+			std::cout << "test" << std::endl;
+		}
+		else
+		{
+			std::cerr << "webserv: Webserv::handleEvents: file descriptor is neither a server socket nor a client socket" << std::endl;
+		}
+	}
 }
 
 int	Webserv::start(void)
@@ -346,6 +392,8 @@ int	Webserv::start(void)
 		{
 			this->handleEvents(events, status);
 		}
+		/* Need to check client time out, fork time out, waitPID ect
+		after each epoll_wait() (not only betweeneach event) */
 	}
 	return (0);
 }
