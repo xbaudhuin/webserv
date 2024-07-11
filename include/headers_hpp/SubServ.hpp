@@ -21,7 +21,7 @@ class	SubServ
 		bool				isClientSocket(int socketFd);
 		bool				isServerSocket(int socketFd);
 		int					initServerSocket(void);
-		const ServerConf	*getMainConf(void);
+		const ServerConf	*getConf(const std::string &serverName);
 		int					getPort(void);
 
 	protected:

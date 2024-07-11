@@ -48,6 +48,7 @@ Webserv::Webserv(const char* file)
 		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
+	std::cout << "webserv: epoll successfully created on fd" << this->_epollFd << std::endl;
 	this->setServerSockets();
 }
 
@@ -105,7 +106,6 @@ bool checkNumberBrackets(const vec_string &split)
         }
     }
     return 0;
-    
 }
 
 void Webserv::createMaps(void)
@@ -199,13 +199,13 @@ void Webserv::parseConfig(const std::string &conf)
     this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
 }
 
-int	Webserv::addSocketToEpoll(int socketFd)
+int	Webserv::addSocketToEpoll(int socketFd, uint32_t events)
 {
 	struct epoll_event	epollEvent;
 	int					status;
 	
 	std::memset(&epollEvent, 0, sizeof (epollEvent));
-	epollEvent.events = EPOLLIN;
+	epollEvent.events = events;
 	epollEvent.data.fd = socketFd;
 	status = epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketFd, &epollEvent);
 	if (status != 0)
@@ -219,18 +219,19 @@ int	Webserv::addSocketToEpoll(int socketFd)
 
 int	Webserv::removeFdFromIdMap(int socketFd)
 {
-	try
+	int	result;
+
+	result = this->idMap.erase(socketFd);
+	if (result == 1)
 	{
-		this->idMap.at(socketFd);
-		this->idMap.erase(socketFd);
 		std::cout << "webserv: successfully erased socket fd " << socketFd << " from ID Map" << std::endl;
+		return (0);
 	}
-	catch(const std::exception& e)
+	else
 	{
 		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd" << std::endl;
 		return (1);
 	}
-	return (0);
 }
 
 void	Webserv::closeFds(void)
@@ -260,7 +261,7 @@ void	Webserv::setServerSockets(void)
 			this->closeFds();
 			throw std::logic_error("Can not create server socket");
 		}
-		if (this->addSocketToEpoll(serverSocket) != 0)
+		if (this->addSocketToEpoll(serverSocket, EPOLLIN) != 0)
 		{
 			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
@@ -268,4 +269,58 @@ void	Webserv::setServerSockets(void)
 		this->idMap[serverSocket] = &((*iter).second);
 		iter++;
 	}
+}
+
+int		Webserv::closeClientConnection(int clientSocket)
+{
+	std::map<int, SubServ*>::iterator	iter;
+	int									status = 0;
+
+	iter = this->idMap.find(clientSocket);
+	if (iter == this->idMap.end())
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
+		status = 1;
+	}
+	if ((*iter).second->removeClientSocket(clientSocket) != 0)
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
+		status = 1;
+	}
+	/* Need to erase request related to the client in Xaviers's class*/
+	this->removeFdFromIdMap(clientSocket);
+	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != 0)
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: epoll_ctl: " << strerror(errno) << std::endl;
+		status = 1;
+	}
+	if (close(clientSocket) != 0)
+	{
+		std::cerr << "webserv: Webserv::closeClientConnection: close: " << strerror(errno) << std::endl;
+		status = 1;		
+	}
+	if (status == 0)
+	{
+		std::cout << "webserv: successfully closed connection with client on socket fd " << clientSocket << std::endl;
+	}
+	return (status);
+}
+
+int		changeEpollEvents(int epollFd, int socket, uint32_t	events)
+{
+	struct epoll_event epollEvent;
+
+	epollEvent.events = events;
+	epollEvent.data.fd = socket;
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, socket, &epollEvent) != 0)
+	{
+		std::cerr << "webserv: Webserv::changeEpollEvents: epoll_ctl: " << strerror(errno) << std::endl;
+		return (1);
+	}
+	return (0);	
+}
+
+int	Webserv::getEpollFd(void)
+{
+	return (this->_epollFd);
 }
