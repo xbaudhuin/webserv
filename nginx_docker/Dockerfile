@@ -28,7 +28,6 @@ RUN mkdir -p /usr/share/nginx/html2
 COPY index2.html /usr/share/nginx/html2/index.html
 COPY 404.html /usr/share/nginx/html2/404.html/404.html
 COPY 404.html /usr/share/nginx/html/404.html
-RUN chmod 000 /usr/share/nginx/html/404.html
 
 WORKDIR /
 

@@ -6,11 +6,13 @@
 #include "SubServ.hpp"
 #include <cctype>
 #include <ctime>
+#include <dirent.h>
 #include <exception>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
+#include <sys/types.h>
 
 class ServerConf;
 
@@ -32,6 +34,7 @@ public:
   const std::string &getBuffer(void) const;
   int getBodySize(void) const;
   void sendResponse(std::string &response);
+  bool isTimedOut(void);
 
 protected:
 private:
@@ -74,13 +77,13 @@ private:
   void readRequest(void);
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
+  void findIndex(std::string &url);
   void createResponseBody(void);
   bool checkMethod(void);
   bool checkIfValid(void);
 
   void resetClient(void);
   time_t getTime(void);
-  bool isTimedOut(void);
 };
 
 #endif //! CLIENT_HPP
