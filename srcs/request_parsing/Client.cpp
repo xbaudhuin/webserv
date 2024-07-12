@@ -139,8 +139,8 @@ Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
 
 Client::~Client(void) { return; }
 
-Client::Client(Client const &copy): _socket(copy._socket), _mapConf(copy._mapConf)
-      {
+Client::Client(Client const &copy)
+    : _socket(copy._socket), _mapConf(copy._mapConf) {
   if (this != &copy)
     *this = copy;
   return;
@@ -148,7 +148,7 @@ Client::Client(Client const &copy): _socket(copy._socket), _mapConf(copy._mapCon
 
 Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
-    _defaultConf = rhs._defaultConf; 
+    _defaultConf = rhs._defaultConf;
     _server = rhs._server;
     _location = rhs._location;
     _time = rhs._time;
@@ -170,11 +170,11 @@ Client &Client::operator=(Client const &rhs) {
   return (*this);
 }
 
-time_t Client::getTime(void) { 
+time_t Client::getTime(void) {
   time_t time = std::time(0);
   if (time == -1)
     std::cout << RED << "FAIL TO GET TIME" << RESET << std::endl;
-  return (time); 
+  return (time);
 }
 
 bool Client::isTimedOut(void) {
@@ -183,7 +183,7 @@ bool Client::isTimedOut(void) {
   double timeOut = std::difftime(current, _time);
   std::cout << "current = " << current << std::endl;
   std::cout << "_time   = " << _time << std::endl;
-  std::cout << PURP2<< getDate() << RESET << std::endl;
+  std::cout << PURP2 << getDate() << RESET << std::endl;
   std::cout << PURP << "timeout is: " << timeOut << RESET << std::endl;
   if (timeOut >= 10.0)
     return (true);
@@ -439,13 +439,13 @@ void Client::sendResponse(std::string &response) {
   if (_statusCode < 300 || _statusCode >= 400) {
     response += "Content-Type: text/html\r\n";
     response += "Content-Length: ";
-    std::cout << PURP << "responseBody.size() = " << static_cast<int>(_responseBody.size())
-              << RESET << std::endl;  
-  {
-    std::ostringstream ss;
-    ss << _responseBody.size();
-    response += ss.str();
-  }
+    std::cout << PURP << "responseBody.size() = "
+              << static_cast<int>(_responseBody.size()) << RESET << std::endl;
+    {
+      std::ostringstream ss;
+      ss << _responseBody.size();
+      response += ss.str();
+    }
     std::cout << PURP << "responseBody.size() = " << _responseBody.size()
               << RESET << std::endl;
     response += " \r\n";
