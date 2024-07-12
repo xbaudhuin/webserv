@@ -34,9 +34,16 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 	return(*this);
 }
 
-const ServerConf	*SubServ::getMainConf(void)
+const ServerConf	*SubServ::getConf(const std::string &serverName)
 {
-	return (this->_main);
+	try
+	{
+		return ((this->_portConfs.at(serverName)));
+	}
+	catch(const std::exception& e)
+	{
+		return (this->_main);
+	}
 }
 
 int	SubServ::acceptNewConnection(void)
@@ -56,10 +63,11 @@ int	SubServ::acceptNewConnection(void)
 	catch(const std::exception& e)
 	{
 		/* Send error to client ; */
-		close(clientSocket);
+		protectedClose(clientSocket);
 		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
 		return (-1);
 	}
+	std::cout << "wevserv: new client connection accepted on port " << this->_port << " to socket fd " << clientSocket << std::endl;
 	return (clientSocket);
 }
 
@@ -76,26 +84,14 @@ int	SubServ::removeClientSocket(int clientSocket)
 	}
 	else
 	{
-		std::cerr << "webserv: SubServ::removeClientSocket: trying to remove non existing fd from vector" << std::endl;
+		std::cerr << "webserv: SubServ::removeClientSocket: trying to remove non existing client socket from vector of subserv port " <<  this->_port << std::endl;
 		return (1);
 	}
 }
 
-bool	SubServ::isClientSocket(int socketFd)
+bool	SubServ::isClientSocket(int fd)
 {
-	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), socketFd) != this->_clientSockets.end())
-	{
-		return (false);
-	}
-	else
-	{
-		return (true);
-	}
-}
-
-bool	SubServ::isServerSocket(int socketFd)
-{
-	if (socketFd == this->_serverSocket)
+	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end())
 	{
 		return (true);
 	}
@@ -105,7 +101,19 @@ bool	SubServ::isServerSocket(int socketFd)
 	}
 }
 
-int	SubServ::initServerSocket(void)
+bool	SubServ::isServerSocket(int fd)
+{
+	if (fd == this->_serverSocket)
+	{
+		return (true);
+	}
+	else
+	{
+		return (false);
+	}
+}
+
+int	SubServ::initPortSocket(void)
 {
 	this->_serverSocket = createServerSocket(this->_port);
 	return (this->_serverSocket);
