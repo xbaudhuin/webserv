@@ -417,9 +417,13 @@ void Client::sendResponse(std::string &response) {
   if (_statusCode < 300 || _statusCode >= 400) {
     response += "Content-Type: text/html\r\n";
     response += "Content-Length: ";
-    std::cout << PURP << "responseBody.size() = " << _responseBody.size()
-              << RESET << std::endl;
-    response += _responseBody.size();
+    std::cout << PURP << "responseBody.size() = " << static_cast<int>(_responseBody.size())
+              << RESET << std::endl;  
+  {
+    std::ostringstream ss;
+    ss << _responseBody.size();
+    response += ss.str();
+  }
     std::cout << PURP << "responseBody.size() = " << _responseBody.size()
               << RESET << std::endl;
     response += " \r\n";
