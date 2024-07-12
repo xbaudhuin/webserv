@@ -61,25 +61,36 @@ int main() {
               << std::endl;
     map.insert(std::make_pair(cf->getMainServerName(), cf));
     std::cout << BLUE << "request: \n" << http_request << RESET << std::endl;
-    Client request(5, map, cf);
-    size_t pos = http_request.find_first_of('\r', 0);
-    if (pos == http_request.npos)
-      std::cout << RED << "no \\r" << RESET << std::endl;
-    else
-      std::cout << GREEN << "found \\r" << RESET << std::endl;
-    std::string empty = "";
-    request.addBuffer(http_request);
-    int a = 0;
-    while (request.getBodySize() > 0 && a != 10){
-      a++;
-      request.addBuffer(empty);
-    }
-    if (a == 10)
-      std::cout << RED << "a == 10" << std::endl;
-    request.print();
-    std::string response;
-    request.sendResponse(response);
-    std::cout << GREEN << "response: \n" << response << RESET<< std::endl;
+    std::map<int, Client>mapClient;
+    // mapClient.insert(std::make_pair(1, Client (5, map, cf)));
+    std::make_pair(1, Client (5, map, cf)).second.print();
+ // std::map<int, Client>::iterator it = mapClient.find(1);
+    // if (it == mapClient.end())
+    // {
+    //   std::cout << RED << "not found in map" << RESET << std::endl;
+    //   return (0);
+    // }
+    //
+    // size_t pos = http_request.find_first_of('\r', 0);
+    // if (pos == http_request.npos)
+    //   std::cout << RED << "no \\r" << RESET << std::endl;
+    // else
+    //   std::cout << GREEN << "found \\r" << RESET << std::endl;
+    // std::string empty = "";
+    // (*it).second.addBuffer(http_request);
+    // int a = 0;
+    // while ((*it).second.getBodySize() > 0 && a != 10){
+    //   a++;
+    //   (*it).second.addBuffer(empty);
+    // }
+    // if (a == 10)
+    //   std::cout << RED << "a == 10" << std::endl;
+    // (*it).second.print();
+    // std::string response;
+    // (*it).second.sendResponse(response);
+    // std::cout << GREEN << "response: \n" << response << RESET<< std::endl;
+    // while ((*it).second.isTimedOut() == false)
+    //   sleep(2);
     delete cf;
   } catch (std::exception &e) {
     std::cout << "Caught error: " << e.what() << std::endl;

@@ -18,14 +18,14 @@ class Client {
 public:
   // Constructor
   Client(const int fd, const mapConfs &map, ServerConf *defaultServer);
-  Client(Client const &copy);
 
   // Destructor
   ~Client(void);
 
   // operator
-  Client &operator=(Client const &rhs);
 
+  Client(Client const &copy);
+  Client &operator=(Client const &rhs);
   // method
   void print();
   bool addBuffer(std::string &buffer);
