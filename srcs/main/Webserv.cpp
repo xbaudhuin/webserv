@@ -453,7 +453,7 @@ int	Webserv::start(void)
 		{
 			this->handleEvents(events, status);
 		}
-		this->bounceOldClients();
+		//this->bounceOldClients();
 		/* Need to check client time out, fork time out, waitPID ect
 		after each epoll_wait() (not only betweeneach event) */
 	}

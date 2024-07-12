@@ -69,7 +69,9 @@ int	SubServ::acceptNewConnection(void)
 	}
 	try
 	{
-		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
+		 Client newclient(clientSocket, this->_portConfs, this->_main);
+		//std::make_pair(clientSocket, newclient).second.print();
+		//this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
 	}
 	catch(const std::exception& e)
 	{
