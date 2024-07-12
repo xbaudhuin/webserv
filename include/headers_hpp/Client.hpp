@@ -19,6 +19,7 @@ public:
   // Constructor
   Client(const int fd, const mapConfs &map, ServerConf *defaultServer);
   Client(Client const &copy);
+  Client(void);
 
   // Destructor
   ~Client(void);

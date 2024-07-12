@@ -31,6 +31,8 @@ class	SubServ
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;
+		mapClients			_clientRequests;
+
 
 };
 

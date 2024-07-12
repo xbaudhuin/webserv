@@ -5,15 +5,17 @@
 #include <vector>
 #include <iostream>
 
-class SubServ;
-class ServerConf;
-class Location;
+class	SubServ;
+class	ServerConf;
+class	Location;
+class	Client;
 
 typedef std::map<int, SubServ> mapSubServs; /* key = port */
 typedef std::map<std::string, ServerConf*> mapConfs;
 typedef std::vector<std::string> vec_string;
 typedef std::map<int, std::string> map_err_pages;
 typedef std::vector<Location> vec_location;
+typedef std::map<int, Client> mapClients;
 typedef std::vector<std::pair<vec_string, ServerConf> > vec_confs;
 
 #endif

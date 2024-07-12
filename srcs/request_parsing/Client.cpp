@@ -135,6 +135,11 @@ Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
   return;
 }
 
+Client::Client(void) : _socket(-1), _mapConf(mapConfs()), _defaultConf(NULL)
+{
+	return ;
+}
+
 Client::~Client(void) { return; }
 
 Client::Client(Client const &copy)
