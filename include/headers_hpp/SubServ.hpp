@@ -2,6 +2,7 @@
 # define SUBSERV_HPP
 
 # include "Config.hpp"
+# include "Webserv.hpp"
 # include <vector>
 # include "sockets.hpp"
 
@@ -23,17 +24,18 @@ class	SubServ
 		int					initPortSocket(void);
 		const ServerConf	*getConf(const std::string &serverName);
 		int					getPort(void);
+		void				addClientsToBounce(std::vector<int> &clientsToBounce);
 
 	protected:
 
 	private:
-		const ServerConf	*_main;
+		ServerConf			*_main;
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;
 		mapClients			_clientRequests;
-
-
+		int					removeSocketFromClientVector(int socket);
+		int					removeSocketFromRequestMap(int socket);
 };
 
 #endif

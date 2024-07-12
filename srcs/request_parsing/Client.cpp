@@ -135,11 +135,6 @@ Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
   return;
 }
 
-Client::Client(void) : _socket(-1), _mapConf(mapConfs()), _defaultConf(NULL)
-{
-	return ;
-}
-
 Client::~Client(void) { return; }
 
 Client::Client(Client const &copy)
@@ -162,13 +157,13 @@ Client &Client::operator=(Client const &rhs) {
   return (*this);
 }
 
-time_t Client::getTime(void) { return (std::time(0)); }
+time_t Client::getTime(void) { return (std::time(&_time)); }
 
 bool Client::isTimedOut(void) {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);
-  if (timeOut >= 60.0)
+  if (timeOut >= 10.0)
     return (true);
   return (false);
 }

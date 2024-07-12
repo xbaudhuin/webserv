@@ -19,7 +19,6 @@ public:
   // Constructor
   Client(const int fd, const mapConfs &map, ServerConf *defaultServer);
   Client(Client const &copy);
-  Client(void);
 
   // Destructor
   ~Client(void);
@@ -33,6 +32,7 @@ public:
   const std::string &getBuffer(void) const;
   int getBodySize(void) const;
   void sendResponse(std::string &response);
+  bool isTimedOut(void);
 
 protected:
 private:
@@ -81,7 +81,6 @@ private:
 
   void resetClient(void);
   time_t getTime(void);
-  bool isTimedOut(void);
 };
 
 #endif //! CLIENT_HPP
