@@ -7,6 +7,7 @@
 #include <cctype>
 #include <ctime>
 #include <exception>
+#include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -29,7 +30,8 @@ public:
   void print();
   bool addBuffer(std::string &buffer);
   const std::string &getBuffer(void) const;
-int getBodySize(void) const;
+  int getBodySize(void) const;
+  void sendResponse(std::string &response);
 
 protected:
 private:
@@ -51,6 +53,8 @@ private:
   int _bodySize;
   std::string _buffer;
   std::string _responseBody;
+  bool _keepConnectionAlive;
+  bool _chunkRequest;
 
   static const char *_validMethods[];
   static const size_t _methodSize;
@@ -69,11 +73,12 @@ private:
   void uriDecoder(std::string &uri);
   void readRequest(void);
   ServerConf *getServerConf(void);
-  void getResponseBody(void);
-  void sendResponse(int statusCode);
+  void findPages(const std::string &url);
+  void createResponseBody(void);
   bool checkMethod(void);
   bool checkIfValid(void);
 
+  void resetClient(void);
   time_t getTime(void);
   bool isTimedOut(void);
 };

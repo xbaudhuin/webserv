@@ -11,7 +11,7 @@
 
 int main() {
   try {
-    std::string http_request = "POST /coucou/test2/salut?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
+    std::string http_request = "GET /coucou/test2/salut?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
     http_request += "host: bonjour\r\n";
     // http_request += "host: bonjour2\n\r";
     http_request += "Content-Length: 115\r\n";
@@ -32,7 +32,6 @@ int main() {
     loc.setIndexFile("index.html");
     loc.fixUrl("/html");
     loc.fixIndexFile();
-    loc.fixRoot();
     cf->addLocation(loc);
     Location test;
     test.addUrl("/coucou/test/test2/", "");
@@ -43,7 +42,6 @@ int main() {
     test.setIndexFile("index.html");
     test.fixUrl("/html");
     test.fixIndexFile();
-    test.fixRoot();
     cf->addLocation(test);
     Location loc2;
     loc2.addUrl("/coucou/test2/", "");
@@ -54,7 +52,6 @@ int main() {
     loc2.setIndexFile("index.html");
     loc2.fixUrl("/html");
     loc2.fixIndexFile();
-    loc2.fixRoot();
     cf->addLocation(loc2);
     cf->setRootToErrorPages();
     std::cout << *cf << std::endl;
@@ -80,6 +77,9 @@ int main() {
     if (a == 10)
       std::cout << RED << "a == 10" << std::endl;
     request.print();
+    std::string response;
+    request.sendResponse(response);
+    std::cout << GREEN << "response: \n" << response << RESET<< std::endl;
     delete cf;
   } catch (std::exception &e) {
     std::cout << "Caught error: " << e.what() << std::endl;

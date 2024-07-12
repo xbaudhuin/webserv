@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/10 14:02:52 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/12 12:43:24 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -113,6 +113,7 @@ SRCS_MAIN		=	main/main.cpp \
 REQUEST = requester
 
 SRCS_REQUEST 	=		main/Webserv.cpp \
+									error_pages/singleton.cpp \
 									exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \

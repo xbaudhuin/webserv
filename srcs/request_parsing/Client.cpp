@@ -129,7 +129,8 @@ const std::map<std::string, char> Client::_uriEncoding = initMap();
 Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _location(NULL), _statusCode(0), _method(""), _uri(""), _version(0),
-      _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer("") {
+      _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer(""),
+      _keepConnectionAlive(false), _chunkRequest(false) {
   _time = getTime();
   return;
 }
@@ -290,52 +291,6 @@ size_t Client::insertInMap(std::string &line) {
   return (0);
 }
 
-// void Client::readRequest(void) {
-//   char buf[BUFSIZ] = {0};
-//   ssize_t read = recv(_socket, buf, BUFSIZ, 0);
-//   if (read == -1) {
-//     std::cout << RED << "initial recv return -1 on " << _socket << RESET
-//               << std::endl;
-//     return;
-//   }
-//   if (read == 0) {
-//     std::cout << RED << "initial recv return 0 on " << _socket << RESET
-//               << std::endl;
-//     return;
-//   }
-//   _buffer += buf;
-//   size_t start = _requestSize;
-//   while (true) {
-//     start = _buffer.find_first_of('\r', start);
-//     if (start == _buffer.npos)
-//       break;
-//     if (_buffer[start + 1] == '\n')
-//       _buffer.erase(start, 1);
-//   }
-//   if (_bodySize > 0) {
-//     std::cout << RED << "adding buffer to previous body\n" << RESET;
-//     std::cout << YELLOW << "buf:\n" << buf << RESET;
-//     std::cout << YELLOW << "\nbuffer after adding buf:\n"
-//               << _buffer << RESET << std::endl;
-//     if (_bodySize > read) {
-//       _requestSize += read;
-//       _bodySize -= read;
-//       std::cout << RED << "return: body not complete, still have to read: "
-//                 << _bodySize << RESET << std::endl;
-//       return;
-//     } else {
-//       _requestSize += _bodySize;
-//       _bodySize = -1;
-//       _body = _buffer.substr(0, _requestSize);
-//       _buffer = _buffer.substr(_requestSize, _buffer.size() - _requestSize);
-//       std::cout << RED << "separating body form buffer:\n" << RESET;
-//       std::cout << YELLOW << "body:\n" << _body << RESET;
-//       std::cout << YELLOW << "\nbuffer:\n" << _buffer << RESET << std::endl;
-//     }
-//   }
-//   parseBuffer();
-// }
-
 bool Client::addBuffer(std::string &buffer) {
   if (_bodySize > 0) {
     std::cout << RED << "_bodySize > 0" << RESET << std::endl;
@@ -343,8 +298,8 @@ bool Client::addBuffer(std::string &buffer) {
     _body += tmp_body;
     _bodySize -= tmp_body.size();
     if (tmp_body.size() < buffer.size())
-      _buffer = buffer.substr(tmp_body.size());
-    if (_bodySize <= 0)
+      _statusCode = 400;
+    if (_bodySize <= 0 || _statusCode != 0)
       return (1);
     return (0);
   }
@@ -387,32 +342,92 @@ std::string Client::getDate(void) {
   time(&rawtime);
   tm *gmtTime = gmtime(&rawtime);
   char buffer[80] = {0};
-  std::strftime(buffer, 80, "Date: %a, %d, %b, %Y, %H:%M:%S GMT\r\n", gmtTime);
+  std::strftime(buffer, 80, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", gmtTime);
   return (buffer);
 }
 
-void Client::sendResponse(int statusCode) {
-  std::string response;
+void Client::findPages(const std::string &url) {
+  std::ifstream file(url.c_str(), std::ios::in);
+  if (file.is_open() == false) {
+    std::cout << RED << "failed to open file: " << url << RESET << std::endl;
+    if (access(url.c_str(), F_OK) == -1)
+      _statusCode = 404;
+    else
+      _statusCode = 403;
+    return;
+  }
+  std::string s;
+  while (getline(file, s)) {
+    _responseBody.append(s);
+    _responseBody.append("\r\n");
+  }
+  if (file.fail() == true)
+    _statusCode = 400;
+}
+
+void Client::createResponseBody(void) {
+  if (_statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "uri : " << _location->getUrl() << " ?" << RESET
+              << std::endl;
+    findPages(_location->getUrl());
+  }
+  if (_statusCode >= 400) {
+    _responseBody = findErrorPage(_statusCode, _server->getErrPages());
+  }
+}
+
+void Client::resetClient(void) {
+  _server = NULL;
+  _location = NULL;
+  _time = getTime();
+  _statusCode = 0;
+  _method = "";
+  _uri = "";
+  _queryUri = "";
+  _version = 0;
+  _host = "";
+  _headers.clear();
+  _body = "";
+  _requestSize = 0;
+  _bodySize = 0;
+  _buffer = "";
+  _responseBody = "";
+  _keepConnectionAlive = false;
+  _chunkRequest = false;
+}
+
+void Client::sendResponse(std::string &response) {
   response += "HTTP/1.1 ";
   {
     std::ostringstream ss;
-    ss << statusCode;
+    ss << _statusCode;
     response += ss.str();
   }
+
+  createResponseBody();
   response += "reasonPhrase\r\n";
   response += "Webserv: 1.0.0\r\n";
   response += getDate();
-  response += "Content-Type: text/html\r\n";
-  response += "Content-Length: 157\r\n";
   response += "Connection: ";
-  if (statusCode >= 400 || _version == 0) {
+  if (_statusCode >= 400 || _version == 0) {
     response += "close\r\n";
   } else {
     response += "keep-alive\r\n";
   }
+  if (_statusCode < 300 || _statusCode >= 400) {
+    response += "Content-Type: text/html\r\n";
+    response += "Content-Length: ";
+    std::cout << PURP << "responseBody.size() = " << _responseBody.size()
+              << RESET << std::endl;
+    response += _responseBody.size();
+    std::cout << PURP << "responseBody.size() = " << _responseBody.size()
+              << RESET << std::endl;
+    response += " \r\n";
+  }
   response += "\r\n";
   response += _responseBody;
-  std::cout << GREEN << "response:\n" << response << RESET << std::endl;
+  std::cout << BLUE << "response:\n" << response << RESET << std::endl;
+  resetClient();
   return;
 }
 
@@ -455,6 +470,7 @@ void Client::parseRequest(std::string &buffer) {
     if (_statusCode != 0)
       return;
   }
+  _buffer.erase(0, _requestSize);
   if (_headers.count("host") == 0) {
     _statusCode = 400;
     return;
@@ -505,14 +521,15 @@ void Client::parseRequest(std::string &buffer) {
       _bodySize = -1;
   } else
     std::cout << PURP << "No body" << RESET << std::endl;
-
-  // if cookie parse_cookie
-  _statusCode = 200;
+  if (_buffer.size() != 0)
+    _statusCode = 400;
+  else
+    _statusCode = 200;
   return;
 }
 
 bool Client::checkMethod(void) {
-  if (_method == "GET" && _location->getGetSatus() == false) {
+  if (_method == "GET" && _location->getGetStatus() == false) {
     _statusCode = 405;
     return (false);
   } else if (_method == "POST" && _location->getPostStatus() == false) {
