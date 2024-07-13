@@ -40,7 +40,10 @@ Webserv::Webserv(const char* file)
     }
 #endif
 #ifdef PRINT
-    std::cout << findErrorPage(403, this->confs[0].second.getErrPages()) << std::endl;
+    std::cout << findErrorPage(404, this->confs[0].second.getErrPages()) << "\n" << std::endl;
+    std::cout << findErrorPage(403, this->confs[0].second.getErrPages()) << "\n" << std::endl;
+    std::cout << findErrorPage(405, this->confs[0].second.getErrPages()) << "\n" << std::endl;
+    std::cout << findErrorPage(200, this->confs[0].second.getErrPages()) << "\n" << std::endl;
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)

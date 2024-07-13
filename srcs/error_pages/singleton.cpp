@@ -88,7 +88,41 @@ std::string findErrorPage(int error_code, const map_err_pages& map)
 {
     std::ifstream strm;
     std::string file;
-    std::string s = map.find(error_code)->second;
+    std::string s = "." + map.find(error_code)->second;
+    strm.open(s.c_str());
+    if(strm.is_open())
+    {
+        std::stringstream str;
+        str << strm.rdbuf();
+        file = str.str();
+        strm.close();
+        return(file);
+    }
+    else
+    {
+        file = getErrorPageFromSingleton(error_code);
+        return(file);
+    }
+    return(file);
+}
+
+#include "ServerConf.hpp"
+
+std::string findErrorPage(int error_code, ServerConf& map)
+{
+    std::ifstream strm;
+    std::string file;
+    std::string s;
+    try
+    {
+        map_err_pages m = map.getErrPages();
+        Location loc = map.getPreciseLocation(m[error_code]);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
     strm.open(s.c_str());
     if(strm.is_open())
     {

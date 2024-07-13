@@ -205,7 +205,7 @@ void Location::addRedirection(const std::string &code, const std::string &redire
     if(pos != std::string::npos)
         throw std::logic_error("Error:\nCouldnt set redirection, invalid code passed as parameter");
     long int code_i = std::strtol(code.c_str(), NULL, 10);
-    if(code_i < 300 || code_i > 320)
+    if(code_i < 300 || code_i > 308)
         throw std::logic_error("Error:\nCouldnt set redirection, invalid code passed as parameter");
     size_t check = redirect.size();
     if(check <= 0)
@@ -339,4 +339,10 @@ std::ostream& operator<<(std::ostream& out, const Location& loc){
     out << "Method DELETE status: " << (loc.getDeleteStatus() ? "on" : "off") << "\n\t";
     out << "Directory Listing Status: " << loc.getAutoIndex() << std::endl;
     return(out);
+}
+
+bool Location::isRedirected(void) const{
+    if(this->redirection.size() > 0 && this->code_redirection != 0)
+        return(1);
+    return(0);
 }
