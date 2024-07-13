@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/06/14 15:36:27 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/12 14:26:24 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -59,6 +59,7 @@ HEADER				=	-I./include/headers_hpp/ \
 								
 DEP_PATH			=	dep/
 
+
 HEADER_FILES	=	 Config.hpp \
 					 Webserv.hpp \
 					 ServerConf.hpp \
@@ -66,8 +67,9 @@ HEADER_FILES	=	 Config.hpp \
 					 SubServ.hpp \
 					 Typedef.hpp \
 					 Utils.hpp \
+					 Client.hpp \
 					 SubServ.hpp \
-					 sockets.hpp \
+					 sockets.hpp 
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -105,10 +107,39 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/ParserLocation.cpp \
 					parser/Printer.cpp \
 					sockets/createServerSocket.cpp \
+					sockets/addSocketToEpoll.cpp \
+					sockets/protectedClose.cpp \
+					sockets/changeEpollEvents.cpp \
 					error_logs/logs.cpp \
 					error_pages/singleton.cpp \
 
+REQUEST = requester
+
+SRCS_REQUEST 	=		main/Webserv.cpp \
+					exec/SubServ.cpp \
+					parser/Config.cpp \
+					parser/Split.cpp \
+					parser/CreateSocket.cpp \
+					parser/Parser.cpp \
+					parser/ServerConf.cpp \
+					parser/ServerConfGetter.cpp \
+					parser/UtilsParser.cpp \
+					parser/Location.cpp \
+					parser/ParserLocation.cpp \
+					parser/Printer.cpp \
+					sockets/createServerSocket.cpp \
+					sockets/addSocketToEpoll.cpp \
+					sockets/protectedClose.cpp \
+					sockets/changeEpollEvents.cpp \
+					error_logs/logs.cpp \
+					error_pages/singleton.cpp \
+									request_parsing/Client.cpp \
+									request_parsing/main.cpp 
+
+
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
+
+OBJS_REQUEST	=	$(addprefix ${OBJ_PATH}, ${SRCS_REQUEST:.cpp=.o}) \
 
 ################################################################################
 #                                    TESTS                                     #
@@ -142,6 +173,14 @@ ${NAME}:		${OBJS} ${TXT} Makefile
 		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS} ${HEADER}
 		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 
+request: ${REQUEST}
+
+${REQUEST}: ${OBJS_REQUEST} ${TXT} Makefile
+		@${CXX} ${CXXFLAGS} -o ${REQUEST} ${OBJS_REQUEST} ${HEADER}
+		@printf "${NEW}${YELLOW}${REQUEST}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
+		
+		
+
 ${OBJ_PATH}%.o:	${SRC_PATH}%.cpp
 		@mkdir -p $(dir $@)
 		@${CXX} ${CXXFLAGS} ${HEADER} -c $< -o $@
@@ -153,7 +192,7 @@ compile:	${OBJS}
 		@printf "\n"
 
 ${TXT}:
-		@echo "-Iinclude/\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
+		@echo "-Iinclude/headers_hpp\n-I/include/headers_h\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
 
 test:		${OBJS_TESTS} ${TXT} Makefile
 		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS_TESTS} ${HEADER}
@@ -163,7 +202,7 @@ clean:
 		${RM}  ${OBJ_PATH}
 
 fclean:		clean
-		${RM} ${NAME} ${SRC_PATH}${TXT} ${TXT}
+		${RM} ${NAME} ${REQUEST} ${SRC_PATH}${TXT} ${TXT}
 
 re:			fclean all
 

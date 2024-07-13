@@ -17,11 +17,11 @@ class	SubServ
 		SubServ				&operator=(const SubServ &otherSubServ);
 		mapConfs			_portConfs;
 		int					acceptNewConnection(void);
-		int					removeClientSocket(int socketFd);
-		bool				isClientSocket(int socketFd);
-		bool				isServerSocket(int socketFd);
-		int					initServerSocket(void);
-		const ServerConf	*getMainConf(void);
+		int					removeClientSocket(int clientSocket);
+		bool				isClientSocket(int fd);
+		bool				isServerSocket(int fd);
+		int					initPortSocket(void);
+		const ServerConf	*getConf(const std::string &serverName);
 		int					getPort(void);
 
 	protected:

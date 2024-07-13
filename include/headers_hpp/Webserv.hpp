@@ -11,8 +11,10 @@
 #include "ServerConf.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
-# include "sockets.hpp"
+#include "sockets.hpp"
 
+const int BACKLOG_LISTEN = 100;
+const int MAX_EVENTS = 500;
 
 class Webserv
 {
@@ -29,6 +31,10 @@ class Webserv
         void 					createMaps(void);
 		void					setServerSockets(void);
 		void					closeFds(void);
+		int						receive(int clientSocket);
+		int						handlePortEvent(int serverSocket);
+		int						handleClientEvent(int clientSocket, uint32_t event);
+		void					handleEvents(const struct epoll_event *events, int nbEvents);
 
     public:
       		 	 Webserv(const char *s);
@@ -37,8 +43,12 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void);
-		int		addSocketToEpoll(int socketFd);
-		int		removeFdFromIdMap(int socketFd);
+		int		removeFdFromIdMap(int fd);
+		int		closeClientConnection(int clientSocket);
+		int		getEpollFd(void);
+		int		start(void);
+		int		isClientSocket(int fd);
+		int		isServerSocket(int fd);
 		
 };
 

@@ -1,10 +1,10 @@
 #ifndef LOCATION_HPP
-# define LOCATION_HPP
+#define LOCATION_HPP
 
-#include <iostream>
-#include <vector>
 #include "Typedef.hpp"
 #include "Utils.hpp"
+#include <iostream>
+#include <vector>
 
 class Location
 {
@@ -29,11 +29,11 @@ class Location
         int _root_check;
         std::string upload_location;
 
-    public:
-        Location();
-        Location(const Location &rhs);
-        Location& operator=(const Location &rhs);
-        ~Location();
+public:
+  Location();
+  Location(const Location &rhs);
+  Location &operator=(const Location &rhs);
+  ~Location();
 
         /* getters */
         const uint64_t& getLimitBodySize(void) const;

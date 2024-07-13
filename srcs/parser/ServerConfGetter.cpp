@@ -1,46 +1,34 @@
 #include "ServerConf.hpp"
 #include "Error.hpp"
 
-std::string &ServerConf::getIndexErrorPage(int errorCode)
-{
-    (void)errorCode;
-    map_err_pages::iterator it = this->err_pages.find(errorCode);
-    return(it->second);
+std::string &ServerConf::getIndexErrorPage(int errorCode) {
+  (void)errorCode;
+  map_err_pages::iterator it = this->err_pages.find(errorCode);
+  return (it->second);
 }
 
-const uint32_t &ServerConf::getHost(void) const
-{
-    return(this->host);
+const uint32_t &ServerConf::getHost(void) const { return (this->host); }
+
+const int &ServerConf::getPort(void) const { return (this->port); }
+
+void ServerConf::setMainServerName(void) {
+  std::string name = "Webserv";
+  if (this->server_names.size() >= 1)
+    name = this->server_names[0];
+  this->server_name = name;
 }
 
-const int &ServerConf::getPort(void) const
-{
-    return(this->port);
+const std::string &ServerConf::getMainServerName(void) const {
+  return (this->server_name);
 }
 
-void ServerConf::setMainServerName(void)
-{
-    std::string name = "Webserv";
-    if(this->server_names.size() >= 1)
-        name = this->server_names[0];
-    this->server_name = name;
+const map_err_pages &ServerConf::getErrPages(void) const {
+  return (this->err_pages);
 }
 
-const std::string &ServerConf::getMainServerName(void) const
-{
-    return(this->server_name);
+const uint64_t &ServerConf::getLimitBodySize(void) const {
+  return (this->limit_body_size);
 }
-
-const map_err_pages &ServerConf::getErrPages(void) const
-{
-    return(this->err_pages);
-}
-
-const uint64_t &ServerConf::getLimitBodySize(void) const
-{
-    return(this->limit_body_size);
-}
-
 vec_location& ServerConf::getLocations(void){
     return(this->_locations);
 }
@@ -49,6 +37,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
 {
     size_t size = this->_locations.size();
     std::string s = this->root + url;
+    std::cout << RED << "URI: " << s << RESET << std::endl;
     for (size_t i = 0; i < size; i++)
     {
         if(this->_locations[i].isExactMatch() && this->_locations[i].getUrl() == s)
@@ -83,6 +72,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     {   
         pos = s.find_last_of("/", pos);
         std::string s1 = s.substr(0, pos + 1);
+        std::cout << "HERE IDIOT: " << s1 << std::endl;
         for (size_t i = 0; i < size; i++)
         {
             if(this->_locations[i].getUrl() == s1)
