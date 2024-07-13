@@ -22,6 +22,7 @@ int	createServerSocket(int port);
 int	changeEpollEvents(int epollFd, int socket, uint32_t	events);
 int	addSocketToEpoll(int epollFd, int socketFd, uint32_t events);
 int	protectedClose(int fd);
+int	handleSignal(int signal, int option);
 
 
 #endif

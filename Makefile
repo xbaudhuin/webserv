@@ -99,6 +99,7 @@ AR						=	ar rcs
 
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
+					main/handleSignal.cpp \
 					exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \

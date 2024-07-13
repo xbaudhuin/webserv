@@ -1,5 +1,7 @@
 #include "Webserv.hpp"
 
+extern int	gSignal;
+
 Webserv::Webserv()
 {
 }
@@ -40,10 +42,10 @@ Webserv::Webserv(const char* file)
     }
 #endif
 #ifdef PRINT
-    std::cout << findErrorPage(404, this->confs[0].second.getErrPages()) << "\n" << std::endl;
-    std::cout << findErrorPage(403, this->confs[0].second.getErrPages()) << "\n" << std::endl;
-    std::cout << findErrorPage(405, this->confs[0].second.getErrPages()) << "\n" << std::endl;
-    std::cout << findErrorPage(200, this->confs[0].second.getErrPages()) << "\n" << std::endl;
+    std::cout << findErrorPage(404, this->confs[0].second) << "\n" << std::endl;
+    std::cout << findErrorPage(403, this->confs[0].second) << "\n" << std::endl;
+    std::cout << findErrorPage(405, this->confs[0].second) << "\n" << std::endl;
+    std::cout << findErrorPage(200, this->confs[0].second) << "\n" << std::endl;
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
@@ -436,11 +438,30 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 	}
 }
 
+void	Webserv::printAllConfig(void)
+{
+	mapSubServs::iterator	iter = this->_subServs.begin();
+	while (iter != this->_subServs.end())
+	{
+
+		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
+		mapConfs::iterator	iter2 = (*iter).second._portConfs.begin();
+		while (iter2 != (*iter).second._portConfs.end())
+		{
+			std::cout << "---SERVER NAME : " <<(*iter2).first << "---" << std::endl << std::endl;
+			std::cout << *(*iter2).second << std::endl;
+			iter2++;
+		}
+		++iter;
+	}
+}
+
 int	Webserv::start(void)
 {
 	int	status;
 	struct epoll_event	events[MAX_EVENTS];
 	
+	//this->printAllConfig();
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)
 	{
@@ -458,9 +479,18 @@ int	Webserv::start(void)
 		{
 			this->handleEvents(events, status);
 		}
-		//this->bounceOldClients();
+		this->bounceOldClients();
+		if (gSignal == SIGINT)
+		{
+			throw Webserv::StopServer();
+		}
 		/* Need to check client time out, fork time out, waitPID ect
 		after each epoll_wait() (not only betweeneach event) */
 	}
 	return (0);
+}
+
+const char	*Webserv::StopServer::what(void) const throw()
+{
+	return ("Server is stoping");
 }
