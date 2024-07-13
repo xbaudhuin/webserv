@@ -49,7 +49,7 @@ public:
         const bool& getDeleteStatus(void) const;
         const std::vector<std::pair<std::string, std::string> >& getCgi(void) const;
         std::string getUploadLocation(void) const;
-
+        bool isRedirected(void) const;
         /* setters */
         void addLimitBodySize(const std::string &limit);
         void addUrl(const std::string &url, std::string root);
