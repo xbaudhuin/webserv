@@ -126,20 +126,21 @@ std::map<std::string, char> initMap() {
 
 const std::map<std::string, char> Client::_uriEncoding = initMap();
 
-Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
+Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _location(NULL), _statusCode(0), _method(""), _uri(""), _version(0),
       _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer(""),
       _keepConnectionAlive(false), _chunkRequest(false) {
   _time = getTime();
+  std::cout << "_time = " << _time << std::endl;
+  std::cout << getDate();
   return;
 }
 
 Client::~Client(void) { return; }
 
 Client::Client(Client const &copy)
-    : _socket(copy._socket), _mapConf(copy._mapConf),
-      _defaultConf(copy._defaultConf) {
+    : _socket(copy._socket), _mapConf(copy._mapConf) {
   if (this != &copy)
     *this = copy;
   return;
@@ -147,24 +148,39 @@ Client::Client(Client const &copy)
 
 Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
+    _defaultConf = rhs._defaultConf;
+    _server = rhs._server;
+    _location = rhs._location;
+    _time = rhs._time;
+    _statusCode = rhs._statusCode;
     _method = rhs._method;
     _uri = rhs._uri;
+    _queryUri = rhs._queryUri;
     _version = rhs._version;
     _host = rhs._host;
     _headers = rhs._headers;
     _body = rhs._body;
+    _requestSize = rhs._requestSize;
+    _bodySize = rhs._bodySize;
+    _buffer = rhs._buffer;
+    _responseBody = rhs._responseBody;
+    _keepConnectionAlive = rhs._keepConnectionAlive;
+    _chunkRequest = rhs._chunkRequest;
   }
   return (*this);
 }
 
-time_t Client::getTime(void) { return (std::time(&_time)); }
+time_t Client::getTime(void) { return (std::time(0)); }
 
 bool Client::isTimedOut(void) {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);
-  std::cout << PURP << "timeout is : " << timeOut << RESET << std::endl;
-  if (timeOut >= 10.0)
+  std::cout << "current = " << current << std::endl;
+  std::cout << "_time   = " << _time << std::endl;
+  std::cout << PURP2 << getDate() << RESET << std::endl;
+  std::cout << PURP << "timeout is: " << timeOut << RESET << std::endl;
+  if (timeOut >= 60.0)
     return (true);
   return (false);
 }

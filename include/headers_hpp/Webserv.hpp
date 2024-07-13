@@ -12,6 +12,7 @@
 #include "Typedef.hpp"
 #include "Utils.hpp"
 #include "sockets.hpp"
+#include "Client.hpp"
 
 const int BACKLOG_LISTEN = 100;
 const int MAX_EVENTS = 500;
@@ -27,7 +28,7 @@ class Webserv
         Webserv();
         void                    parseConfig(const std::string &conf);
         void                    parse(vec_string split); 
-		std::map<int, SubServ*>	idMap;
+		mapID					idMap;
         void 					createMaps(void);
 		void					setServerSockets(void);
 		void					closeFds(void);
@@ -35,6 +36,10 @@ class Webserv
 		int						handlePortEvent(int serverSocket);
 		int						handleClientEvent(int clientSocket, uint32_t event);
 		void					handleEvents(const struct epoll_event *events, int nbEvents);
+		int						removeFdFromIdMap(int fd);
+		int						isClientSocket(int fd);
+		int						isServerSocket(int fd);
+		int						bounceOldClients(void);
 
     public:
       		 	 Webserv(const char *s);
@@ -43,13 +48,9 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void);
-		int		removeFdFromIdMap(int fd);
 		int		closeClientConnection(int clientSocket);
 		int		getEpollFd(void);
 		int		start(void);
-		int		isClientSocket(int fd);
-		int		isServerSocket(int fd);
-		
 };
 
 #endif
