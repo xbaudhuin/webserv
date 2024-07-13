@@ -15,6 +15,7 @@ Location::Location(){
     this->_delete = 1;
     this->_root_check = 0;
     this->upload_location = "";
+    this->_is_a_dir = 0;
 }
 
 Location::Location(const Location &rhs){
@@ -39,6 +40,7 @@ Location& Location::operator=(const Location &rhs){
         this->_delete = rhs._delete;
         this->_root_check = rhs._root_check;
         this->upload_location = rhs.upload_location;
+        this->_is_a_dir = rhs._is_a_dir;
     }
     return(*this);
 }
@@ -151,35 +153,31 @@ void Location::addUrl(const std::string &url, std::string root){
         throw std::logic_error("Error:\nCouldnt set url, invalid path passed as parameter");
     std::string line = url;
     vec_string s = tokenizer(line, " ", "/");
-    for (size_t i = 0; i < s.size(); i++)
+
+    if(s[0] != "/")
+            throw std::logic_error("Error:\nInvalid URL passed in the location block");
+    if(s.back() == "/")
     {
-        if(i == 0)
-        {
-            if(s[i] != "/")
-                throw std::logic_error("Error:\nInvalid URL passed in the location block");
-            continue;
-        }
-        else if (i % 2 == 0)
-        {
-            isfile = 0;
-            if(s[i] != "/")
-                throw std::logic_error("Error:\nInvalid URL passed in the location block");
-            continue;
-        }
+        isfile = 0;
+    }
+    else
+    {
         isfile = 1;
     }
     if(isfile && !this->_exact_match)
     {
         this->url = "/";
         this->setIndexFile(url);
-
+        this->_is_a_dir = 0;
     }
     else
     {
         this->url = url;
+        this->_is_a_dir = 1;
         if(isfile)
         {
             this->setIndexFile(url.substr(url.find_last_of("/", url.size()), url.size()));
+            this->_is_a_dir = 0;
         }
     }
 }
@@ -345,4 +343,8 @@ bool Location::isRedirected(void) const{
     if(this->redirection.size() > 0 && this->code_redirection != 0)
         return(1);
     return(0);
+}
+
+const bool& Location::isADir(void) const{
+    return(this->_is_a_dir);
 }

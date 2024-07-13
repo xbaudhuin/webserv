@@ -42,10 +42,10 @@ Webserv::Webserv(const char* file)
     }
 #endif
 #ifdef PRINT
-    std::cout << findErrorPage(404, this->confs[0].second.getErrPages()) << "\n" << std::endl;
-    std::cout << findErrorPage(403, this->confs[0].second.getErrPages()) << "\n" << std::endl;
-    std::cout << findErrorPage(405, this->confs[0].second.getErrPages()) << "\n" << std::endl;
-    std::cout << findErrorPage(200, this->confs[0].second.getErrPages()) << "\n" << std::endl;
+    std::cout << findErrorPage(404, this->confs[0].second) << "\n" << std::endl;
+    std::cout << findErrorPage(403, this->confs[0].second) << "\n" << std::endl;
+    std::cout << findErrorPage(405, this->confs[0].second) << "\n" << std::endl;
+    std::cout << findErrorPage(200, this->confs[0].second) << "\n" << std::endl;
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
@@ -125,8 +125,11 @@ void Webserv::createMaps(void)
         }
         else
         {
-            std::string name = this->confs[i].second.getServerNames()[0];
-            this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+			for (size_t j = 0; j < this->confs[i].second.getServerNames().size(); j++)
+			{
+            	std::string name = this->confs[i].second.getServerNames()[j];
+            	this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+			}
         }
     }
     //std::cout << this->_subServs.size() << std::endl;
@@ -137,6 +140,7 @@ void Webserv::createMaps(void)
         mapConfs::iterator ite = it->second._portConfs.begin();
         while (ite != it->second._portConfs.end())
         {
+			std::cout << "CONF NAME: " << ite->first << std::endl;
             std::cout << (*ite->second) << std::endl;
             ite++;
         }
@@ -176,13 +180,11 @@ void Webserv::parse(vec_string split)
         }
     }
     // std::cout << "Test: " << this->confs.size() << std::endl;
-    if(check)
+    if(!check)
     {
-        // std::cout << "Coucou" << std::endl;
-        // printConfig(this->confs);  
-    }
-    else
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
+	}
+	this->checkConfigs();
     this->createMaps();
 }
 
