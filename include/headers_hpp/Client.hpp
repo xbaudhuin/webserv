@@ -2,6 +2,7 @@
 #define CLIENT_HPP
 
 #include "Config.hpp"
+#include "Response.hpp"
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
 #include <cctype>
@@ -12,6 +13,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 class ServerConf;
@@ -42,6 +44,7 @@ private:
   mapConfs &_mapConf;
   ServerConf *_defaultConf;
   ServerConf *_server;
+  Response response;
   Location *_location;
   time_t _time;
   size_t _statusCode;
@@ -55,7 +58,6 @@ private:
   size_t _requestSize;
   int _bodySize;
   std::string _buffer;
-  std::string _responseBody;
   bool _keepConnectionAlive;
   bool _chunkRequest;
 
@@ -78,6 +80,7 @@ private:
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
   void findIndex(std::string &url);
+  void handleRedirection(void);
   void createResponseBody(void);
   bool checkMethod(void);
   bool checkIfValid(void);
