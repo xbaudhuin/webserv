@@ -7,7 +7,10 @@ SubServ::SubServ()
 
 SubServ::SubServ(ServerConf &serv) : _main(&serv)
 {
-    this->_portConfs[serv.getServerNames()[0]] = &serv;
+	for (size_t i = 0; i < serv.getServerNames().size(); i++)
+	{
+    	this->_portConfs[serv.getServerNames()[i]] = &serv;
+	}
     this->_port = serv.getPort();
 }
 

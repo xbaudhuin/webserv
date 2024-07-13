@@ -183,3 +183,34 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     rank++;
     return(cf);
 }
+
+void isSameVec_string(const vec_string &v, const vec_string &v1)
+{
+    for (size_t i = 0; i < v.size(); i++)
+    {
+        for (size_t j = 0; j < v1.size(); j++)
+        {
+            if(v[i] == v1[j])
+                throw std::logic_error("Webserv: Error:\nServer Config with same name and port found");
+        }
+    }
+    
+}
+
+void Webserv::checkConfigs(void)
+{
+    for (size_t i = 0; i < this->confs.size(); i++)
+    {
+        vec_string v = this->confs[i].first;
+        int port = this->confs[i].second.getPort();
+        for (size_t j = i + 1; j < this->confs.size(); j++)
+        {
+            if(this->confs[j].second.getPort() == port)
+            {
+                isSameVec_string(v, this->confs[j].first);
+            }
+        }
+        
+    }
+    
+}

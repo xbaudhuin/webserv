@@ -297,6 +297,7 @@ std::ostream& operator<<(std::ostream& out, const ServerConf& cf)
         out << BLUE << "Server Name n["<< i << "]: " << serv.getServerNames()[i] << RESET << std::endl;
     }
     out << YELLOW << "Root: " << serv.getRoot() << std::endl;
+#if PRINT == 4
     map_err_pages err = serv.getErrPages();
     map_err_pages::iterator err_it = err.begin();
     out << PURP2 << "Error pages: " << RESET << std::endl;
@@ -305,6 +306,7 @@ std::ostream& operator<<(std::ostream& out, const ServerConf& cf)
       out << PURP2 << "Code Error: " << err_it->first << " && url: " << err_it->second << RESET << std::endl;
       err_it++;
     }
+#endif
     out << GREEN << "Max body size: " << serv.getLimitBodySize() << RESET << std::endl;
     uint32_t ip = ntohl(serv.getHost());
     out << ORANGE << "IP: " 

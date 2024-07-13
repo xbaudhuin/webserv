@@ -28,6 +28,7 @@ class Webserv
         Webserv();
         void                    parseConfig(const std::string &conf);
         void                    parse(vec_string split); 
+		void					checkConfigs(void);
 		mapID					idMap;
         void 					createMaps(void);
 		void					setServerSockets(void);

@@ -13,6 +13,7 @@ class Location
         bool _post;
         bool _get;
         bool _delete;
+        bool _is_a_dir;
         /* POST */
         /* DELETE */
         /* FAST_CGI */
@@ -50,6 +51,7 @@ public:
         const std::vector<std::pair<std::string, std::string> >& getCgi(void) const;
         std::string getUploadLocation(void) const;
         bool isRedirected(void) const;
+        const bool& isADir(void) const;
         /* setters */
         void addLimitBodySize(const std::string &limit);
         void addUrl(const std::string &url, std::string root);
