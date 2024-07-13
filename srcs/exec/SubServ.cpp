@@ -72,9 +72,7 @@ int	SubServ::acceptNewConnection(void)
 	}
 	try
 	{
-		 Client newclient(clientSocket, this->_portConfs, this->_main);
-		//std::make_pair(clientSocket, newclient).second.print();
-		//this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
+		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
 	}
 	catch(const std::exception& e)
 	{
@@ -94,7 +92,7 @@ int	SubServ::removeSocketFromRequestMap(int socket)
 	status = this->_clientRequests.erase(socket);
 	if (status == 0)
 	{
-		std::cerr << "webserv: SubServ::removeSocketFromRequestMap: could not remove socket fd " << socket << "from request map" << std::endl;
+		std::cerr << "webserv: SubServ::removeSocketFromRequestMap: could not remove socket fd " << socket << " from request map" << std::endl;
 		return (1);
 	}
 	std::cout << "webserv: successfully remove client socket " << socket << " in subserver map listening on port " << this->_port << std::endl;
