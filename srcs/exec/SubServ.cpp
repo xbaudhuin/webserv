@@ -67,19 +67,46 @@ int	SubServ::acceptNewConnection(void)
 		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
 		return (-1);
 	}
+	try
+	{
+		 Client newclient(clientSocket, this->_portConfs, this->_main);
+		//std::make_pair(clientSocket, newclient).second.print();
+		//this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
+	}
+	catch(const std::exception& e)
+	{
+		protectedClose(clientSocket);
+		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
+		this->removeSocketFromClientVector(clientSocket);
+		return (-1);
+	}
 	std::cout << "wevserv: new client connection accepted on port " << this->_port << " to socket fd " << clientSocket << std::endl;
 	return (clientSocket);
 }
 
-int	SubServ::removeClientSocket(int clientSocket)
+int	SubServ::removeSocketFromRequestMap(int socket)
+{
+	int	status;
+
+	status = this->_clientRequests.erase(socket);
+	if (status == 0)
+	{
+		std::cerr << "webserv: SubServ::removeSocketFromRequestMap: could not remove socket fd " << socket << "from request map" << std::endl;
+		return (1);
+	}
+	std::cout << "webserv: successfully remove client socket " << socket << " in subserver map listening on port " << this->_port << std::endl;
+	return (0);
+}
+
+int	SubServ::removeSocketFromClientVector(int socket)
 {
 	std::vector<int>::iterator	iter;
 
-	iter = std::find(this->_clientSockets.begin(), this->_clientSockets.end(), clientSocket);
+	iter = std::find(this->_clientSockets.begin(), this->_clientSockets.end(), socket);
 	if (iter != this->_clientSockets.end())
 	{
 		this->_clientSockets.erase(iter);
-		std::cout << "webserv: successfully remove client socket " << clientSocket << " in subserver listening on port " << this->_port << std::endl;
+		std::cout << "webserv: successfully remove client socket " << socket << " in subserver vector listening on port " << this->_port << std::endl;
 		return (0);
 	}
 	else
@@ -87,6 +114,16 @@ int	SubServ::removeClientSocket(int clientSocket)
 		std::cerr << "webserv: SubServ::removeClientSocket: trying to remove non existing client socket from vector of subserv port " <<  this->_port << std::endl;
 		return (1);
 	}
+}
+
+int	SubServ::removeClientSocket(int clientSocket)
+{
+	int status;
+
+	status = 0;
+	status += this->removeSocketFromClientVector(clientSocket);
+	status += this->removeSocketFromRequestMap(clientSocket);
+	return (status);
 }
 
 bool	SubServ::isClientSocket(int fd)
@@ -122,4 +159,19 @@ int	SubServ::initPortSocket(void)
 int	SubServ::getPort(void)
 {
 	return (this->_port);
+}
+
+void	SubServ::addClientsToBounce(std::vector<int> &clientsToBounce)
+{
+	mapClients::iterator	iter;
+
+	iter = this->_clientRequests.begin();
+	while (iter != this->_clientRequests.end())
+	{
+		if ((*iter).second.isTimedOut() == true)
+		{
+			clientsToBounce.push_back((*iter).first);
+		}
+		iter++;
+	}
 }

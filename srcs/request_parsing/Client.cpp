@@ -126,20 +126,21 @@ std::map<std::string, char> initMap() {
 
 const std::map<std::string, char> Client::_uriEncoding = initMap();
 
-Client::Client(const int fd, const mapConfs &mapConfs, ServerConf *defaultConf)
+Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _location(NULL), _statusCode(0), _method(""), _uri(""), _version(0),
       _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer(""),
       _keepConnectionAlive(false), _chunkRequest(false) {
   _time = getTime();
+  std::cout << "_time = " << _time << std::endl;
+  std::cout << getDate();
   return;
 }
 
 Client::~Client(void) { return; }
 
 Client::Client(Client const &copy)
-    : _socket(copy._socket), _mapConf(copy._mapConf),
-      _defaultConf(copy._defaultConf) {
+    : _socket(copy._socket), _mapConf(copy._mapConf) {
   if (this != &copy)
     *this = copy;
   return;
@@ -147,12 +148,24 @@ Client::Client(Client const &copy)
 
 Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
+    _defaultConf = rhs._defaultConf;
+    _server = rhs._server;
+    _location = rhs._location;
+    _time = rhs._time;
+    _statusCode = rhs._statusCode;
     _method = rhs._method;
     _uri = rhs._uri;
+    _queryUri = rhs._queryUri;
     _version = rhs._version;
     _host = rhs._host;
     _headers = rhs._headers;
     _body = rhs._body;
+    _requestSize = rhs._requestSize;
+    _bodySize = rhs._bodySize;
+    _buffer = rhs._buffer;
+    _responseBody = rhs._responseBody;
+    _keepConnectionAlive = rhs._keepConnectionAlive;
+    _chunkRequest = rhs._chunkRequest;
   }
   return (*this);
 }
@@ -163,6 +176,10 @@ bool Client::isTimedOut(void) {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);
+  std::cout << "current = " << current << std::endl;
+  std::cout << "_time   = " << _time << std::endl;
+  std::cout << PURP2 << getDate() << RESET << std::endl;
+  std::cout << PURP << "timeout is: " << timeOut << RESET << std::endl;
   if (timeOut >= 60.0)
     return (true);
   return (false);
@@ -299,6 +316,7 @@ bool Client::addBuffer(std::string &buffer) {
     _bodySize -= tmp_body.size();
     if (tmp_body.size() < buffer.size())
       _statusCode = 400;
+    _time = getTime();
     if (_bodySize <= 0 || _statusCode != 0)
       return (1);
     return (0);
@@ -322,6 +340,7 @@ bool Client::addBuffer(std::string &buffer) {
   size_t pos = _buffer.find("\n\n", _requestSize);
   if (pos == _buffer.npos) {
     std::cout << RED << "No empty line in buffer" << RESET << std::endl;
+    _time = getTime();
     return (0);
   }
   std::string request = _buffer.substr(0, pos);
@@ -331,6 +350,7 @@ bool Client::addBuffer(std::string &buffer) {
   std::cout << GREEN << "request:\n" << request << RESET;
   std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   parseRequest(request);
+  _time = getTime();
   if (_statusCode != 0)
     return (true);
   return (false);
@@ -346,8 +366,18 @@ std::string Client::getDate(void) {
   return (buffer);
 }
 
-void Client::findPages(const std::string &url) {
+// void Client::findIndex(std::string &url) {
+//   vec_string vector = _location->getIndexFile();
+// }
+
+void Client::findPages(const std::string &urlu) {
+  std::string url = "." + urlu;
+  // if (url[url.size() - 1] == '/') {
+  //   findIndex(url);
+  //   return;
+  // }
   std::ifstream file(url.c_str(), std::ios::in);
+  std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
   if (file.is_open() == false) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
@@ -361,8 +391,10 @@ void Client::findPages(const std::string &url) {
     _responseBody.append(s);
     _responseBody.append("\r\n");
   }
-  if (file.fail() == true)
+  if (file.eof() == true) {
+    std::cout << RED << "fail to read all file" << RESET << std::endl;
     _statusCode = 400;
+  }
 }
 
 void Client::createResponseBody(void) {
@@ -397,14 +429,13 @@ void Client::resetClient(void) {
 }
 
 void Client::sendResponse(std::string &response) {
+  createResponseBody();
   response += "HTTP/1.1 ";
   {
     std::ostringstream ss;
     ss << _statusCode;
     response += ss.str();
   }
-
-  createResponseBody();
   response += "reasonPhrase\r\n";
   response += "Webserv: 1.0.0\r\n";
   response += getDate();
@@ -417,15 +448,11 @@ void Client::sendResponse(std::string &response) {
   if (_statusCode < 300 || _statusCode >= 400) {
     response += "Content-Type: text/html\r\n";
     response += "Content-Length: ";
-    std::cout << PURP << "responseBody.size() = " << static_cast<int>(_responseBody.size())
-              << RESET << std::endl;  
-  {
-    std::ostringstream ss;
-    ss << _responseBody.size();
-    response += ss.str();
-  }
-    std::cout << PURP << "responseBody.size() = " << _responseBody.size()
-              << RESET << std::endl;
+    {
+      std::ostringstream ss;
+      ss << _responseBody.size();
+      response += ss.str();
+    }
     response += " \r\n";
   }
   response += "\r\n";
@@ -458,6 +485,8 @@ void Client::parseRequest(std::string &buffer) {
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
+    std::cout << RED << "changin statusCode because if (request.size() < 2) to "
+              << _statusCode << RESET << std::endl;
     return;
   }
   _requestSize = request[0].size();
@@ -468,6 +497,10 @@ void Client::parseRequest(std::string &buffer) {
     _requestSize += request[it].size();
     if (_requestSize > _headersMaxBuffer) {
       _statusCode = 413;
+      std::cout << RED
+                << "changin statusCode because if (_requestSize > "
+                   "_headersMaxBuffer) to "
+                << _statusCode << RESET << std::endl;
       return;
     }
     _statusCode = insertInMap(request[it]);
@@ -477,6 +510,10 @@ void Client::parseRequest(std::string &buffer) {
   _buffer.erase(0, _requestSize);
   if (_headers.count("host") == 0) {
     _statusCode = 400;
+    std::cout
+        << RED
+        << "changin statusCode because if (_headers.count(\"host\") == 0) to "
+        << _statusCode << RESET << std::endl;
     return;
   }
   std::cout << RED << "Before at" << RESET << std::endl;
@@ -493,6 +530,8 @@ void Client::parseRequest(std::string &buffer) {
   } catch (std::exception &e) {
     _location = NULL;
     _statusCode = 404;
+    std::cout << RED << "changin statusCode because caught exception to "
+              << _statusCode << RESET << std::endl;
     return;
   }
   if (checkIfValid() == false)
@@ -502,6 +541,9 @@ void Client::parseRequest(std::string &buffer) {
   if (it != _headers.end()) {
     if (_method != "POST") {
       _statusCode = 413;
+      std::cout << RED
+                << "changin statusCode because if (_method != \"POST\")to "
+                << _statusCode << RESET << std::endl;
       return;
     }
     _bodySize = std::strtol(((*it).second).c_str(), NULL, 10);
@@ -511,6 +553,10 @@ void Client::parseRequest(std::string &buffer) {
       std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
                 << RESET << std::endl;
       _statusCode = 413;
+      std::cout << RED
+                << "changin statusCode because (_bodySize > "
+                   "static_cast<int>(_server->getLimitBodySize()) to "
+                << _statusCode << RESET << std::endl;
       return;
     }
   }
@@ -525,9 +571,12 @@ void Client::parseRequest(std::string &buffer) {
       _bodySize = -1;
   } else
     std::cout << PURP << "No body" << RESET << std::endl;
-  if (_buffer.size() != 0)
+  if (_buffer.size() != 0) {
     _statusCode = 400;
-  else
+    std::cout << RED
+              << "changin statusCode because if (_buffer.size() != 0) to "
+              << _statusCode << RESET << std::endl;
+  } else
     _statusCode = 200;
   return;
 }
