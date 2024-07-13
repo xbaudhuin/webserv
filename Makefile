@@ -53,6 +53,10 @@ ifeq ($(print), 2)
 	CXXFLAGS += -D PRINT=2
 endif
 
+ifeq ($(print), 3)
+	CXXFLAGS += -D PRINT=3
+endif
+
 TXT						=	compile_flags.txt
 
 HEADER				=	-I./include/headers_hpp/ \
