@@ -6,37 +6,40 @@
 #include "SubServ.hpp"
 #include <cctype>
 #include <ctime>
+#include <dirent.h>
 #include <exception>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
+#include <sys/types.h>
 
 class ServerConf;
 
 class Client {
 public:
   // Constructor
-  Client(const int fd, const mapConfs &map, ServerConf *defaultServer);
-  Client(Client const &copy);
+  Client(int fd, mapConfs &map, ServerConf *defaultServer);
 
   // Destructor
   ~Client(void);
 
   // operator
-  Client &operator=(Client const &rhs);
 
+  Client(Client const &copy);
+  Client &operator=(Client const &rhs);
   // method
   void print();
   bool addBuffer(std::string &buffer);
   const std::string &getBuffer(void) const;
   int getBodySize(void) const;
   void sendResponse(std::string &response);
+  bool isTimedOut(void);
 
 protected:
 private:
-  const int _socket;
-  const mapConfs &_mapConf;
+  int _socket;
+  mapConfs &_mapConf;
   ServerConf *_defaultConf;
   ServerConf *_server;
   Location *_location;
@@ -74,13 +77,13 @@ private:
   void readRequest(void);
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
+  void findIndex(std::string &url);
   void createResponseBody(void);
   bool checkMethod(void);
   bool checkIfValid(void);
 
   void resetClient(void);
   time_t getTime(void);
-  bool isTimedOut(void);
 };
 
 #endif //! CLIENT_HPP

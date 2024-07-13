@@ -14,15 +14,15 @@ int main() {
     std::string http_request = "GET /coucou/test2/salut?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
     http_request += "host: bonjour\r\n";
     // http_request += "host: bonjour2\n\r";
-    http_request += "Content-Length: 115\r\n";
+    // http_request += "Content-Length: 115\r\n";
     http_request += "\r\n";
-    http_request += "bonjour=2\n";
-    http_request += "bonjour=20";
+    // http_request += "bonjour=2\n";
+    // http_request += "bonjour=20";
     ServerConf *cf = new ServerConf;
     cf->addPortOrHost("127.0.0.1:443");
     cf->addServerName("Webserv");
     cf->setMainServerName();
-    cf->addLimitBodySize("100");
+    cf->addLimitBodySize("1000");
     Location loc;
     loc.addUrl("/coucou/test/", "");
     loc.setAutoIndex("on");
@@ -80,6 +80,9 @@ int main() {
     std::string response;
     request.sendResponse(response);
     std::cout << GREEN << "response: \n" << response << RESET<< std::endl;
+    while (request.isTimedOut() == false)
+      sleep (2);
+
     delete cf;
   } catch (std::exception &e) {
     std::cout << "Caught error: " << e.what() << std::endl;

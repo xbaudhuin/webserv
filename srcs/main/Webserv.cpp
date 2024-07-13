@@ -256,10 +256,10 @@ void	Webserv::setServerSockets(void)
 	}
 }
 
-int		Webserv::closeClientConnection(int clientSocket)
+int	Webserv::closeClientConnection(int clientSocket)
 {
-	std::map<int, SubServ*>::iterator	iter;
-	int									status = 0;
+	mapID::iterator	iter;
+	int				status = 0;
 
 	iter = this->idMap.find(clientSocket);
 	if (iter == this->idMap.end())
@@ -315,6 +315,32 @@ int	Webserv::isServerSocket(int fd)
 		return (false);
 	}
 	
+}
+
+int	Webserv::bounceOldClients(void)
+{
+	mapSubServs::iterator	iter;
+	std::vector<int>		clientsToBounce;
+
+	try
+	{
+		iter = this->_subServs.begin();
+		while (iter != this->_subServs.end())
+		{
+			(*iter).second.addClientsToBounce(clientsToBounce);
+			iter++;
+		}
+		for (size_t i = 0; i < clientsToBounce.size(); i++)
+		{
+			this->closeClientConnection(clientsToBounce[i]);
+		}		
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << "webserv: Webserv::bounceOldClients: " << e.what() << std::endl;
+		return (1);
+	}
+	return (0);
 }
 
 int	Webserv::handlePortEvent(int serverSocket)
@@ -430,6 +456,7 @@ int	Webserv::start(void)
 		{
 			this->handleEvents(events, status);
 		}
+		//this->bounceOldClients();
 		/* Need to check client time out, fork time out, waitPID ect
 		after each epoll_wait() (not only betweeneach event) */
 	}
