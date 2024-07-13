@@ -132,8 +132,6 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
       _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer(""),
       _keepConnectionAlive(false), _chunkRequest(false) {
   _time = getTime();
-  std::cout << "_time = " << _time << std::endl;
-  std::cout << getDate();
   return;
 }
 
@@ -176,11 +174,7 @@ bool Client::isTimedOut(void) {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);
-  std::cout << "current = " << current << std::endl;
-  std::cout << "_time   = " << _time << std::endl;
-  std::cout << PURP2 << getDate() << RESET << std::endl;
-  std::cout << PURP << "timeout is: " << timeOut << RESET << std::endl;
-  if (timeOut >= 60.0)
+  if (timeOut >= 10.0)
     return (true);
   return (false);
 }
