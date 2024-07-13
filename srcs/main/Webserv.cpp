@@ -53,7 +53,7 @@ Webserv::Webserv(const char* file)
 		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
-	std::cout << "webserv: epoll successfully created on fd" << this->_epollFd << std::endl;
+	std::cout << "webserv: epoll successfully created on fd " << this->_epollFd << std::endl;
 	this->setServerSockets();
 }
 
@@ -397,7 +397,7 @@ int	Webserv::receive(int clientSocket)
 	{
 		buffer[bytesRead] = '\0';
 		/* Add buffer to the request */
-		std::cout << "webserv: client on fd " << clientSocket << "says: " << buffer << std::endl;
+		std::cout << "webserv: client on fd " << clientSocket << " says: " << buffer << std::endl;
 	}
 	return (status);
 }
