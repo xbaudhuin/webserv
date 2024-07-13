@@ -72,7 +72,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     {   
         pos = s.find_last_of("/", pos);
         std::string s1 = s.substr(0, pos + 1);
-        std::cout << "HERE IDIOT: " << s1 << std::endl;
+        // std::cout << "HERE IDIOT: " << s1 << std::endl;
         for (size_t i = 0; i < size; i++)
         {
             if(this->_locations[i].getUrl() == s1)

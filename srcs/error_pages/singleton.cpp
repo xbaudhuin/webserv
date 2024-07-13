@@ -84,45 +84,65 @@ std::string getErrorPageFromSingleton(int error_code)
     return(singleton_err_pages()[error_code]);
 }
 
-std::string findErrorPage(int error_code, const map_err_pages& map)
-{
-    std::ifstream strm;
-    std::string file;
-    std::string s = "." + map.find(error_code)->second;
-    strm.open(s.c_str());
-    if(strm.is_open())
-    {
-        std::stringstream str;
-        str << strm.rdbuf();
-        file = str.str();
-        strm.close();
-        return(file);
-    }
-    else
-    {
-        file = getErrorPageFromSingleton(error_code);
-        return(file);
-    }
-    return(file);
-}
+// std::string findErrorPage(int error_code, const map_err_pages& map)
+// {
+//     std::ifstream strm;
+//     std::string file;
+//     std::string s = "." + map.find(error_code)->second;
+//     strm.open(s.c_str());
+//     if(strm.is_open())
+//     {
+//         std::stringstream str;
+//         str << strm.rdbuf();
+//         file = str.str();
+//         strm.close();
+//         return(file);
+//     }
+//     else
+//     {
+//         file = getErrorPageFromSingleton(error_code);
+//         return(file);
+//     }
+//     return(file);
+// }
 
 #include "ServerConf.hpp"
+using std::string; 
 
 std::string findErrorPage(int error_code, ServerConf& map)
 {
-    std::ifstream strm;
-    std::string file;
-    std::string s;
+    string s = "";
     try
     {
         map_err_pages m = map.getErrPages();
-        Location loc = map.getPreciseLocation(m[error_code]);
+        Location loc = map.getPreciseLocation(m[error_code].substr(map.getRoot().size(), m[error_code].size()));
+        if(loc.isExactMatch() != 1)
+            throw std::logic_error("");
+        for (size_t i = 0; i < loc.getIndexFile().size(); i++)
+        {
+            string str = "." + loc.getIndexFile()[i];
+            std::ifstream strm;
+            string file;
+            strm.open(s.c_str());
+            if(strm.is_open())
+            {
+                std::stringstream str;
+                str << strm.rdbuf();
+                file = str.str();
+                strm.close();
+                return(file);
+            }
+        }
+        throw std::logic_error("");
     }
-    catch(const std::exception& e)
+    catch(const std::logic_error& e)
     {
-        std::cerr << e.what() << '\n';
+        // std::cout << "coucou idiot" << std::endl;
+        ;
     }
-    
+    std::ifstream strm;
+    string file;
+    s = "." + map.getErrPages().find(error_code)->second;
     strm.open(s.c_str());
     if(strm.is_open())
     {

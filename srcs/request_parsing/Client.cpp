@@ -398,7 +398,7 @@ void Client::createResponseBody(void) {
     findPages(_location->getUrl());
   }
   if (_statusCode >= 400) {
-    _responseBody = findErrorPage(_statusCode, _server->getErrPages());
+    _responseBody = findErrorPage(_statusCode, *_server);
   }
 }
 
