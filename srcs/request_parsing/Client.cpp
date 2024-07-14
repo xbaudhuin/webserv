@@ -10,8 +10,8 @@
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _location(NULL), _statusCode(0), _method(""), _uri(""), _version(0),
-      _host(""), _body(""), _requestSize(0), _bodySize(-1), _buffer(""),
+      _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
+      _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
       _keepConnectionAlive(false), _chunkRequest(false) {
   _time = getTime();
   return;
@@ -39,13 +39,12 @@ Client &Client::operator=(Client const &rhs) {
     _version = rhs._version;
     _host = rhs._host;
     _headers = rhs._headers;
-    _body = rhs._body;
     _requestSize = rhs._requestSize;
-    _bodySize = rhs._bodySize;
+    _bodyToRead = rhs._bodyToRead;
     _buffer = rhs._buffer;
-    _responseBody = rhs._responseBody;
     _keepConnectionAlive = rhs._keepConnectionAlive;
     _chunkRequest = rhs._chunkRequest;
+    _response = rhs._response;
   }
   return (*this);
 }
@@ -61,16 +60,6 @@ bool Client::isTimedOut(void) {
   return (false);
 }
 
-std::string Client::getDate(void) {
-  time_t rawtime;
-
-  time(&rawtime);
-  tm *gmtTime = gmtime(&rawtime);
-  char buffer[80] = {0};
-  std::strftime(buffer, 80, "Date: %a, %d %b %Y %H:%M:%S GMT\r\n", gmtTime);
-  return (buffer);
-}
-
 void Client::resetClient(void) {
   _server = NULL;
   _location = NULL;
@@ -82,13 +71,12 @@ void Client::resetClient(void) {
   _version = 0;
   _host = "";
   _headers.clear();
-  _body = "";
   _requestSize = 0;
-  _bodySize = 0;
+  _bodyToRead = -1;
   _buffer = "";
-  _responseBody = "";
   _keepConnectionAlive = false;
   _chunkRequest = false;
+  _response.reset();
 }
 
 ServerConf *Client::getServerConf(void) {
@@ -102,15 +90,11 @@ ServerConf *Client::getServerConf(void) {
   }
   std::cout << YELLOW << "return default server" << RESET << std::endl;
   return (_defaultConf);
-
-  // return (cf);
 }
-
-// void Client::getResponseBody(void) { std::ifstream file(); }
 
 const std::string &Client::getBuffer(void) const { return (_buffer); }
 
-int Client::getBodySize(void) const { return (_bodySize); }
+int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
 void Client::print() {
 
@@ -139,7 +123,6 @@ void Client::print() {
        i != _headers.end(); i++) {
     std::cout << (*i).first << " = " << (*i).second << "\n";
   }
-  std::cout << "_body       = " << _body << "\n";
-  std::cout << "bodySize    = " << _bodySize << "\n";
+  std::cout << "_bodyToRead    = " << _bodyToRead << "\n";
   std::cout << "remain buffer = " << _buffer << std::endl;
 }

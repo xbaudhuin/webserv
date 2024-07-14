@@ -19,7 +19,7 @@ NAME					=	webserv
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -g3
 
 debug 				= 	0
 
@@ -72,6 +72,7 @@ HEADER_FILES	=	 Config.hpp \
 					 Typedef.hpp \
 					 Utils.hpp \
 					 Client.hpp \
+					 Response.hpp \
 					 SubServ.hpp \
 					 sockets.hpp 
 
@@ -122,6 +123,7 @@ SRCS_MAIN		=	main/main.cpp \
 REQUEST = requester
 
 SRCS_REQUEST 	=		main/Webserv.cpp \
+									main/handleSignal.cpp \
 					exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
@@ -139,8 +141,11 @@ SRCS_REQUEST 	=		main/Webserv.cpp \
 					sockets/changeEpollEvents.cpp \
 					error_logs/logs.cpp \
 					error_pages/singleton.cpp \
-									request_parsing/Client.cpp \
-									request_parsing/main.cpp 
+					request_parsing/Client.cpp \
+					request_parsing/ClientConst.cpp \
+					request_parsing/ClientResponse.cpp \
+					request_parsing/Response.cpp \
+													request_parsing/main.cpp 
 
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \

@@ -1,14 +1,15 @@
 #include "Client.hpp"
+#include "Utils.hpp"
 #include <cerrno>
 
 void Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
   std::string tmp;
-  struct stat *statbuf;
+  struct stat statbuf;
   size_t it = 0;
   for (; it < vector.size(); it++) {
     tmp = url + vector[it];
-    if (stat(tmp.c_str(), statbuf) == 0) {
+    if (stat(tmp.c_str(), &statbuf) == 0) {
       break;
     }
     if (errno == EACCES)
@@ -42,8 +43,7 @@ void Client::findPages(const std::string &urlu) {
   }
   std::string s;
   while (getline(file, s)) {
-    _responseBody.append(s);
-    _responseBody.append("\r\n");
+    _response.addLineToBoddy(s);
   }
   if (file.bad()) {
     std::cout << RED << "fail to read all file" << RESET << std::endl;
@@ -58,17 +58,58 @@ void Client::createResponseBody(void) {
     findPages(_location->getUrl());
   }
   if (_statusCode >= 400) {
-    _responseBody = findErrorPage(_statusCode, _server->getErrPages());
+    _response.setBody(findErrorPage(_statusCode, *_server));
   }
 }
 
-void Client::handleRedirection(void) { _statusCode }
-
-void Client::sendResponse(std::string &response) {
-  if (_statusCode < 400 && _location->isRedirected()) {
-    handleRedirection();
+void Client::addConnectionHeader(void) {
+  if (_version == 0) {
+    _response.setHeader("Connection", "close");
     return;
   }
+  if (_statusCode >= 100 && _statusCode < 400) {
+    _response.setHeader("Connection", "keep-alive");
+    return;
+  }
+  if (_statusCode == 403 || _statusCode == 404 || _statusCode == 405) {
+    _response.setHeader("Connection", "keep-alive");
+    return;
+  } else if (_statusCode == 400 || _statusCode == 408) {
+    _response.setHeader("Connection", "close");
+    return;
+  }
+}
+
+void Client::defaultResponse(void) {
+  _response.setStatusCode(_statusCode);
+  _response.setDate();
+  _response.setHeader("Content-Type", "text/html");
+  _response.setBody(findErrorPage(_statusCode, *_server));
+  _response.setHeader("Content-Length", _response.getBodySize());
+}
+
+bool Client::handleRedirection(std::string &send) {
+  _statusCode = _location->getRedirCode();
+  defaultResponse();
+  addConnectionHeader();
+  _response.setHeader("Location", _location->getRedirection());
+  _response.getResponse(send);
+  return (true);
+}
+
+bool Client::handleError(std::string &send) {
+  defaultResponse();
+  addConnectionHeader();
+  _response.getResponse(send);
+  return (true);
+}
+
+bool Client::sendResponse(std::string &response) {
+  if (_statusCode < 400 && _location->isRedirected()) {
+    return (handleRedirection(response));
+  }
+  if (_statusCode >= 400)
+    return (handleError(response));
   createResponseBody();
   response += "HTTP/1.1 ";
   {
@@ -91,14 +132,13 @@ void Client::sendResponse(std::string &response) {
     response += "Content-Length: ";
     {
       std::ostringstream ss;
-      ss << _responseBody.size();
+      ss << _response.getBodySize();
       response += ss.str();
     }
     response += " \r\n";
   }
   response += "\r\n";
-  response += _responseBody;
   std::cout << BLUE << "response:\n" << response << RESET << std::endl;
   resetClient();
-  return;
+  return (true);
 }

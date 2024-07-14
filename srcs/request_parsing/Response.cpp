@@ -73,7 +73,7 @@ const std::map<size_t, std::string> Response::_mapReasonPhrase =
     initializeStatusMap();
 
 Response::Response(void) : _responseLine("HTTP/1.1 "), _body("") {
-  _headers.insert(std::make_pair("Webserv", "1.0.0"));
+  _headers.insert(std::make_pair("Server:", "Webserv/1.0.0"));
   return;
 }
 
@@ -94,6 +94,16 @@ Response &Response::operator=(Response const &rhs) {
   return (*this);
 }
 
+void Response::setDate(void) {
+  time_t rawtime;
+
+  time(&rawtime);
+  tm *gmtTime = gmtime(&rawtime);
+  char buffer[80] = {0};
+  std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S GMT\r\n", gmtTime);
+  setHeader("Date", buffer);
+}
+
 void Response::setStatusCode(size_t statusCode) {
   if (_mapReasonPhrase.count(statusCode) != 1)
     return;
@@ -108,10 +118,21 @@ void Response::removeHeader(const std::string &headerName) {
   _headers.erase(headerName);
 }
 
+void Response::setHeader(const std::string &headerName, int value) {
+  _headers.erase(headerName);
+  std::ostringstream ss;
+  ss << value;
+  _headers.insert(std::make_pair(headerName, ss.str()));
+}
+
 void Response::setHeader(const std::string &headerName,
                          const std::string &headerValue) {
   _headers.erase(headerName);
   _headers.insert(std::make_pair(headerName, headerValue));
+}
+
+void Response::addLineToBoddy(const std::string &line) {
+  _body += line + "\r\n";
 }
 
 void Response::setBody(const std::string &body) {
@@ -131,3 +152,12 @@ void Response::getResponse(std::string &response) const {
   response += _body;
   return;
 }
+
+void Response::reset(void) {
+  _responseLine = "";
+  _headers.clear();
+  _headers.insert(std::make_pair("Server", "Webserv/1.0.0"));
+  _body = "";
+}
+
+size_t Response::getBodySize(void) const { return (_body.size()); }
