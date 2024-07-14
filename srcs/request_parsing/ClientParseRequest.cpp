@@ -201,29 +201,29 @@ void Client::parseRequest(std::string &buffer) {
                 << _statusCode << RESET << std::endl;
       return;
     }
-    _bodySize = std::strtol(((*it).second).c_str(), NULL, 10);
-    if (errno == ERANGE || _bodySize < 0 ||
-        (_bodySize > static_cast<int>(_server->getLimitBodySize()) &&
+    _bodyToRead = std::strtol(((*it).second).c_str(), NULL, 10);
+    if (errno == ERANGE || _bodyToRead < 0 ||
+        (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
          _server->getLimitBodySize() != 0)) {
       std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
                 << RESET << std::endl;
       _statusCode = 413;
       std::cout << RED
-                << "changin statusCode because (_bodySize > "
+                << "changin statusCode because (_bodyToRead > "
                    "static_cast<int>(_server->getLimitBodySize()) to "
                 << _statusCode << RESET << std::endl;
       return;
     }
   }
-  if (_bodySize > 0) {
-    std::cout << PURP << "_bodysize = " << _bodySize
+  if (_bodyToRead > 0) {
+    std::cout << PURP << "_bodysize = " << _bodyToRead
               << "; body.size() = " << _body.size() << RESET << std::endl;
-    _body = _buffer.substr(0, _bodySize);
-    if (static_cast<int>(_buffer.size()) > _bodySize)
-      _buffer = _buffer.substr(_bodySize);
-    _bodySize -= _body.size();
-    if (_bodySize <= 0)
-      _bodySize = -1;
+    _body = _buffer.substr(0, _bodyToRead);
+    if (static_cast<int>(_buffer.size()) > _bodyToRead)
+      _buffer = _buffer.substr(_bodyToRead);
+    _bodyToRead -= _body.size();
+    if (_bodyToRead <= 0)
+      _bodyToRead = -1;
   } else
     std::cout << PURP << "No body" << RESET << std::endl;
   if (_buffer.size() != 0) {
@@ -237,15 +237,15 @@ void Client::parseRequest(std::string &buffer) {
 }
 
 bool Client::addBuffer(std::string &buffer) {
-  if (_bodySize > 0) {
-    std::cout << RED << "_bodySize > 0" << RESET << std::endl;
-    std::string tmp_body = buffer.substr(0, _bodySize);
+  if (_bodyToRead > 0) {
+    std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
+    std::string tmp_body = buffer.substr(0, _bodyToRead);
     _body += tmp_body;
-    _bodySize -= tmp_body.size();
+    _bodyToRead -= tmp_body.size();
     if (tmp_body.size() < buffer.size())
       _statusCode = 400;
     _time = getTime();
-    if (_bodySize <= 0 || _statusCode != 0)
+    if (_bodyToRead <= 0 || _statusCode != 0)
       return (1);
     return (0);
   }

@@ -19,7 +19,7 @@ NAME					=	webserv
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -g3
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
 
 debug 				= 	0
 
@@ -122,9 +122,7 @@ SRCS_MAIN		=	main/main.cpp \
 
 REQUEST = requester
 
-SRCS_REQUEST 	=		main/Webserv.cpp \
-									main/handleSignal.cpp \
-					exec/SubServ.cpp \
+SRCS_REQUEST 	=	exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -145,6 +143,7 @@ SRCS_REQUEST 	=		main/Webserv.cpp \
 					request_parsing/ClientConst.cpp \
 					request_parsing/ClientResponse.cpp \
 					request_parsing/Response.cpp \
+					request_parsing/ClientParseRequest.cpp \
 													request_parsing/main.cpp 
 
 

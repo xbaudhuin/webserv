@@ -27,10 +27,12 @@ void Client::findIndex(std::string &url) {
 
 void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
-  // if (url[url.size() - 1] == '/') { // if bool _location->isDirectory == true
-  //   findIndex(url);
-  //   return;
-  // }
+  if (_location->isADir() == true) {
+    if (_uri.back() == '/')
+      findIndex(url);
+    else
+      url += _uri.substr(_uri.find_last_of('/'));
+  }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
   if (file.is_open() == false) {
@@ -43,6 +45,7 @@ void Client::findPages(const std::string &urlu) {
   }
   std::string s;
   while (getline(file, s)) {
+    std::cout << PURP << "adding line to body: " << s << std::endl;
     _response.addLineToBoddy(s);
   }
   if (file.bad()) {
@@ -65,22 +68,21 @@ void Client::createResponseBody(void) {
 void Client::addConnectionHeader(void) {
   if (_version == 0) {
     _response.setHeader("Connection", "close");
+    _keepConnectionAlive = false;
     return;
   }
-  if (_statusCode >= 100 && _statusCode < 400) {
-    _response.setHeader("Connection", "keep-alive");
-    return;
-  }
-  if (_statusCode == 403 || _statusCode == 404 || _statusCode == 405) {
-    _response.setHeader("Connection", "keep-alive");
-    return;
-  } else if (_statusCode == 400 || _statusCode == 408) {
+  if (_statusCode == 400 || _statusCode == 408 || _statusCode == 413 ||
+      _statusCode == 414 || _statusCode == 500 || _statusCode == 501) {
     _response.setHeader("Connection", "close");
-    return;
+    _keepConnectionAlive = false;
+  } else {
+    _keepConnectionAlive = true;
+    _response.setHeader("Connection", "keep-alive");
   }
+  return;
 }
 
-void Client::defaultResponse(void) {
+void Client::defaultHTMLResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
@@ -90,18 +92,18 @@ void Client::defaultResponse(void) {
 
 bool Client::handleRedirection(std::string &send) {
   _statusCode = _location->getRedirCode();
-  defaultResponse();
+  defaultHTMLResponse();
   addConnectionHeader();
   _response.setHeader("Location", _location->getRedirection());
   _response.getResponse(send);
-  return (true);
+  return (_keepConnectionAlive);
 }
 
 bool Client::handleError(std::string &send) {
-  defaultResponse();
+  defaultHTMLResponse();
   addConnectionHeader();
   _response.getResponse(send);
-  return (true);
+  return (_keepConnectionAlive);
 }
 
 bool Client::sendResponse(std::string &response) {
@@ -111,33 +113,16 @@ bool Client::sendResponse(std::string &response) {
   if (_statusCode >= 400)
     return (handleError(response));
   createResponseBody();
-  response += "HTTP/1.1 ";
-  {
-    std::ostringstream ss;
-    ss << _statusCode;
-    response += ss.str();
+  if (_statusCode >= 400) {
+    _response.reset();
+    return (handleError(response));
   }
-  response += " reasonPhrase\r\n";
-  response += "Webserv: 1.0.0\r\n";
-  response += getDate();
-  response += "Connection: ";
-  if (_statusCode >= 400 || _version == 0) {
-    response += "close\r\n";
-  } else {
-    response += "keep-alive\r\n";
-  }
+  _response.setStatusCode(_statusCode);
+  _response.setDate();
+  addConnectionHeader();
+  _response.setHeader("Content-Type", "text/html");
+  _response.setHeader("Content-Length", _response.getBodySize());
 
-  if (_statusCode < 300 || _statusCode >= 400) {
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: ";
-    {
-      std::ostringstream ss;
-      ss << _response.getBodySize();
-      response += ss.str();
-    }
-    response += " \r\n";
-  }
-  response += "\r\n";
   std::cout << BLUE << "response:\n" << response << RESET << std::endl;
   resetClient();
   return (true);

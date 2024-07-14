@@ -100,16 +100,17 @@ void Response::setDate(void) {
   time(&rawtime);
   tm *gmtTime = gmtime(&rawtime);
   char buffer[80] = {0};
-  std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S GMT\r\n", gmtTime);
+  std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S GMT", gmtTime);
   setHeader("Date", buffer);
 }
 
 void Response::setStatusCode(size_t statusCode) {
   if (_mapReasonPhrase.count(statusCode) != 1)
     return;
+
   std::ostringstream ss;
   ss << statusCode;
-  _responseLine.erase(9);
+  _responseLine = "HTTP/1.1 ";
   _responseLine += ss.str();
   _responseLine += _mapReasonPhrase.at(statusCode);
 }
