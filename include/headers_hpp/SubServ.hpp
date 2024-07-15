@@ -17,6 +17,7 @@ class	SubServ
 							// SubServ(const SubServ &otherSubServ);
 		SubServ				&operator=(const SubServ &otherSubServ);
 		mapConfs			_portConfs;
+		mapClients			_clientRequests;
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int clientSocket);
 		bool				isClientSocket(int fd);
@@ -33,7 +34,6 @@ class	SubServ
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;
-		mapClients			_clientRequests;
 		int					removeSocketFromClientVector(int socket);
 		int					removeSocketFromRequestMap(int socket);
 };

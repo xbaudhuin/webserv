@@ -425,6 +425,7 @@ int	Webserv::respond(int clientSocket)
 	else
 	{
 		std::cout << "webserv: send " << bytesSend << " to client fd " << clientSocket << std::endl;
+
 	}
 	changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLRDHUP));
 	std::cout << "webserv: changed epoll event to EPOLLIN | EPOLLRDHUP for fd " << clientSocket << std::endl;
