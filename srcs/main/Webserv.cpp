@@ -18,8 +18,8 @@ Webserv::Webserv(const char* file)
     this->parseConfig(config);
 #if PRINT == 2
     vec_string v;
-    v.push_back("/coucou/test/index.html");
-    v.push_back("/");
+    v.push_back("/error_pages/htmli");
+    v.push_back("/error_pages/c");
     v.push_back("/coucou/file");
     v.push_back("/error_pages/test/");
     v.push_back("/error_pages/coucou/html/");
@@ -40,12 +40,6 @@ Webserv::Webserv(const char* file)
         }
         
     }
-#endif
-#ifdef PRINT
-    std::cout << findErrorPage(404, this->confs[0].second) << "\n" << std::endl;
-    std::cout << findErrorPage(403, this->confs[0].second) << "\n" << std::endl;
-    std::cout << findErrorPage(405, this->confs[0].second) << "\n" << std::endl;
-    std::cout << findErrorPage(200, this->confs[0].second) << "\n" << std::endl;
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1)
