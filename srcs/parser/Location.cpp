@@ -1,4 +1,4 @@
-#include "ServerConf.hpp"
+#include "Location.hpp"
 
 Location::Location(){
     this->url = "";
