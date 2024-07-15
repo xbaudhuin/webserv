@@ -11,7 +11,8 @@
 
 int main() {
   try {
-    std::string http_request = "GET /coucou/test2/salut?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
+    std::string http_request =
+        "GET /index.html?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
     http_request += "host: bonjour\r\n";
     // http_request += "host: bonjour2\n\r";
     // http_request += "Content-Length: 115\r\n";
@@ -24,7 +25,7 @@ int main() {
     cf->setMainServerName();
     cf->addLimitBodySize("1000");
     Location loc;
-    loc.addUrl("/coucou/test/", "");
+    loc.addUrl("/", "");
     loc.setAutoIndex("on");
     loc.setMethod("POST", "on");
     loc.setMethod("DELETE", "on");
@@ -57,6 +58,7 @@ int main() {
     std::cout << *cf << std::endl;
     mapConfs map;
     // map[cf->getServerNames()] = cf;
+    // map.insert(std::make_pair(cf->getServerNames()[0], cf));
     std::cout << RED << "serverName = " << cf->getMainServerName() << RESET
               << std::endl;
     map.insert(std::make_pair(cf->getMainServerName(), cf));
@@ -70,19 +72,15 @@ int main() {
     std::string empty = "";
     request.addBuffer(http_request);
     int a = 0;
-    while (request.getBodySize() > 0 && a != 10){
-      a++;
-      request.addBuffer(empty);
-    }
     if (a == 10)
       std::cout << RED << "a == 10" << std::endl;
     request.print();
-    std::string response;
+    std::string response = "";
     request.sendResponse(response);
-    std::cout << GREEN << "response: \n" << response << RESET<< std::endl;
-    while (request.isTimedOut() == false)
-      sleep (2);
-
+    std::cout << GREEN << "response: \n" << response << RESET << std::endl;
+    // while (request.isTimedOut() == false)
+    //   sleep(2);
+    //
     delete cf;
   } catch (std::exception &e) {
     std::cout << "Caught error: " << e.what() << std::endl;

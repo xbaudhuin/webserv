@@ -2,9 +2,9 @@
 # define SUBSERV_HPP
 
 # include "Config.hpp"
-# include "Webserv.hpp"
 # include <vector>
 # include "sockets.hpp"
+# include "Client.hpp"
 
 typedef std::map<std::string, ServerConf*> mapConfs;
 
