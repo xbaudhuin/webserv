@@ -1,5 +1,4 @@
 #include "Response.hpp"
-#include <utility>
 
 static std::map<size_t, std::string> initializeStatusMap() {
   std::map<size_t, std::string> m;

@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/12 14:26:24 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/15 14:38:39 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -119,6 +119,10 @@ SRCS_MAIN		=	main/main.cpp \
 					error_logs/logs.cpp \
 					error_pages/singleton.cpp \
 					request_parsing/Client.cpp \
+					request_parsing/ClientConst.cpp \
+					request_parsing/ClientResponse.cpp \
+					request_parsing/Response.cpp \
+					request_parsing/ClientParseRequest.cpp 
 
 REQUEST = requester
 

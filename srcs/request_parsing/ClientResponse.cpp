@@ -1,6 +1,5 @@
 #include "Client.hpp"
 #include "Utils.hpp"
-#include <cerrno>
 
 void Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -28,7 +27,7 @@ void Client::findIndex(std::string &url) {
 void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
   if (_location->isADir() == true) {
-    if (_uri.back() == '/')
+    if (_uri[_uri.size() - 1] == '/')
       findIndex(url);
     else
       url += _uri.substr(_uri.find_last_of('/'));

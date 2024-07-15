@@ -2,11 +2,7 @@
 #include "Error.hpp"
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
-#include "Utils.hpp"
-#include <cstddef>
-#include <cstdlib>
-#include <exception>
-#include <ostream>
+
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),

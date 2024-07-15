@@ -4,8 +4,6 @@
 #include "Config.hpp"
 #include "Response.hpp"
 #include "ServerConf.hpp"
-#include "SubServ.hpp"
-#include <cctype>
 #include <ctime>
 #include <dirent.h>
 #include <exception>
@@ -13,8 +11,8 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <ctype.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 class ServerConf;
 
