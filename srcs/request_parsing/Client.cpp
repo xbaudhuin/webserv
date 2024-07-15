@@ -2,6 +2,7 @@
 #include "Error.hpp"
 #include "ServerConf.hpp"
 #include "SubServ.hpp"
+#include <stdexcept>
 
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
@@ -10,6 +11,8 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
       _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
       _keepConnectionAlive(false), _chunkRequest(false) {
   _time = getTime();
+  if (defaultConf == NULL)
+    throw (std::logic_error("Default server is NULL"));
   return;
 }
 
@@ -91,6 +94,10 @@ ServerConf *Client::getServerConf(void) {
 const std::string &Client::getBuffer(void) const { return (_buffer); }
 
 int Client::getBodyToRead(void) const { return (_bodyToRead); }
+
+bool Client::keepConnectionOpen(void)const{
+  return (_keepConnectionAlive);
+}
 
 void Client::print() {
 

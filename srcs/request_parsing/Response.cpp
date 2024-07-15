@@ -71,7 +71,9 @@ static std::map<size_t, std::string> initializeStatusMap() {
 const std::map<size_t, std::string> Response::_mapReasonPhrase =
     initializeStatusMap();
 
-Response::Response(void) : _responseLine("HTTP/1.1 "), _body("") {
+const size_t Response::_sizeMaxResponse = 100;
+
+Response::Response(void) : _responseLine("HTTP/1.1 "), _body(""), _response(""), _ready(false) {
   _headers.insert(std::make_pair("Server:", "Webserv/1.0.0"));
   return;
 }
@@ -89,6 +91,8 @@ Response &Response::operator=(Response const &rhs) {
     _responseLine = rhs._responseLine;
     _headers = rhs._headers;
     _body = rhs._body;
+    _response = rhs._response;
+    _ready = rhs._ready;
   }
   return (*this);
 }
@@ -101,6 +105,10 @@ void Response::setDate(void) {
   char buffer[80] = {0};
   std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S GMT", gmtTime);
   setHeader("Date", buffer);
+}
+
+bool Response::isReady() const{
+  return (_ready);
 }
 
 void Response::setStatusCode(size_t statusCode) {
@@ -142,14 +150,15 @@ void Response::setBody(const std::string &body) {
   setHeader("Content-Length", ss.str());
 }
 
-void Response::getResponse(std::string &response) const {
-  response = _responseLine + "\r\n";
+void Response::BuildResponse(void) {
+  _response = _responseLine + "\r\n";
   std::map<std::string, std::string>::const_iterator it = _headers.begin();
   for (; it != _headers.end(); it++) {
-    response += (*it).first + ": " + (*it).second + "\r\n";
+    _response += (*it).first + ": " + (*it).second + "\r\n";
   }
-  response += "\r\n";
-  response += _body;
+  _response += "\r\n";
+  _response += _body;
+  _ready = true;
   return;
 }
 
@@ -161,3 +170,16 @@ void Response::reset(void) {
 }
 
 size_t Response::getBodySize(void) const { return (_body.size()); }
+
+bool Response::isNotDone(void) const{
+  if (_response.empty() == true)
+    return (false);
+  return (true);
+}
+
+std::string Response::getResponse(void){
+  std::cout << BLUE << "inside response: " << _response << RESET << std::endl;
+  std::string ret = _response.substr(0, _sizeMaxResponse);
+  _response.erase(0, _sizeMaxResponse);
+  return (ret);
+}

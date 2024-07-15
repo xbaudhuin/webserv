@@ -29,15 +29,21 @@ public:
   void addLineToBoddy(const std::string &line);
   void setBody(const std::string &body);
   size_t getBodySize(void) const;
-  void getResponse(std::string &response) const;
+  void BuildResponse(void);
+  bool isReady(void) const;
   void reset(void);
+  std::string getResponse(void);
+  bool isNotDone(void) const;
 
 protected:
 private:
+  static const size_t _sizeMaxResponse;
   static const std::map<size_t, std::string> _mapReasonPhrase;
   std::string _responseLine;
   std::map<std::string, std::string> _headers;
   std::string _body;
+  std::string _response;
+  bool _ready;
 };
 
 #endif //! RESPONSE_HPP

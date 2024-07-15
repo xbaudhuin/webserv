@@ -237,7 +237,7 @@ void Client::parseRequest(std::string &buffer) {
   return;
 }
 
-bool Client::addBuffer(std::string &buffer) {
+bool Client::addBuffer(std::string buffer) {
   if (_bodyToRead > 0) {
     std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
     std::string tmp_body = buffer.substr(0, _bodyToRead);
