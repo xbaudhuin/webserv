@@ -74,9 +74,13 @@ int main() {
     if (a == 10)
       std::cout << RED << "a == 10" << std::endl;
     request.print();
-    std::string response = "";
-    request.sendResponse(response);
-    std::cout << GREEN << "response: \n" << response << RESET << std::endl;
+    std::string response;
+    std::string final;
+    while  (request.sendResponse(response) != 0)
+    {final += response;}
+    final += response;
+    std::cout << GREEN << "response: \n" << final << RESET << std::endl;
+
     // while (request.isTimedOut() == false)
     //   sleep(2);
     //
