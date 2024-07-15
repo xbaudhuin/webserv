@@ -1,10 +1,11 @@
 #ifndef LOCATION_HPP
 #define LOCATION_HPP
 
-#include "Typedef.hpp"
 #include "Utils.hpp"
 #include <iostream>
 #include <vector>
+#include <limits>
+#include <arpa/inet.h>
 
 class Location
 {

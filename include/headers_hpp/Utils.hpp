@@ -11,4 +11,6 @@ vec_string split(const std::string &str, const std::string &charset);
 vec_string tokenizer(std::string &str, const std::string &charset, const std::string &tokens);
 std::string findErrorPage(int error_code, ServerConf& map);
 
+void trimWhitespace(std::string &str, const char *whiteSpaces);
+unsigned char toLower(char c);
 #endif

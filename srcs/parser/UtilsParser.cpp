@@ -46,3 +46,12 @@ void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split, size_t 
         i++;
     }
 }
+
+void trimWhitespace(std::string &str, const char *whiteSpaces) {
+  str.erase(0, str.find_first_not_of(whiteSpaces));
+  str.erase(str.find_last_not_of(whiteSpaces) + 1);
+}
+
+unsigned char toLower(char c) {
+  return (std::tolower(static_cast<unsigned char>(c)));
+}

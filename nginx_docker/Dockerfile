@@ -21,8 +21,8 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy your website content to the default Nginx public directory
 COPY index.html /usr/share/nginx/html/index.html
-COPY ${SPACE} /usr/share/nginx/html/${SPACE}
-
+COPY ${SPACE} /usr/share/nginx/html/space.html
+# RUN chmod 000 /usr/share/nginx/html/space.html
 RUN mkdir -p /usr/share/nginx/html2
 
 COPY index2.html /usr/share/nginx/html2/index.html
