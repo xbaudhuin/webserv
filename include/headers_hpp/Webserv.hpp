@@ -1,16 +1,9 @@
 #ifndef WEBSERV_HPP
 #define WEBSERV_HPP
 
-#include "Config.hpp"
 #include "Error.hpp"
-#include <fstream>
-#include <sstream>
-#include <fcntl.h>
-#include <unistd.h>
 #include "SubServ.hpp"
 #include "ServerConf.hpp"
-#include "Typedef.hpp"
-#include "Utils.hpp"
 #include "sockets.hpp"
 #include <signal.h>
 #include "Client.hpp"

@@ -1,5 +1,5 @@
 #include "ServerConf.hpp"
-#include "Error.hpp"
+
 ServerConf::ServerConf()
 {
     port = 80;

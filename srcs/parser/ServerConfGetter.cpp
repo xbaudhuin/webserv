@@ -1,5 +1,4 @@
 #include "ServerConf.hpp"
-#include "Error.hpp"
 
 std::string &ServerConf::getIndexErrorPage(int errorCode) {
   (void)errorCode;

@@ -1,4 +1,3 @@
-#include "Error.hpp"
 #include "Typedef.hpp"
 #include "Utils.hpp"
 #include <fstream>

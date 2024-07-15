@@ -1,10 +1,6 @@
 #ifndef SERVER_CONF_HPP
 #define SERVER_CONF_HPP
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <map>
 #include "Location.hpp"
 #include "Utils.hpp"
 
