@@ -105,7 +105,7 @@ void	read_data_from_socket(int sender_fd, int epoll_fd, std::vector<int> &client
 		}
 		ss.clear();
 	}
-	changeEpollEvents(epoll_fd, sender_fd,  EPOLLOUT | EPOLLRDHUP);
+	changeEpollEvents(epoll_fd, sender_fd,  EPOLLOUT | EPOLLRDHUP | EPOLLIN);
 }
 
 void	add_client_socket_to_epoll(int epoll_fd, int client_socket, std::vector<int> &client_sockets, uint32_t events)
@@ -196,7 +196,13 @@ void	respondToClient(int epoll_fd, int client_socket)
 	return ;
 }
 
-
+int	checkEvent(uint32_t events, uint32_t eventToCheck)
+{
+	if ((events & eventToCheck) != 0)
+		return (true);
+	else
+		return (false);
+}
 
 int	main()
 {
@@ -206,7 +212,6 @@ int	main()
 	int					epoll_fd;
 	int					status;
 	struct epoll_event	events[MAX_EVENTS];
-
 
 	server_socket = create_server_socket(PORT_1);
 	if (server_socket == -1)
@@ -247,22 +252,22 @@ int	main()
 			{
 				accept_new_connection(events[i].data.fd, epoll_fd, client_sockets);
 			}
-			else if (events[i].events == EPOLLOUT || events[i].events == (EPOLLIN | EPOLLOUT))
-			{
-				respondToClient(epoll_fd, events[i].data.fd);
-			}
-			else if (events[i].events == EPOLLIN)
-			{
-				read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);	
-			}
-			else if (events[i].events == EPOLLRDHUP)
+			else if (checkEvent(events[i].events, EPOLLRDHUP))
 			{
 				epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
 				close(events[i].data.fd);
-			std::cout << "fd " << events[i].data.fd << " removed from epoll and closed" << std::endl;
+				std::cout << "fd " << events[i].data.fd << " removed from epoll and closed" << std::endl;
+			}
+			else if (checkEvent(events[i].events, EPOLLIN))
+			{
+				read_data_from_socket(events[i].data.fd, epoll_fd, client_sockets);	
+			}
+			else if (checkEvent(events[i].events, EPOLLOUT))
+			{
+				respondToClient(epoll_fd, events[i].data.fd);
 			}
 		}
-		sleep(5);
+		sleep(2);
 	}
 	close(server_socket);
 	return (0);

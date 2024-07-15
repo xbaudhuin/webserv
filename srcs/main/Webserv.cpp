@@ -356,7 +356,7 @@ int	Webserv::handlePortEvent(int serverSocket)
 	{
 		return (1);
 	}
-	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN) != 0)
+	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != 0)
 	{
 		this->idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
@@ -381,14 +381,14 @@ int	Webserv::receive(int clientSocket)
 {
 	char	buffer[BUFSIZ];
 	int		bytesRead;
-	int		status = 0;
+	int		status = SUCCESS;
 
 	bytesRead = recv(clientSocket, buffer, BUFSIZ, 0);
 	if (bytesRead < 0)
 	{
 		std::cerr << "webserv: Webserv::receive: recv: " << strerror(errno) << std::endl;
 		this->closeClientConnection(clientSocket);
-		return (1);
+		return (FAILURE);
 	}
 	else if (bytesRead == 0)
 	{
@@ -401,18 +401,57 @@ int	Webserv::receive(int clientSocket)
 		/* Add buffer to the request */
 		std::cout << "webserv: client on fd " << clientSocket << " says: " << buffer << std::endl;
 	}
+	changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLOUT | EPOLLRDHUP));
+	std::cout << "webserv: changed epoll event to EPOLLIN | EPOLLRDHUP | EPOLLOUT for fd " << clientSocket << std::endl;
 	return (status);
+}
+
+int	Webserv::respond(int clientSocket)
+{
+	int	bytesSend;
+	std::string response("RESPONSE");
+
+	bytesSend = send(clientSocket, response.c_str(), response.size(), 0);
+	if (bytesSend < 0)
+	{
+		std::cerr << "webserv: Webserv::receive: send: " << strerror(errno) << std::endl;
+		this->closeClientConnection(clientSocket);
+		return (FAILURE);		
+	}
+	else if (bytesSend == 0)
+	{
+		std::cout << "webserv: send 0 bytes to client fd " << clientSocket << std::endl;
+	}
+	else
+	{
+		std::cout << "webserv: send " << bytesSend << " to client fd " << clientSocket << std::endl;
+	}
+	changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLRDHUP));
+	std::cout << "webserv: changed epoll event to EPOLLIN | EPOLLRDHUP for fd " << clientSocket << std::endl;
+	return (SUCCESS);
 }
 
 int	Webserv::handleClientEvent(int clientSocket, uint32_t event)
 {
-	if (event == EPOLLIN)
+	if (checkEvent(event, EPOLLRDHUP))
 	{
+		std::cout << "webserv: event EPOLLRDHUP triggered for client on fd " << clientSocket << std::endl;
+		return (this->closeClientConnection(clientSocket));
+	}
+	else if (checkEvent(event, EPOLLIN))
+	{
+		std::cout << "webserv: event EPOLLIN triggered for client on fd " << clientSocket << std::endl;
 		return (this->receive(clientSocket));
+	}
+	else if (checkEvent(event, EPOLLOUT))
+	{
+		std::cout << "webserv: event EPOLLOUT triggered for client on fd " << clientSocket << std::endl;
+		return (this->respond(clientSocket));
 	}
 	else
 	{
-		return (0);
+		std::cerr << "webserv: Webserv::handleClientEvent: unknown event for client on fd " << clientSocket << std::endl;
+		return (FAILURE);
 	}
 }
 
