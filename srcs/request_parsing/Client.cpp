@@ -95,6 +95,10 @@ const std::string &Client::getBuffer(void) const { return (_buffer); }
 
 int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
+bool Client::keepConnectionOpen(void)const{
+  return (_keepConnectionAlive);
+}
+
 void Client::print() {
 
   if (_server == NULL)

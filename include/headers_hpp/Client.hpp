@@ -36,6 +36,7 @@ public:
   bool sendResponse(std::string &response);
   bool isTimedOut(void);
   bool getResponse(std::string &response);
+  bool keepConnectionOpen(void)const;
 
 protected:
 private:
