@@ -2,9 +2,8 @@
 #define CLIENT_HPP
 
 #include "Config.hpp"
+#include "Response.hpp"
 #include "ServerConf.hpp"
-#include "SubServ.hpp"
-#include <cctype>
 #include <ctime>
 #include <dirent.h>
 #include <exception>
@@ -12,7 +11,9 @@
 #include <map>
 #include <sstream>
 #include <string>
-#include <sys/types.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 class ServerConf;
 
@@ -32,8 +33,8 @@ public:
   void print();
   bool addBuffer(std::string &buffer);
   const std::string &getBuffer(void) const;
-  int getBodySize(void) const;
-  void sendResponse(std::string &response);
+  int getBodyToRead(void) const;
+  bool sendResponse(std::string &response);
   bool isTimedOut(void);
 
 protected:
@@ -42,6 +43,7 @@ private:
   mapConfs &_mapConf;
   ServerConf *_defaultConf;
   ServerConf *_server;
+  Response _response;
   Location *_location;
   time_t _time;
   size_t _statusCode;
@@ -51,11 +53,10 @@ private:
   size_t _version;
   std::string _host;
   std::map<std::string, std::string> _headers;
-  std::string _body;
   size_t _requestSize;
-  int _bodySize;
+  std::string _body;
+  int _bodyToRead;
   std::string _buffer;
-  std::string _responseBody;
   bool _keepConnectionAlive;
   bool _chunkRequest;
 
@@ -78,6 +79,10 @@ private:
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
   void findIndex(std::string &url);
+  void addConnectionHeader(void);
+  void defaultHTMLResponse(void);
+  bool handleError(std::string &send);
+  bool handleRedirection(std::string &send);
   void createResponseBody(void);
   bool checkMethod(void);
   bool checkIfValid(void);
