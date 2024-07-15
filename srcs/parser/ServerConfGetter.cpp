@@ -1,5 +1,4 @@
 #include "ServerConf.hpp"
-#include "Error.hpp"
 
 std::string &ServerConf::getIndexErrorPage(int errorCode) {
   (void)errorCode;
@@ -35,6 +34,7 @@ vec_location& ServerConf::getLocations(void){
 
 Location& ServerConf::getPreciseLocation(const std::string &url)
 {
+    bool is_file = 0;
     size_t size = this->_locations.size();
     std::string s = this->root + url;
     std::cout << RED << "URI: " << s << RESET << std::endl;
@@ -62,11 +62,41 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     }
     else
     {
+        is_file = 1;
         s2 = s.substr(pos, s.size());
 #if PRINT == 2
         std::cout << GREEN << "EWW A FILE!" << std::endl;
         std::cout << "This is the ugly file: " << s2 << RESET << std::endl;
 #endif
+    }
+    if(is_file)
+    {
+        size_t pos2 = pos;
+        while (pos2 != std::string::npos)
+        {   
+            pos2 = s.find_last_of("/", pos2);
+            std::string s1 = s.substr(0, pos2 + 1);
+            // std::cout << "HERE IDIOT: " << s1 << std::endl;
+            for (size_t i = 0; i < size; i++)
+            {
+                if(!this->_locations[i].isExactMatch() && !this->_locations[i].isADir() && this->_locations[i].getUrl() == s1)
+                {
+                    std::string uri = this->_locations[i].getIndexFile()[0];
+                    std::string file = uri.substr(uri.find_last_of("/", uri.size()), uri.size());
+                    std::cout << YELLOW << file << " && " << s2 << " && " << uri<< RESET << std::endl;
+                    if(file == s2)
+                    {
+#if PRINT == 2
+                        std::cout << PURP << "NICE, FOUND IN FILE LOCATION!" << std::endl;
+#endif
+                        return(this->_locations[i]);
+                    }
+                }
+            }
+            pos2--;
+            if(pos2 < this->root.size())
+                break;
+        }
     }
     while (pos != std::string::npos)
     {   
@@ -75,7 +105,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         // std::cout << "HERE IDIOT: " << s1 << std::endl;
         for (size_t i = 0; i < size; i++)
         {
-            if(this->_locations[i].getUrl() == s1)
+            if(this->_locations[i].isADir() && this->_locations[i].getUrl() == s1)
             {
 #if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;

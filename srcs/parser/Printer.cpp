@@ -1,5 +1,4 @@
-#include "Error.hpp"
-#include "Config.hpp"
+#include "ServerConf.hpp"
 
 using std::cout;
 

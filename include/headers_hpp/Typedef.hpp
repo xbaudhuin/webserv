@@ -5,6 +5,12 @@
 #include <vector>
 #include <iostream>
 #include <stdint.h>
+#include <algorithm>
+#include <map>
+#include <fstream>
+#include <sstream>
+#include <fcntl.h>
+#include <unistd.h>
 
 class	SubServ;
 class	ServerConf;

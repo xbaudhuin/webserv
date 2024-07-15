@@ -64,8 +64,7 @@ HEADER				=	-I./include/headers_hpp/ \
 DEP_PATH			=	dep/
 
 
-HEADER_FILES	=	 Config.hpp \
-					 Webserv.hpp \
+HEADER_FILES	=	 Webserv.hpp \
 					 ServerConf.hpp \
 					 Error.hpp \
 					 SubServ.hpp \
@@ -74,7 +73,8 @@ HEADER_FILES	=	 Config.hpp \
 					 Client.hpp \
 					 Response.hpp \
 					 SubServ.hpp \
-					 sockets.hpp 
+					 sockets.hpp \
+					 Colors.hpp
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m

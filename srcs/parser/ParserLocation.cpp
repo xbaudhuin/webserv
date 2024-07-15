@@ -1,4 +1,5 @@
-#include "Webserv.hpp"
+#include "ServerConf.hpp"
+#include "Error.hpp"
 
 int testRoot(const vec_string &split, size_t &i, const size_t &size, Location &loc)
 {

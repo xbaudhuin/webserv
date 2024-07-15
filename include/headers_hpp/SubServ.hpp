@@ -1,8 +1,6 @@
 #ifndef SUBSERV_HPP
 # define SUBSERV_HPP
 
-# include "Config.hpp"
-# include <vector>
 # include "sockets.hpp"
 # include "Client.hpp"
 

@@ -1,7 +1,6 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include "Config.hpp"
 #include "Response.hpp"
 #include "ServerConf.hpp"
 #include <ctime>
