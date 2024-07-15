@@ -5,10 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
-#include <limits>
-#include <arpa/inet.h>
 #include "Location.hpp"
-#include "Typedef.hpp"
 #include "Utils.hpp"
 
 class ServerConf {

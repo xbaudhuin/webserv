@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "Error.hpp"
 
 void Client::uriDecoder(std::string &uri) {
   size_t pos = 0;

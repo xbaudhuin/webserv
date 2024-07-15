@@ -1,5 +1,6 @@
 #include "Client.hpp"
 #include "Utils.hpp"
+#include "Error.hpp"
 
 void Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();

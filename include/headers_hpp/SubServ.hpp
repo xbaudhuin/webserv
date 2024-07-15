@@ -4,6 +4,7 @@
 # include "Config.hpp"
 # include <vector>
 # include "sockets.hpp"
+# include "Client.hpp"
 
 typedef std::map<std::string, ServerConf*> mapConfs;
 

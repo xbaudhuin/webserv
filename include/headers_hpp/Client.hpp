@@ -13,6 +13,7 @@
 #include <string>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 class ServerConf;
 
