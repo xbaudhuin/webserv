@@ -28,10 +28,10 @@ void Client::findIndex(std::string &url) {
 void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
   if (_location->isADir() == true) {
-    if (_uri[_uri.size() - 1] == '/')
+    // if (_location->getAutoIndex() == true)
+      // buildDirectoryListing();
+    // else
       findIndex(url);
-    else
-      url += _uri.substr(_uri.find_last_of('/'));
   }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
@@ -90,40 +90,48 @@ void Client::defaultHTMLResponse(void) {
   _response.setHeader("Content-Length", _response.getBodySize());
 }
 
-bool Client::handleRedirection(std::string &send) {
+void Client::handleRedirection(void) {
   _statusCode = _location->getRedirCode();
   defaultHTMLResponse();
   addConnectionHeader();
   _response.setHeader("Location", _location->getRedirection());
-  _response.getResponse(send);
-  return (_keepConnectionAlive);
+  _response.BuildResponse();
+  return ;
 }
 
-bool Client::handleError(std::string &send) {
+void Client::handleError(void) {
   defaultHTMLResponse();
   addConnectionHeader();
-  _response.getResponse(send);
-  return (_keepConnectionAlive);
+  _response.BuildResponse();
+  return ;
 }
 
-bool Client::sendResponse(std::string &response) {
+void Client::buildResponse(void){
   if (_statusCode < 400 && _location->isRedirected()) {
-    return (handleRedirection(response));
+    return (handleRedirection());
   }
   if (_statusCode >= 400)
-    return (handleError(response));
+    return (handleError());
   createResponseBody();
   if (_statusCode >= 400) {
     _response.reset();
-    return (handleError(response));
+    return (handleError());
   }
   _response.setStatusCode(_statusCode);
   _response.setDate();
   addConnectionHeader();
   _response.setHeader("Content-Type", "text/html");
   _response.setHeader("Content-Length", _response.getBodySize());
+  _response.BuildResponse();
+}
 
+bool Client::sendResponse(std::string &response) {
+  if (_response.isReady() == false)
+    buildResponse();
+  response = _response.getResponse();
   std::cout << BLUE << "response:\n" << response << RESET << std::endl;
-  resetClient();
-  return (true);
+  bool ret = _response.isNotDone();
+  if (ret == false)
+    resetClient();
+  return (ret);
 }

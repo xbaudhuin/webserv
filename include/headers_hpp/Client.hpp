@@ -30,11 +30,12 @@ public:
   Client &operator=(Client const &rhs);
   // method
   void print();
-  bool addBuffer(std::string &buffer);
+  bool addBuffer(std::string buffer);
   const std::string &getBuffer(void) const;
   int getBodyToRead(void) const;
   bool sendResponse(std::string &response);
   bool isTimedOut(void);
+  bool getResponse(std::string &response);
 
 protected:
 private:
@@ -78,10 +79,11 @@ private:
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
   void findIndex(std::string &url);
+  void buildResponse(void);
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);
-  bool handleError(std::string &send);
-  bool handleRedirection(std::string &send);
+  void handleError(void);
+  void handleRedirection(void);
   void createResponseBody(void);
   bool checkMethod(void);
   bool checkIfValid(void);
