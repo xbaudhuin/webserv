@@ -15,7 +15,7 @@ class	SubServ
 							// SubServ(const SubServ &otherSubServ);
 		SubServ				&operator=(const SubServ &otherSubServ);
 		mapConfs			_portConfs;
-		mapClients			_clientRequests;
+		ServerConf			*_main;
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int clientSocket);
 		bool				isClientSocket(int fd);
@@ -23,15 +23,16 @@ class	SubServ
 		int					initPortSocket(void);
 		const ServerConf	*getConf(const std::string &serverName);
 		int					getPort(void);
+		Client				*getClient(int clientSocket);
 		void				addClientsToBounce(std::vector<int> &clientsToBounce);
 
 	protected:
 
 	private:
-		ServerConf			*_main;
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;
+		mapClients			_clientRequests;
 		int					removeSocketFromClientVector(int socket);
 		int					removeSocketFromRequestMap(int socket);
 };

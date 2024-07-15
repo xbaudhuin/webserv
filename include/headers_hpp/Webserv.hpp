@@ -28,28 +28,30 @@ enum	status : int
 class Webserv
 {
     private:
-		int					    _epollFd;
-		mapSubServs	            _subServs;
-        vec_string              env;
-        char                    **env_char;
-        vec_confs               confs;
-        Webserv();
-        void                    parseConfig(const std::string &conf);
-        void                    parse(vec_string split); 
-		void					checkConfigs(void);
-		mapID					idMap;
-        void 					createMaps(void);
-		void					setServerSockets(void);
-		void					closeFds(void);
-		int						receive(int clientSocket);
-		int					respond(int clientSocket);
-		int						handlePortEvent(int serverSocket);
-		int						handleClientEvent(int clientSocket, uint32_t event);
-		void					handleEvents(const struct epoll_event *events, int nbEvents);
-		int						removeFdFromIdMap(int fd);
-		int						isClientSocket(int fd);
-		int						isServerSocket(int fd);
-		int						bounceOldClients(void);
+		int			_epollFd;
+		mapSubServs	_subServs;
+        vec_string	env;
+        char		**env_char;
+        vec_confs	confs;
+        			Webserv();
+        void		parseConfig(const std::string &conf);
+        void		parse(vec_string split); 
+		void		checkConfigs(void);
+		mapID		idMap;
+        void		createMaps(void);
+		void		setServerSockets(void);
+		void		closeFds(void);
+		int			receive(int clientSocket);
+		int			respond(int clientSocket);
+		int			handlePortEvent(int serverSocket);
+		int			handleClientEvent(int clientSocket, uint32_t event);
+		void		handleEvents(const struct epoll_event *events, int nbEvents);
+		int			removeFdFromIdMap(int fd);
+		int			isClientSocket(int fd);
+		int			isServerSocket(int fd);
+		int			bounceOldClients(void);
+		int			closeClientConnection(int clientSocket);
+		void		printAllConfig(void);				
 
     public:
       		 	 Webserv(const char *s);
@@ -58,10 +60,8 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void);
-		int		closeClientConnection(int clientSocket);
 		int		getEpollFd(void);
 		int		start(void);
-		void	printAllConfig(void);
 
 		class	StopServer : public std::exception
 		{

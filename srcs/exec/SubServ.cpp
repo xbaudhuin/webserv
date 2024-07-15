@@ -176,3 +176,18 @@ void	SubServ::addClientsToBounce(std::vector<int> &clientsToBounce)
 		iter++;
 	}
 }
+
+Client	*SubServ::getClient(int clientSocket)
+{
+	Client	*clientToReturn;
+
+	try
+	{
+		clientToReturn = &this->_clientRequests.at(clientSocket);
+		return (clientToReturn);
+	}
+	catch(const std::exception& e)
+	{
+		return (NULL);
+	}
+}

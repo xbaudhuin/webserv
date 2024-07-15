@@ -30,7 +30,7 @@ public:
   Client &operator=(Client const &rhs);
   // method
   void print();
-  bool addBuffer(std::string &buffer);
+  bool addBuffer(std::string buffer);
   const std::string &getBuffer(void) const;
   int getBodyToRead(void) const;
   bool sendResponse(std::string &response);
