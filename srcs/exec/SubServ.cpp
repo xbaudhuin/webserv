@@ -33,6 +33,7 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 {
 	if (this != &otherSubServ)
 	{
+		
 	}		
 	return(*this);
 }
