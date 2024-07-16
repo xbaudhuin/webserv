@@ -3,6 +3,7 @@
 
 #include "Typedef.hpp"
 #include "Colors.hpp"
+#include "security_error.hpp"
 
 ServerConf parser(const vec_string &split, size_t &i, const size_t &size);
 void ParserLocation(const vec_string &split, size_t &i,const size_t &size, ServerConf &cf);

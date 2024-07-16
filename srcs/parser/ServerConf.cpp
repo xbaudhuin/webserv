@@ -171,12 +171,6 @@ void ServerConf::addHost(const std::string &str)
 
     vec_string vec = split(str, ".");
 
-    /* Future condition to handle * and localhost if necessary 
-    if(vec.size() == 1)
-    {
-    }
-    else */
-
     if(vec.size() == 4)
     {
         for(int i = 0; i < 4; i++)
