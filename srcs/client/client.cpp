@@ -168,7 +168,7 @@ int main(int ac, char **av) {
   // request += "Content-Type: application/x-www-form-urlencoded\r\n";
   // request += "Content-Type: text/html\r\n";
   // request += "Content-Length: 150\r\n";
-  request += "webserv_type: bonjour\r\n";
+//   request += "webserv_type: bonjour\r\n";
   // request += "Content-Length: 27\r\n";
   request += "\r\n";
   // request += "param1=value1&param2=value2";
