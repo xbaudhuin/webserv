@@ -12,6 +12,7 @@ SubServ::SubServ(ServerConf &serv) : _main(&serv)
     	this->_portConfs[serv.getServerNames()[i]] = &serv;
 	}
     this->_port = serv.getPort();
+	this->_address = serv.getHost();
 }
 
 
@@ -39,6 +40,8 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 		this->_clientRequests = otherSubServ._clientRequests;
 		this->_portConfs = otherSubServ._portConfs;
 		this->_main = otherSubServ._main;
+		this->_address = otherSubServ._address;
+
 	}		
 	return(*this);
 }
@@ -159,7 +162,7 @@ bool	SubServ::isServerSocket(int fd)
 
 int	SubServ::initPortSocket(void)
 {
-	this->_serverSocket = createServerSocket(this->_port);
+	this->_serverSocket = createServerSocket(this->_port, this->_address);
 	return (this->_serverSocket);
 }
 
@@ -196,4 +199,21 @@ Client	*SubServ::getClient(int clientSocket)
 	{
 		return (NULL);
 	}
+}
+
+void	SubServ::printPortConfs(void)
+{
+	std::cout << "Main = "<< this->_main << std::endl;
+	mapConfs::iterator	iter2 = this->_portConfs.begin();
+	while (iter2 != this->_portConfs.end())
+	{
+		std::cout << "---SERVER NAME : " <<(*iter2).first << "---" << std::endl << std::endl;
+		std::cout << *(*iter2).second << std::endl;
+		iter2++;
+	}
+}
+
+void	SubServ::addToConf(const std::string &name, ServerConf *newConf)
+{
+	this->_portConfs[name] = newConf;
 }

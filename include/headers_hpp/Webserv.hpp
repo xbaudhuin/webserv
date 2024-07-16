@@ -8,7 +8,6 @@
 #include <signal.h>
 #include "Client.hpp"
 
-const int BACKLOG_LISTEN = 100;
 const int MAX_EVENTS = 500;
 
 enum	signal_handler
@@ -16,13 +15,6 @@ enum	signal_handler
 	IGNORE = 0,
 	DEFAULT = 1,
 	STOP = 2,
-};
-
-enum	status
-{
-	SUCCESS = 0,
-	FAILURE = 1,
-	BAD_FD = -1,
 };
 
 class Webserv

@@ -122,7 +122,8 @@ void Webserv::createMaps(void)
 			for (size_t j = 0; j < this->confs[i].second.getServerNames().size(); j++)
 			{
             	std::string name = this->confs[i].second.getServerNames()[j];
-            	this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+            	//this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+				this->_subServs[this->confs[i].second.getPort()].addToConf(name, &(this->confs[i].second));
 			}
         }
     }
@@ -335,9 +336,9 @@ int	Webserv::bounceOldClients(void)
 	catch(const std::exception& e)
 	{
 		std::cerr << "webserv: Webserv::bounceOldClients: " << e.what() << std::endl;
-		return (1);
+		return (FAILURE);
 	}
-	return (0);
+	return (SUCCESS);
 }
 
 int	Webserv::handlePortEvent(int serverSocket)
@@ -513,16 +514,8 @@ void	Webserv::printAllConfig(void)
 	mapSubServs::iterator	iter = this->_subServs.begin();
 	while (iter != this->_subServs.end())
 	{
-
 		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
-		std::cout << "Main = "<< *((*iter).second._main) << std::endl;
-		mapConfs::iterator	iter2 = (*iter).second._portConfs.begin();
-		while (iter2 != (*iter).second._portConfs.end())
-		{
-			std::cout << "---SERVER NAME : " <<(*iter2).first << "---" << std::endl << std::endl;
-			std::cout << *(*iter2).second << std::endl;
-			iter2++;
-		}
+		(*iter).second.printPortConfs();
 		++iter;
 	}
 }

@@ -3,8 +3,8 @@
 
 # include "sockets.hpp"
 # include "Client.hpp"
-
-typedef std::map<std::string, ServerConf*> mapConfs;
+# include "Typedef.hpp"
+# include "ServerConf.hpp"
 
 class	SubServ
 {
@@ -14,8 +14,6 @@ class	SubServ
 							~SubServ(void);
 							SubServ(const SubServ &otherSubServ);
 		SubServ				&operator=(const SubServ &otherSubServ);
-		mapConfs			_portConfs;
-		ServerConf			*_main;
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int clientSocket);
 		bool				isClientSocket(int fd);
@@ -25,10 +23,15 @@ class	SubServ
 		int					getPort(void);
 		Client				*getClient(int clientSocket);
 		void				addClientsToBounce(std::vector<int> &clientsToBounce);
+		void				printPortConfs(void);
+		void				addToConf(const std::string &name, ServerConf *newConf);
 
 	protected:
 
 	private:
+		ServerConf			*_main;
+		mapConfs			_portConfs;
+		uint32_t			_address;
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;
