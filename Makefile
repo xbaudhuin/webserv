@@ -74,7 +74,8 @@ HEADER_FILES	=	 Webserv.hpp \
 					 Response.hpp \
 					 SubServ.hpp \
 					 sockets.hpp \
-					 Colors.hpp
+					 Colors.hpp \
+					 security_error.hpp \
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -118,6 +119,7 @@ SRCS_MAIN		=	main/main.cpp \
 					sockets/changeEpollEvents.cpp \
 					sockets/checkEvent.cpp \
 					error_logs/logs.cpp \
+					error_logs/Security_error.cpp \
 					error_pages/singleton.cpp \
 					request_parsing/Client.cpp \
 					request_parsing/ClientConst.cpp \

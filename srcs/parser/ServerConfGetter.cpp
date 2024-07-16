@@ -50,6 +50,17 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
             return(this->_locations[i]);
         }
     }
+    vec_string security_check = split(s, "/");
+    long long int count = 0;
+    for (size_t i = 0; i < security_check.size(); i++)
+    {
+        if(security_check[i] == "..")
+            count--;
+        else
+            count++;
+    }
+    if(count < 0)
+        throw security_error("BIG ISSUE");
     size_t pos = s.size();
     pos = s.find_last_of("/", pos);
     std::string s1 = s.substr(0, pos + 1);
