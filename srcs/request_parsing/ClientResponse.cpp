@@ -1,8 +1,8 @@
 #include "Client.hpp"
-#include "Utils.hpp"
 #include "Error.hpp"
+#include "Utils.hpp"
 
-void Client::findIndex(std::string &url) {
+bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
   std::string tmp;
   struct stat statbuf;
@@ -14,24 +14,24 @@ void Client::findIndex(std::string &url) {
     }
     if (errno == EACCES)
       _statusCode = 403;
-    else if (_statusCode != 403 && (errno == ENOENT || errno == ENOTDIR)) {
-      _statusCode = 404;
-      break;
+    else if (_statusCode != 403 && errno == ENOENT) {
+      continue;
     }
   }
   if (_statusCode >= 400)
-    return;
+    return (true);
+  if (it == vector.size())
+    return (false);
   url += vector[it];
-  return;
+  return (true);
 }
 
 void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
   if (_location->isADir() == true) {
-    // if (_location->getAutoIndex() == true)
-      // buildDirectoryListing();
-    // else
-      findIndex(url);
+    findIndex(url);
+    // if (findIndex(url) == false)
+      // return (buildListingDirectory());
   }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
@@ -96,17 +96,17 @@ void Client::handleRedirection(void) {
   addConnectionHeader();
   _response.setHeader("Location", _location->getRedirection());
   _response.BuildResponse();
-  return ;
+  return;
 }
 
 void Client::handleError(void) {
   defaultHTMLResponse();
   addConnectionHeader();
   _response.BuildResponse();
-  return ;
+  return;
 }
 
-void Client::buildResponse(void){
+void Client::buildResponse(void) {
   if (_statusCode < 400 && _location->isRedirected()) {
     return (handleRedirection());
   }
@@ -123,6 +123,23 @@ void Client::buildResponse(void){
   _response.setHeader("Content-Type", "text/html");
   _response.setHeader("Content-Length", _response.getBodySize());
   _response.BuildResponse();
+}
+
+void Client::add400Response(void) {
+  if (_epollIn == true)
+    return;
+  Response error400;
+  error400.setStatusCode(400);
+  error400.setDate();
+  error400.setHeader("Content-Type", "text/html");
+  error400.setBody(findErrorPage(_statusCode, *_server));
+  error400.setHeader("Content-Length", _response.getBodySize());
+  error400.setHeader("Connection", "close");
+  error400.BuildResponse();
+  _response.add400(error400);
+  _epollIn = true;
+  _keepConnectionAlive = false;
+  return;
 }
 
 bool Client::sendResponse(std::string &response) {

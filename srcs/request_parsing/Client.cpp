@@ -4,15 +4,14 @@
 #include "SubServ.hpp"
 #include <stdexcept>
 
-
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
       _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
-      _keepConnectionAlive(false), _chunkRequest(false) {
+      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false) {
   _time = getTime();
   if (defaultConf == NULL)
-    throw (std::logic_error("Default server is NULL"));
+    throw(std::logic_error("Default server is NULL"));
   return;
 }
 
@@ -44,6 +43,7 @@ Client &Client::operator=(Client const &rhs) {
     _keepConnectionAlive = rhs._keepConnectionAlive;
     _chunkRequest = rhs._chunkRequest;
     _response = rhs._response;
+    _epollIn = rhs._epollIn;
   }
   return (*this);
 }
@@ -73,9 +73,9 @@ void Client::resetClient(void) {
   _requestSize = 0;
   _bodyToRead = -1;
   _buffer = "";
-  _keepConnectionAlive = false;
   _chunkRequest = false;
   _response.reset();
+  _epollIn = false;
 }
 
 ServerConf *Client::getServerConf(void) {
@@ -95,9 +95,7 @@ const std::string &Client::getBuffer(void) const { return (_buffer); }
 
 int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
-bool Client::keepConnectionOpen(void)const{
-  return (_keepConnectionAlive);
-}
+bool Client::keepConnectionOpen(void) const { return (_keepConnectionAlive); }
 
 void Client::print() {
 
