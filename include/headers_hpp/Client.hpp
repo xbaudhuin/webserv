@@ -4,13 +4,13 @@
 #include "Response.hpp"
 #include "ServerConf.hpp"
 #include <ctime>
+#include <ctype.h>
 #include <dirent.h>
 #include <exception>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
-#include <ctype.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -35,8 +35,8 @@ public:
   int getBodyToRead(void) const;
   bool sendResponse(std::string &response);
   bool isTimedOut(void);
-  bool getResponse(std::string &response);
-  bool keepConnectionOpen(void)const;
+  void add400Response(void);
+  bool keepConnectionOpen(void) const;
 
 protected:
 private:
@@ -60,6 +60,7 @@ private:
   std::string _buffer;
   bool _keepConnectionAlive;
   bool _chunkRequest;
+  bool _epollIn;
 
   static const char *_validMethods[];
   static const size_t _methodSize;
@@ -79,7 +80,8 @@ private:
   void readRequest(void);
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
-  void findIndex(std::string &url);
+  bool findIndex(std::string &url);
+  bool getResponse(std::string &response);
   void buildResponse(void);
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);

@@ -73,7 +73,8 @@ const std::map<size_t, std::string> Response::_mapReasonPhrase =
 
 const size_t Response::_sizeMaxResponse = 100;
 
-Response::Response(void) : _responseLine("HTTP/1.1 "), _body(""), _response(""), _ready(false) {
+Response::Response(void)
+    : _responseLine("HTTP/1.1 "), _body(""), _response(""), _ready(false) {
   _headers.insert(std::make_pair("Server:", "Webserv/1.0.0"));
   return;
 }
@@ -107,9 +108,7 @@ void Response::setDate(void) {
   setHeader("Date", buffer);
 }
 
-bool Response::isReady() const{
-  return (_ready);
-}
+bool Response::isReady() const { return (_ready); }
 
 void Response::setStatusCode(size_t statusCode) {
   if (_mapReasonPhrase.count(statusCode) != 1)
@@ -171,13 +170,18 @@ void Response::reset(void) {
 
 size_t Response::getBodySize(void) const { return (_body.size()); }
 
-bool Response::isNotDone(void) const{
+bool Response::isNotDone(void) const {
   if (_response.empty() == true)
     return (false);
   return (true);
 }
 
-std::string Response::getResponse(void){
+void Response::add400(const Response &error) {
+  _response += "\r\n";
+  _response += error._response;
+}
+
+std::string Response::getResponse(void) {
   std::cout << BLUE << "inside response: " << _response << RESET << std::endl;
   std::string ret = _response.substr(0, _sizeMaxResponse);
   _response.erase(0, _sizeMaxResponse);

@@ -170,8 +170,8 @@ int main(int ac, char **av) {
   // request += "Content-Length: 150\r\n";
 //   request += "webserv_type: bonjour\r\n";
   // request += "Content-Length: 27\r\n";
-//   request += "\r\n";
-//   request += "param1=value1&param2=value2";
+  request += "\r\n";
+  // request += "param1=value1&param2=value2";
   // request += "\r\n";
 
   char buffer[2048] = {0};
@@ -193,16 +193,17 @@ int main(int ac, char **av) {
     close(sock);
     return (1);
   }
-  send(sock, request.c_str(), request.size(), 0);
-  std::cout << "Sent request: \n" << request << std::endl;
+  std::string test = "salut\r\n";
+  send(sock, test.c_str(), request.size(), 0);
+  std::cout << "Sent request: \n" << test << std::endl;
   valread = read(sock, buffer, 2048);
   std::cout << buffer << std::endl;
   sleep(3);
   // request = "Bonjour: */*\r\n";
   // request += "\r\n";
 
-  valread = read(sock, buffer, 2048);
-  std::cout << buffer << std::endl;
+  // valread = read(sock, buffer, 2048);
+  // std::cout << buffer << std::endl;
   // valread = read(sock, buffer, 2048);
   // std::cout << buffer << std::endl;
   // valread = read(sock, buffer, 2048);
