@@ -20,20 +20,25 @@ SubServ::~SubServ(void)
 	return ;
 }
 
-// SubServ::SubServ(const SubServ &otherSubServ)
-// {
-// 	if (this != &otherSubServ)
-// 	{
-// 		*this = otherSubServ;
-// 	}
-// 	return;
-// }
+SubServ::SubServ(const SubServ &otherSubServ)
+{
+	if (this != &otherSubServ)
+	{
+		*this = otherSubServ;
+	}
+	return;
+}
 
 SubServ &SubServ::operator=(const SubServ &otherSubServ)
 {
 	if (this != &otherSubServ)
 	{
-		
+		this->_port = otherSubServ._port;
+		this->_serverSocket = otherSubServ._serverSocket;
+		this->_clientSockets = otherSubServ._clientSockets;
+		this->_clientRequests = otherSubServ._clientRequests;
+		this->_portConfs = otherSubServ._portConfs;
+		this->_main = otherSubServ._main;
 	}		
 	return(*this);
 }

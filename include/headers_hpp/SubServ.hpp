@@ -12,7 +12,7 @@ class	SubServ
 							SubServ(void);
 							SubServ(ServerConf &conf);
 							~SubServ(void);
-							// SubServ(const SubServ &otherSubServ);
+							SubServ(const SubServ &otherSubServ);
 		SubServ				&operator=(const SubServ &otherSubServ);
 		mapConfs			_portConfs;
 		ServerConf			*_main;

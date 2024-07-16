@@ -42,7 +42,7 @@ class Webserv
 		void		setServerSockets(void);
 		void		closeFds(void);
 		int			receive(int clientSocket);
-		int			respond(int clientSocket);
+		int			respond(int clientSocket, uint32_t events);
 		int			handlePortEvent(int serverSocket);
 		int			handleClientEvent(int clientSocket, uint32_t event);
 		void		handleEvents(const struct epoll_event *events, int nbEvents);
