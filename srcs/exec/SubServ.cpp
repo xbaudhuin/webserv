@@ -1,20 +1,17 @@
 #include "SubServ.hpp"
 
-SubServ::SubServ()
+SubServ::SubServ() : _address(INADDR_LOOPBACK), _port(4243)
 {
 	return ;
 }
 
-SubServ::SubServ(ServerConf &serv) : _main(&serv)
+SubServ::SubServ(ServerConf &serv) : _main(&serv), _address(serv.getHost()), _port(serv.getPort())
 {
 	for (size_t i = 0; i < serv.getServerNames().size(); i++)
 	{
     	this->_portConfs[serv.getServerNames()[i]] = &serv;
 	}
-    this->_port = serv.getPort();
-	this->_address = serv.getHost();
 }
-
 
 SubServ::~SubServ(void)
 {
@@ -46,27 +43,15 @@ SubServ &SubServ::operator=(const SubServ &otherSubServ)
 	return(*this);
 }
 
-const ServerConf	*SubServ::getConf(const std::string &serverName)
-{
-	try
-	{
-		return ((this->_portConfs.at(serverName)));
-	}
-	catch(const std::exception& e)
-	{
-		return (this->_main);
-	}
-}
-
 int	SubServ::acceptNewConnection(void)
 {
 	int	clientSocket;
 	
 	clientSocket = accept(this->_serverSocket, NULL, NULL);
-	if (clientSocket == -1)
+	if (clientSocket == BAD_FD)
 	{
 		std::cerr << "webserv: SubServ::acceptNewConncetion: accept: " << strerror(errno) << std::endl;
-		return (-1);
+		return (BAD_FD);
 	}
 	try
 	{
@@ -74,10 +59,9 @@ int	SubServ::acceptNewConnection(void)
 	}
 	catch(const std::exception& e)
 	{
-		/* Send error to client ; */
 		protectedClose(clientSocket);
 		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
-		return (-1);
+		return (BAD_FD);
 	}
 	try
 	{
@@ -88,7 +72,7 @@ int	SubServ::acceptNewConnection(void)
 		protectedClose(clientSocket);
 		std::cerr << "webserv: SubServ::acceptNewConnection: " << e.what() << std::endl;
 		this->removeSocketFromClientVector(clientSocket);
-		return (-1);
+		return (BAD_FD);
 	}
 	std::cout << "wevserv: new client connection accepted on port " << this->_port << " to socket fd " << clientSocket << std::endl;
 	return (clientSocket);
@@ -102,10 +86,10 @@ int	SubServ::removeSocketFromRequestMap(int socket)
 	if (status == 0)
 	{
 		std::cerr << "webserv: SubServ::removeSocketFromRequestMap: could not remove socket fd " << socket << " from request map" << std::endl;
-		return (1);
+		return (FAILURE);
 	}
 	std::cout << "webserv: successfully remove client socket " << socket << " in subserver map listening on port " << this->_port << std::endl;
-	return (0);
+	return (SUCCESS);
 }
 
 int	SubServ::removeSocketFromClientVector(int socket)
@@ -117,12 +101,12 @@ int	SubServ::removeSocketFromClientVector(int socket)
 	{
 		this->_clientSockets.erase(iter);
 		std::cout << "webserv: successfully remove client socket " << socket << " in subserver vector listening on port " << this->_port << std::endl;
-		return (0);
+		return (SUCCESS);
 	}
 	else
 	{
 		std::cerr << "webserv: SubServ::removeClientSocket: trying to remove non existing client socket from vector of subserv port " <<  this->_port << std::endl;
-		return (1);
+		return (FAILURE);
 	}
 }
 
@@ -171,10 +155,12 @@ int	SubServ::getPort(void)
 	return (this->_port);
 }
 
-void	SubServ::addClientsToBounce(std::vector<int> &clientsToBounce)
+int	SubServ::addClientsToBounce(std::vector<int> &clientsToBounce)
 {
 	mapClients::iterator	iter;
+	int						nbBounce;
 
+	nbBounce = 0;
 	iter = this->_clientRequests.begin();
 	while (iter != this->_clientRequests.end())
 	{
@@ -182,8 +168,10 @@ void	SubServ::addClientsToBounce(std::vector<int> &clientsToBounce)
 		{
 			clientsToBounce.push_back((*iter).first);
 		}
+		nbBounce++;
 		iter++;
 	}
+	return (nbBounce);
 }
 
 Client	*SubServ::getClient(int clientSocket)
@@ -203,7 +191,7 @@ Client	*SubServ::getClient(int clientSocket)
 
 void	SubServ::printPortConfs(void)
 {
-	std::cout << "Main = "<< this->_main << std::endl;
+	std::cout << "Main = "<< *(this->_main) << std::endl;
 	mapConfs::iterator	iter2 = this->_portConfs.begin();
 	while (iter2 != this->_portConfs.end())
 	{

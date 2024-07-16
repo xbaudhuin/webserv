@@ -19,10 +19,9 @@ class	SubServ
 		bool				isClientSocket(int fd);
 		bool				isServerSocket(int fd);
 		int					initPortSocket(void);
-		const ServerConf	*getConf(const std::string &serverName);
 		int					getPort(void);
 		Client				*getClient(int clientSocket);
-		void				addClientsToBounce(std::vector<int> &clientsToBounce);
+		int					addClientsToBounce(std::vector<int> &clientsToBounce);
 		void				printPortConfs(void);
 		void				addToConf(const std::string &name, ServerConf *newConf);
 
