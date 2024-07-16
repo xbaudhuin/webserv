@@ -8,7 +8,7 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
       _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
-      _keepConnectionAlive(false), _chunkRequest(false), _epollIn(false) {
+      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false) {
   _time = getTime();
   if (defaultConf == NULL)
     throw(std::logic_error("Default server is NULL"));
@@ -73,7 +73,6 @@ void Client::resetClient(void) {
   _requestSize = 0;
   _bodyToRead = -1;
   _buffer = "";
-  _keepConnectionAlive = false;
   _chunkRequest = false;
   _response.reset();
   _epollIn = false;

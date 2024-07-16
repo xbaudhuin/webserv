@@ -2,7 +2,7 @@
 #include "Error.hpp"
 #include "Utils.hpp"
 
-void Client::findIndex(std::string &url) {
+bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
   std::string tmp;
   struct stat statbuf;
@@ -14,24 +14,24 @@ void Client::findIndex(std::string &url) {
     }
     if (errno == EACCES)
       _statusCode = 403;
-    else if (_statusCode != 403 && (errno == ENOENT || errno == ENOTDIR)) {
-      _statusCode = 404;
-      break;
+    else if (_statusCode != 403 && errno == ENOENT) {
+      continue;
     }
   }
   if (_statusCode >= 400)
-    return;
+    return (true);
+  if (it == vector.size())
+    return (false);
   url += vector[it];
-  return;
+  return (true);
 }
 
 void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
   if (_location->isADir() == true) {
-    // if (_location->getAutoIndex() == true)
-    // buildDirectoryListing();
-    // else
     findIndex(url);
+    // if (findIndex(url) == false)
+      // return (buildListingDirectory());
   }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
@@ -138,6 +138,7 @@ void Client::add400Response(void) {
   error400.BuildResponse();
   _response.add400(error400);
   _epollIn = true;
+  _keepConnectionAlive = false;
   return;
 }
 

@@ -11,24 +11,32 @@ RUN mkdir -p /usr/share/nginx/html/html2
 RUN mkdir -p /usr/share/nginx/html/html3
 RUN mkdir -p /usr/share/nginx/html/html3/html2
 RUN mkdir -p /usr/share/nginx/html/html2/html3
-COPY index3.html /usr/share/nginx/html/html2/html3/index.html
-COPY index2.html /usr/share/nginx/html/html2/index.html
+RUN mkdir -p /usr/share/nginx/html/html2/dir
+RUN mkdir -p /usr/share/nginx/html/html2/Notdir
+RUN mkdir -p /usr/share/nginx/html/html2/.hiddendir
+
+COPY index3.html /usr/share/nginx/html/html2/html3/html3.html
+COPY index2.html /usr/share/nginx/html/html2/bonjour.html
+COPY index2.html /usr/share/nginx/html/html2/salut.html
+COPY index2.html /usr/share/nginx/html/html2/coucou.html
+COPY index2.html /usr/share/nginx/html/html2/notfile.html
+COPY index2.html /usr/share/nginx/html/html2/.hiddenfile.html
 COPY index3.html /usr/share/nginx/html/html3/html2/index.html
 COPY ${SPACE} /usr/share/nginx/html/html3/html2/index.html
+COPY ${SPACE} /usr/share/nginx/html/space.html
+COPY index.html /usr/share/nginx/html/bonjour.html
+# COPY index2.html /usr/share/nginx/html2/index.html
 
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy your website content to the default Nginx public directory
-COPY index.html /usr/share/nginx/html/bonjour.html
-COPY ${SPACE} /usr/share/nginx/html/space.html
-# RUN chmod 000 /usr/share/nginx/html/space.html
+RUN chmod 000 /usr/share/nginx/html/html2/notfile.html
 RUN mkdir -p /usr/share/nginx/html2
 
-COPY index2.html /usr/share/nginx/html2/index.html
 COPY 404.html /usr/share/nginx/html2/404.html/404.html
 COPY 404.html /usr/share/nginx/html/404.html
-RUN rm /usr/share/nginx/html/index.html
+# RUN rm /usr/share/nginx/html/html2/index.html
 WORKDIR /
 
 # Expose port 80 to the host

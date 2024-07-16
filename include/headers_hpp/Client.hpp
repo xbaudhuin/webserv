@@ -36,7 +36,6 @@ public:
   bool sendResponse(std::string &response);
   bool isTimedOut(void);
   void add400Response(void);
-  bool getResponse(std::string &response);
   bool keepConnectionOpen(void) const;
 
 protected:
@@ -81,7 +80,8 @@ private:
   void readRequest(void);
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
-  void findIndex(std::string &url);
+  bool findIndex(std::string &url);
+  bool getResponse(std::string &response);
   void buildResponse(void);
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);

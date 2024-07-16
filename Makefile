@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/15 14:38:39 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/16 14:56:53 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,7 @@
 
 NAME					=	webserv
 
-CXX						=	clang++
+CXX						=	c++
 
 CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
 
