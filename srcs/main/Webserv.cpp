@@ -47,7 +47,7 @@ Webserv::Webserv(const char* file)
 		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
-	std::cout << "webserv: epoll successfully created on fd" << this->_epollFd << std::endl;
+	std::cout << "webserv: epoll successfully created on fd " << this->_epollFd << std::endl;
 	this->setServerSockets();
 }
 
@@ -270,7 +270,6 @@ int	Webserv::closeClientConnection(int clientSocket)
 		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
 		status = 1;
 	}
-	/* Need to erase request related to the client in Xaviers's class*/
 	this->removeFdFromIdMap(clientSocket);
 	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != 0)
 	{
@@ -350,7 +349,7 @@ int	Webserv::handlePortEvent(int serverSocket)
 	{
 		return (1);
 	}
-	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN) != 0)
+	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != 0)
 	{
 		this->idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
@@ -375,38 +374,114 @@ int	Webserv::receive(int clientSocket)
 {
 	char	buffer[BUFSIZ];
 	int		bytesRead;
-	int		status = 0;
+	Client	*clientRequest;
 
-	bytesRead = recv(clientSocket, buffer, BUFSIZ, 0);
-	if (bytesRead < 0)
+	try
 	{
-		std::cerr << "webserv: Webserv::receive: recv: " << strerror(errno) << std::endl;
-		this->closeClientConnection(clientSocket);
-		return (1);
+		bytesRead = recv(clientSocket, buffer, BUFSIZ - 1, 0);
+		if (bytesRead < 0)
+		{
+			std::cerr << "webserv: Webserv::receive: recv: " << strerror(errno) << std::endl;
+			this->closeClientConnection(clientSocket);
+			return (FAILURE);
+		}
+		else if (bytesRead == 0)
+		{
+			std::cout << "webserv: client on fd " << clientSocket << " closed connection with the server (via recv of size 0)" << std::endl;
+			return (this->closeClientConnection(clientSocket));
+		}
+		else
+		{
+			buffer[bytesRead] = '\0';
+			clientRequest = this->idMap[clientSocket]->getClient(clientSocket);
+			if (clientRequest == NULL)
+			{
+				return(this->closeClientConnection(clientSocket));
+			}
+			if (clientRequest->addBuffer(buffer) == true)
+			{
+				if (changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
+				{
+					return (this->closeClientConnection(clientSocket));
+				}
+				std::cout << "webserv: changing epoll event to EPOLLIN | EPOLLRDHUP | EPOLLOUT for fd " << clientSocket << std::endl;
+			}
+		}
 	}
-	else if (bytesRead == 0)
+	catch(const std::exception& e)
 	{
-		std::cout << "webserv: client on fd " << clientSocket << " closed connection with the server" << std::endl;
-		status = this->closeClientConnection(clientSocket);
+		std::cerr << "webserv: Webserv::receive: catch error: " << e.what() << std::endl;
+		return (this->closeClientConnection(clientSocket));
 	}
-	else
+	return (SUCCESS);
+}
+
+int	Webserv::respond(int clientSocket, uint32_t events)
+{
+	int			bytesSend;
+	std::string	response;
+	bool		remainRequest;
+	Client		*clientRequest;
+
+	try
 	{
-		buffer[bytesRead] = '\0';
-		/* Add buffer to the request */
-		std::cout << "webserv: client on fd " << clientSocket << "says: " << buffer << std::endl;
+		clientRequest = this->idMap[clientSocket]->getClient(clientSocket);
+		if (checkEvent(events, EPOLLIN) == true)
+		{
+			clientRequest->add400Response();
+		}
+		if (clientRequest == NULL)
+		{
+			return(this->closeClientConnection(clientSocket));
+		}
+		remainRequest = clientRequest->sendResponse(response);
+		bytesSend = send(clientSocket, response.c_str(), response.size(), 0);
+		if (bytesSend < 0)
+		{
+			std::cerr << "webserv: Webserv::respond: send: " << strerror(errno) << std::endl;
+			return (this->closeClientConnection(clientSocket));
+		}
+		if (remainRequest == false)
+		{
+			if (clientRequest->keepConnectionOpen() == false)
+				return (this->closeClientConnection(clientSocket));
+			else
+			{
+				if (changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLRDHUP)) != SUCCESS)
+					return (this->closeClientConnection(clientSocket));
+				std::cout << "webserv: changing epoll event to EPOLLIN | EPOLLRDHUP for fd " << clientSocket << std::endl;
+			}
+		}
 	}
-	return (status);
+	catch(const std::exception& e)
+	{
+		std::cerr << "webserv: Webserv::respond: catch error: " << e.what() << std::endl;
+		return (this->closeClientConnection(clientSocket));
+	}
+	return (SUCCESS);
 }
 
 int	Webserv::handleClientEvent(int clientSocket, uint32_t event)
 {
-	if (event == EPOLLIN)
+	if (checkEvent(event, EPOLLRDHUP))
 	{
+		std::cout << "webserv: event EPOLLRDHUP triggered for client on fd " << clientSocket << std::endl;
+		return (this->closeClientConnection(clientSocket));
+	}
+	else if (checkEvent(event, EPOLLIN))
+	{
+		std::cout << "webserv: event EPOLLIN triggered for client on fd " << clientSocket << std::endl;
 		return (this->receive(clientSocket));
+	}
+	else if (checkEvent(event, EPOLLOUT))
+	{
+		std::cout << "webserv: event EPOLLOUT triggered for client on fd " << clientSocket << std::endl;
+		return (this->respond(clientSocket, event));
 	}
 	else
 	{
-		return (0);
+		std::cerr << "webserv: Webserv::handleClientEvent: unknown event for client on fd " << clientSocket << std::endl;
+		return (FAILURE);
 	}
 }
 
@@ -429,6 +504,7 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 		{
 			std::cerr << "webserv: Webserv::handleEvents: file descriptor is neither a server socket nor a client socket" << std::endl;
 		}
+		this->doCheckRoutine();
 	}
 }
 
@@ -439,6 +515,7 @@ void	Webserv::printAllConfig(void)
 	{
 
 		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
+		std::cout << "Main = "<< *((*iter).second._main) << std::endl;
 		mapConfs::iterator	iter2 = (*iter).second._portConfs.begin();
 		while (iter2 != (*iter).second._portConfs.end())
 		{
@@ -450,12 +527,26 @@ void	Webserv::printAllConfig(void)
 	}
 }
 
+void	Webserv::checkSigint(void)
+{
+	if (gSignal == SIGINT)
+	{
+		throw Webserv::StopServer();
+	}
+}
+
+void	Webserv::doCheckRoutine(void)
+{
+	this->checkSigint();
+	this->bounceOldClients();
+}
+
 int	Webserv::start(void)
 {
 	int	status;
 	struct epoll_event	events[MAX_EVENTS];
 	
-	//this->printAllConfig();
+	this->printAllConfig();
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)
 	{
@@ -473,13 +564,7 @@ int	Webserv::start(void)
 		{
 			this->handleEvents(events, status);
 		}
-		this->bounceOldClients();
-		if (gSignal == SIGINT)
-		{
-			throw Webserv::StopServer();
-		}
-		/* Need to check client time out, fork time out, waitPID ect
-		after each epoll_wait() (not only betweeneach event) */
+		this->doCheckRoutine();
 	}
 	return (0);
 }

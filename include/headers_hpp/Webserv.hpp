@@ -11,14 +11,14 @@
 const int BACKLOG_LISTEN = 100;
 const int MAX_EVENTS = 500;
 
-enum	signal_handler : int
+enum	signal_handler
 {
 	IGNORE = 0,
 	DEFAULT = 1,
 	STOP = 2,
 };
 
-enum	status : int
+enum	status
 {
 	SUCCESS = 0,
 	FAILURE = 1,
@@ -28,27 +28,32 @@ enum	status : int
 class Webserv
 {
     private:
-		int					    _epollFd;
-		mapSubServs	            _subServs;
-        vec_string              env;
-        char                    **env_char;
-        vec_confs               confs;
-        Webserv();
-        void                    parseConfig(const std::string &conf);
-        void                    parse(vec_string split); 
-		void					checkConfigs(void);
-		mapID					idMap;
-        void 					createMaps(void);
-		void					setServerSockets(void);
-		void					closeFds(void);
-		int						receive(int clientSocket);
-		int						handlePortEvent(int serverSocket);
-		int						handleClientEvent(int clientSocket, uint32_t event);
-		void					handleEvents(const struct epoll_event *events, int nbEvents);
-		int						removeFdFromIdMap(int fd);
-		int						isClientSocket(int fd);
-		int						isServerSocket(int fd);
-		int						bounceOldClients(void);
+		int			_epollFd;
+		mapSubServs	_subServs;
+        vec_string	env;
+        char		**env_char;
+        vec_confs	confs;
+        			Webserv();
+        void		parseConfig(const std::string &conf);
+        void		parse(vec_string split); 
+		void		checkConfigs(void);
+		mapID		idMap;
+        void		createMaps(void);
+		void		setServerSockets(void);
+		void		closeFds(void);
+		int			receive(int clientSocket);
+		int			respond(int clientSocket, uint32_t events);
+		int			handlePortEvent(int serverSocket);
+		int			handleClientEvent(int clientSocket, uint32_t event);
+		void		handleEvents(const struct epoll_event *events, int nbEvents);
+		int			removeFdFromIdMap(int fd);
+		int			isClientSocket(int fd);
+		int			isServerSocket(int fd);
+		int			bounceOldClients(void);
+		int			closeClientConnection(int clientSocket);
+		void		printAllConfig(void);	
+		void		checkSigint(void);
+		void		doCheckRoutine(void);
 
     public:
       		 	 Webserv(const char *s);
@@ -57,10 +62,8 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void);
-		int		closeClientConnection(int clientSocket);
 		int		getEpollFd(void);
 		int		start(void);
-		void	printAllConfig(void);
 
 		class	StopServer : public std::exception
 		{
