@@ -3,6 +3,7 @@
 
 #include "Response.hpp"
 #include "ServerConf.hpp"
+#include "Utils.hpp"
 #include <ctime>
 #include <ctype.h>
 #include <dirent.h>
@@ -88,6 +89,7 @@ private:
   void handleError(void);
   void handleRedirection(void);
   void createResponseBody(void);
+  bool earlyParsing(void);
   bool checkMethod(void);
   bool checkIfValid(void);
 

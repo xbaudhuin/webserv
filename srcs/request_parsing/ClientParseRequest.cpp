@@ -183,6 +183,8 @@ void Client::parseRequest(std::string &buffer) {
     _location = &(_server->getPreciseLocation(_uri));
     std::cout << YELLOW << "location = " << _location->getUrl() << RESET
               << std::endl;
+  } catch (security_error &e) {
+
   } catch (std::exception &e) {
     _location = NULL;
     _statusCode = 404;
@@ -237,6 +239,21 @@ void Client::parseRequest(std::string &buffer) {
   return;
 }
 
+bool Client::earlyParsing(void) {
+  std::string early = _buffer.substr(0, _buffer.find_first_of(' '));
+  size_t i = 0;
+  for (; i < _methodSize && early != _validMethods[i]; i++) {
+  }
+  if (i == _methodSize) {
+    _statusCode = 400;
+    return (false);
+  } else if (i > 2) {
+    _statusCode = 405;
+    return (false);
+  }
+  return (true);
+}
+
 bool Client::addBuffer(std::string buffer) {
   if (_bodyToRead > 0) {
     std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
@@ -247,8 +264,8 @@ bool Client::addBuffer(std::string buffer) {
       _statusCode = 400;
     _time = getTime();
     if (_bodyToRead <= 0 || _statusCode != 0)
-      return (1);
-    return (0);
+      return (true);
+    return (false);
   }
   size_t start = 0;
   std::cout << GREEN << "start = " << start << RESET << std::endl;
@@ -264,13 +281,23 @@ bool Client::addBuffer(std::string buffer) {
       buffer.erase(start, 1);
     }
   }
+  if (_buffer.empty()) {
+    while (buffer.size() > 0 && buffer[0] == '\n')
+      buffer.erase(0, 1);
+  }
   _buffer += buffer;
+  if (_buffer.size() < 20) {
+    if (earlyParsing() == false) {
+      _statusCode = 400;
+      return (true);
+    }
+  }
   std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   size_t pos = _buffer.find("\n\n", _requestSize);
   if (pos == _buffer.npos) {
     std::cout << RED << "No empty line in buffer" << RESET << std::endl;
     _time = getTime();
-    return (0);
+    return (false);
   }
   std::string request = _buffer.substr(0, pos);
   pos++;
