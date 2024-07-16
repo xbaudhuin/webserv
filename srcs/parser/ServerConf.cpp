@@ -103,7 +103,8 @@ ServerConf::~ServerConf()
 
 void ServerConf::addServerName(const std::string &name)
 {
-    this->server_names.push_back(name);
+    if(!this->nameExist(name))
+        this->server_names.push_back(name);
 }
 
 vec_string& ServerConf::getServerNames()
