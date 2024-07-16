@@ -51,7 +51,9 @@ class Webserv
 		int			isServerSocket(int fd);
 		int			bounceOldClients(void);
 		int			closeClientConnection(int clientSocket);
-		void		printAllConfig(void);				
+		void		printAllConfig(void);	
+		void		checkSigint(void);
+		void		doCheckRoutine(void);
 
     public:
       		 	 Webserv(const char *s);

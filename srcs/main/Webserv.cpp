@@ -425,11 +425,11 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 
 	try
 	{
+		clientRequest = this->idMap[clientSocket]->getClient(clientSocket);
 		if (checkEvent(events, EPOLLIN) == true)
 		{
-			/* Appeler fonction client pour ajouter une erreur : event IN avant envoie de toute la reponse */
+			clientRequest->add400Response();
 		}
-		clientRequest = this->idMap[clientSocket]->getClient(clientSocket);
 		if (clientRequest == NULL)
 		{
 			return(this->closeClientConnection(clientSocket));
@@ -504,7 +504,7 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 		{
 			std::cerr << "webserv: Webserv::handleEvents: file descriptor is neither a server socket nor a client socket" << std::endl;
 		}
-		this->bounceOldClients();
+		this->doCheckRoutine();
 	}
 }
 
@@ -525,6 +525,20 @@ void	Webserv::printAllConfig(void)
 		}
 		++iter;
 	}
+}
+
+void	Webserv::checkSigint(void)
+{
+	if (gSignal == SIGINT)
+	{
+		throw Webserv::StopServer();
+	}
+}
+
+void	Webserv::doCheckRoutine(void)
+{
+	this->checkSigint();
+	this->bounceOldClients();
 }
 
 int	Webserv::start(void)
@@ -550,14 +564,7 @@ int	Webserv::start(void)
 		{
 			this->handleEvents(events, status);
 		}
-		if (gSignal == SIGINT)
-		{
-			throw Webserv::StopServer();
-		}
-		this->bounceOldClients();
-
-		/* Need to check client time out, fork time out, waitPID ect
-		after each epoll_wait() (not only betweeneach event) */
+		this->doCheckRoutine();
 	}
 	return (0);
 }
