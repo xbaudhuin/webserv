@@ -182,7 +182,7 @@ void Response::add400(const Response &error) {
 }
 
 std::string Response::getResponse(void) {
-  std::cout << BLUE << "inside response: " << _response << RESET << std::endl;
+  // std::cout << BLUE << "inside response: " << _response << RESET << std::endl;
   std::string ret = _response.substr(0, _sizeMaxResponse);
   _response.erase(0, _sizeMaxResponse);
   return (ret);

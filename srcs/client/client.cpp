@@ -193,9 +193,9 @@ int main(int ac, char **av) {
     close(sock);
     return (1);
   }
-  std::string test = "salut\r\n";
-  send(sock, test.c_str(), request.size(), 0);
-  std::cout << "Sent request: \n" << test << std::endl;
+  // std::string test = "salut\r\n";
+  send(sock, request.c_str(), request.size(), 0);
+  std::cout << "Sent request: \n" << request << std::endl;
   valread = read(sock, buffer, 2048);
   std::cout << buffer << std::endl;
   sleep(3);
