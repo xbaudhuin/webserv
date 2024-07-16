@@ -1,5 +1,5 @@
-#ifndef SERVER_CONF_HPP
-#define SERVER_CONF_HPP
+#ifndef SERVERCONF_HPP
+#define SERVERCONF_HPP
 
 #include "Location.hpp"
 #include "Utils.hpp"
