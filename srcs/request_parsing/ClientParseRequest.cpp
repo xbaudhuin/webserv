@@ -184,7 +184,10 @@ void Client::parseRequest(std::string &buffer) {
     std::cout << YELLOW << "location = " << _location->getUrl() << RESET
               << std::endl;
   } catch (security_error &e) {
-
+    _location = NULL;
+    _statusCode = 400;
+    std::cout << RED << "caught security_error" << RESET << std::endl;
+    return;
   } catch (std::exception &e) {
     _location = NULL;
     _statusCode = 404;
@@ -247,9 +250,6 @@ bool Client::earlyParsing(void) {
   if (i == _methodSize) {
     _statusCode = 400;
     return (false);
-  } else if (i > 2) {
-    _statusCode = 405;
-    return (false);
   }
   return (true);
 }
@@ -289,6 +289,7 @@ bool Client::addBuffer(std::string buffer) {
   if (_buffer.size() < 20) {
     if (earlyParsing() == false) {
       _statusCode = 400;
+      _server = _defaultConf;
       return (true);
     }
   }

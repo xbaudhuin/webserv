@@ -8,10 +8,12 @@
 #include <iostream>
 #include <utility>
 
+int gSignal = 0;
+
 int main() {
   try {
     std::string http_request =
-        "GET /?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
+        "GET /..//coucou?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
     http_request += "host: bonjour\r\n";
     // http_request += "host: bonjour2\n\r";
     // http_request += "Content-Length: 115\r\n";
@@ -76,8 +78,9 @@ int main() {
     request.print();
     std::string response;
     std::string final;
-    while  (request.sendResponse(response) != 0)
-    {final += response;}
+    while (request.sendResponse(response) != 0) {
+      final += response;
+    }
     final += response;
     std::cout << GREEN << "response: \n" << final << RESET << std::endl;
 

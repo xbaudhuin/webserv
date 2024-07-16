@@ -129,7 +129,10 @@ SRCS_MAIN		=	main/main.cpp \
 
 REQUEST = requester
 
-SRCS_REQUEST 	=	exec/SubServ.cpp \
+SRCS_REQUEST 	=	request_parsing/main.cpp \
+					main/Webserv.cpp \
+					main/handleSignal.cpp \
+					exec/SubServ.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -144,14 +147,15 @@ SRCS_REQUEST 	=	exec/SubServ.cpp \
 					sockets/addSocketToEpoll.cpp \
 					sockets/protectedClose.cpp \
 					sockets/changeEpollEvents.cpp \
+					sockets/checkEvent.cpp \
 					error_logs/logs.cpp \
+					error_logs/Security_error.cpp \
 					error_pages/singleton.cpp \
 					request_parsing/Client.cpp \
 					request_parsing/ClientConst.cpp \
 					request_parsing/ClientResponse.cpp \
 					request_parsing/Response.cpp \
-					request_parsing/ClientParseRequest.cpp \
-													request_parsing/main.cpp 
+					request_parsing/ClientParseRequest.cpp 
 
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \

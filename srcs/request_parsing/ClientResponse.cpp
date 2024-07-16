@@ -182,6 +182,9 @@ void Client::handleError(void) {
 }
 
 void Client::buildResponse(void) {
+  if (_server == NULL) {
+    _server = _defaultConf;
+  }
   if (_statusCode < 400 && _location->isRedirected()) {
     return (handleRedirection());
   }
