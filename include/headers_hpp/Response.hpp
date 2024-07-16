@@ -32,7 +32,9 @@ public:
   void BuildResponse(void);
   bool isReady(void) const;
   void reset(void);
+  std::string &getAllResponse(void);
   std::string getResponse(void);
+  void add400(const Response &error);
   bool isNotDone(void) const;
 
 protected:

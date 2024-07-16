@@ -1,6 +1,6 @@
 #include "Client.hpp"
-#include "Utils.hpp"
 #include "Error.hpp"
+#include "Utils.hpp"
 
 void Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -29,9 +29,9 @@ void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
   if (_location->isADir() == true) {
     // if (_location->getAutoIndex() == true)
-      // buildDirectoryListing();
+    // buildDirectoryListing();
     // else
-      findIndex(url);
+    findIndex(url);
   }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
@@ -96,17 +96,17 @@ void Client::handleRedirection(void) {
   addConnectionHeader();
   _response.setHeader("Location", _location->getRedirection());
   _response.BuildResponse();
-  return ;
+  return;
 }
 
 void Client::handleError(void) {
   defaultHTMLResponse();
   addConnectionHeader();
   _response.BuildResponse();
-  return ;
+  return;
 }
 
-void Client::buildResponse(void){
+void Client::buildResponse(void) {
   if (_statusCode < 400 && _location->isRedirected()) {
     return (handleRedirection());
   }
@@ -123,6 +123,22 @@ void Client::buildResponse(void){
   _response.setHeader("Content-Type", "text/html");
   _response.setHeader("Content-Length", _response.getBodySize());
   _response.BuildResponse();
+}
+
+void Client::add400Response(void) {
+  if (_epollIn == true)
+    return;
+  Response error400;
+  error400.setStatusCode(400);
+  error400.setDate();
+  error400.setHeader("Content-Type", "text/html");
+  error400.setBody(findErrorPage(_statusCode, *_server));
+  error400.setHeader("Content-Length", _response.getBodySize());
+  error400.setHeader("Connection", "close");
+  error400.BuildResponse();
+  _response.add400(error400);
+  _epollIn = true;
+  return;
 }
 
 bool Client::sendResponse(std::string &response) {
