@@ -50,17 +50,6 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
             return(this->_locations[i]);
         }
     }
-    vec_string security_check = split(s, "/");
-    long long int count = 0;
-    for (size_t i = 0; i < security_check.size(); i++)
-    {
-        if(security_check[i] == "..")
-            count--;
-        else
-            count++;
-    }
-    if(count < 0)
-        throw security_error("BIG ISSUE");
     size_t pos = s.size();
     pos = s.find_last_of("/", pos);
     std::string s1 = s.substr(0, pos + 1);
@@ -80,6 +69,19 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         std::cout << "This is the ugly file: " << s2 << RESET << std::endl;
 #endif
     }
+    vec_string security_check = split(url, "/");
+    long long int count = 0;
+    for (size_t i = 0; i < security_check.size(); i++)
+    {
+        if(is_file && i== security_check.size() -1)
+             break;
+        if(security_check[i] == "..")
+            count--;
+        else
+            count++;
+    }
+    if(count < 0)
+        throw security_error("BIG ISSUE");
     if(is_file)
     {
         size_t pos2 = pos;
@@ -116,7 +118,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         // std::cout << "HERE IDIOT: " << s1 << std::endl;
         for (size_t i = 0; i < size; i++)
         {
-            if(this->_locations[i].isADir() && this->_locations[i].getUrl() == s1)
+            if(!this->_locations[i].isExactMatch() && this->_locations[i].isADir() && this->_locations[i].getUrl() == s1)
             {
 #if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;
