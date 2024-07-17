@@ -1,19 +1,19 @@
-#ifndef SUBSERV_HPP
-# define SUBSERV_HPP
+#ifndef Port_HPP
+# define Port_HPP
 
 # include "sockets.hpp"
 # include "Client.hpp"
 # include "Typedef.hpp"
 # include "ServerConf.hpp"
 
-class	SubServ
+class	Port
 {
 	public:
-							SubServ(void);
-							SubServ(ServerConf &conf);
-							~SubServ(void);
-							SubServ(const SubServ &otherSubServ);
-		SubServ				&operator=(const SubServ &otherSubServ);
+							Port(void);
+							Port(ServerConf &conf);
+							~Port(void);
+							Port(const Port &otherPort);
+		Port				&operator=(const Port &otherPort);
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int clientSocket);
 		bool				isClientSocket(int fd);

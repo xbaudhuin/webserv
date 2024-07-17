@@ -112,25 +112,25 @@ void Webserv::createMaps(void)
     size_t size = this->confs.size();
     for (size_t i = 0; i < size; i++)
     {
-        mapSubServs::iterator it = this->_subServs.find(this->confs[i].second.getPort());
-        if(it == this->_subServs.end())
+        mapPorts::iterator it = this->_Ports.find(this->confs[i].second.getPort());
+        if(it == this->_Ports.end())
         {
-            this->_subServs.insert(std::make_pair(this->confs[i].second.getPort(), SubServ(this->confs[i].second)));
+            this->_Ports.insert(std::make_pair(this->confs[i].second.getPort(), Port(this->confs[i].second)));
         }
         else
         {
 			for (size_t j = 0; j < this->confs[i].second.getServerNames().size(); j++)
 			{
             	std::string name = this->confs[i].second.getServerNames()[j];
-            	//this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
-				this->_subServs[this->confs[i].second.getPort()].addToConf(name, &(this->confs[i].second));
+            	//this->_Ports[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+				this->_Ports[this->confs[i].second.getPort()].addToConf(name, &(this->confs[i].second));
 			}
         }
     }
-    //std::cout << this->_subServs.size() << std::endl;
+    //std::cout << this->_Ports.size() << std::endl;
 #ifdef PRINT
-    mapSubServs::iterator it = this->_subServs.begin();
-    while(it != this->_subServs.end())
+    mapPorts::iterator it = this->_Ports.begin();
+    while(it != this->_Ports.end())
     {
         mapConfs::iterator ite = it->second._portConfs.begin();
         while (ite != it->second._portConfs.end())
@@ -220,7 +220,7 @@ int	Webserv::removeFdFromIdMap(int fd)
 
 void	Webserv::closeFds(void)
 {
-	std::map<int, SubServ*>::iterator	iter;
+	std::map<int, Port*>::iterator	iter;
 
 	iter = this->idMap.begin();
 	while (iter != this->idMap.end())
@@ -233,11 +233,11 @@ void	Webserv::closeFds(void)
 
 void	Webserv::setServerSockets(void)
 {
-	mapSubServs::iterator	iter;
+	mapPorts::iterator	iter;
 	int						serverSocket;
 
-	iter = this->_subServs.begin();
-	while (iter != this->_subServs.end())
+	iter = this->_Ports.begin();
+	while (iter != this->_Ports.end())
 	{
 		serverSocket = (*iter).second.initPortSocket();
 		if (serverSocket == -1)
@@ -268,7 +268,7 @@ int	Webserv::closeClientConnection(int clientSocket)
 	}
 	else if ((*iter).second->removeClientSocket(clientSocket) != 0)
 	{
-		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
+		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from Port" << std::endl;
 		status = 1;
 	}
 	this->removeFdFromIdMap(clientSocket);
@@ -317,13 +317,13 @@ int	Webserv::isServerSocket(int fd)
 
 int	Webserv::bounceOldClients(void)
 {
-	mapSubServs::iterator	iter;
+	mapPorts::iterator	iter;
 	std::vector<int>		clientsToBounce;
 
 	try
 	{
-		iter = this->_subServs.begin();
-		while (iter != this->_subServs.end())
+		iter = this->_Ports.begin();
+		while (iter != this->_Ports.end())
 		{
 			(*iter).second.addClientsToBounce(clientsToBounce);
 			iter++;
@@ -437,6 +437,7 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 		}
 		remainRequest = clientRequest->sendResponse(response);
 		bytesSend = send(clientSocket, response.c_str(), response.size(), 0);
+		std::cout << "Bytes send to fd " << clientSocket << " = " << bytesSend << std::endl;
 		if (bytesSend < 0)
 		{
 			std::cerr << "webserv: Webserv::respond: send: " << strerror(errno) << std::endl;
@@ -511,8 +512,8 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 
 void	Webserv::printAllConfig(void)
 {
-	mapSubServs::iterator	iter = this->_subServs.begin();
-	while (iter != this->_subServs.end())
+	mapPorts::iterator	iter = this->_Ports.begin();
+	while (iter != this->_Ports.end())
 	{
 		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
 		(*iter).second.printPortConfs();

@@ -2,7 +2,7 @@
 #define WEBSERV_HPP
 
 #include "Error.hpp"
-#include "SubServ.hpp"
+#include "Port.hpp"
 #include "ServerConf.hpp"
 #include "sockets.hpp"
 #include <signal.h>
@@ -21,7 +21,7 @@ class Webserv
 {
     private:
 		int			_epollFd;
-		mapSubServs	_subServs;
+		mapPorts	_Ports;
         vec_string	env;
         char		**env_char;
         vec_confs	confs;
