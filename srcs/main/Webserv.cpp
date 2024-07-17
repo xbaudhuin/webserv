@@ -32,7 +32,7 @@ Webserv::Webserv(const char* file)
     {
         try
         {
-            this->confs[0].second.getPreciseLocation(v[i]);
+            this->_confs[0].second.getPreciseLocation(v[i]);
         }
         catch(const std::exception& e)
         {
@@ -61,8 +61,8 @@ Webserv& Webserv::operator=(const Webserv &rhs)
 {
     if(this != &rhs)
     {
-        this->env = rhs.env;
-        this->confs = rhs.confs;
+        this->_env = rhs._env;
+        this->_confs = rhs._confs;
     }
     return(*this);
 }
@@ -74,17 +74,17 @@ Webserv::~Webserv()
 
 void Webserv::addEnv(char **env)
 {
-    this->env_char = env;
+    this->_env_char = env;
     for(size_t i = 0; env[i]; i++)
     {
         std::string str = env[i];
-        this->env.push_back(str);
+        this->_env.push_back(str);
     }
 }
 
 char** Webserv::getEnv()
 {
-    return(this->env_char);
+    return(this->_env_char);
 }
 
 bool checkNumberBrackets(const vec_string &split)
@@ -109,27 +109,28 @@ bool checkNumberBrackets(const vec_string &split)
 
 void Webserv::createMaps(void)
 {
-    size_t size = this->confs.size();
+    size_t size = this->_confs.size();
     for (size_t i = 0; i < size; i++)
     {
-        mapSubServs::iterator it = this->_subServs.find(this->confs[i].second.getPort());
-        if(it == this->_subServs.end())
+        mapPorts::iterator it = this->_Ports.find(this->_confs[i].second.getPort());
+        if(it == this->_Ports.end())
         {
-            this->_subServs.insert(std::make_pair(this->confs[i].second.getPort(), SubServ(this->confs[i].second)));
+            this->_Ports.insert(std::make_pair(this->_confs[i].second.getPort(), Port(this->_confs[i].second)));
         }
         else
         {
-			for (size_t j = 0; j < this->confs[i].second.getServerNames().size(); j++)
+			for (size_t j = 0; j < this->_confs[i].second.getServerNames().size(); j++)
 			{
-            	std::string name = this->confs[i].second.getServerNames()[j];
-            	this->_subServs[this->confs[i].second.getPort()]._portConfs[name] =  &(this->confs[i].second);
+            	std::string name = this->_confs[i].second.getServerNames()[j];
+            	//this->_Ports[this->_confs[i].second.getPort()]._portConfs[name] =  &(this->_confs[i].second);
+				this->_Ports[this->_confs[i].second.getPort()].addToConf(name, &(this->_confs[i].second));
 			}
         }
     }
-    //std::cout << this->_subServs.size() << std::endl;
+    //std::cout << this->_Ports.size() << std::endl;
 #ifdef PRINT
-    mapSubServs::iterator it = this->_subServs.begin();
-    while(it != this->_subServs.end())
+    mapPorts::iterator it = this->_Ports.begin();
+    while(it != this->_Ports.end())
     {
         mapConfs::iterator ite = it->second._portConfs.begin();
         while (ite != it->second._portConfs.end())
@@ -163,7 +164,7 @@ void Webserv::parse(vec_string split)
             {
                 ServerConf newConf = parser(split, i, size);
                 vec_string name = newConf.getServerNames();
-                this->confs.push_back(std::make_pair(name, newConf));
+                this->_confs.push_back(std::make_pair(name, newConf));
                 check++;
             }
             catch(const std::exception& e)
@@ -173,7 +174,7 @@ void Webserv::parse(vec_string split)
             }
         }
     }
-    // std::cout << "Test: " << this->confs.size() << std::endl;
+    // std::cout << "Test: " << this->_confs.size() << std::endl;
     if(!check)
     {
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
@@ -204,7 +205,7 @@ int	Webserv::removeFdFromIdMap(int fd)
 {
 	int	result;
 
-	result = this->idMap.erase(fd);
+	result = this->_idMap.erase(fd);
 	if (result == 1)
 	{
 		std::cout << "webserv: successfully erased socket fd " << fd << " from ID Map" << std::endl;
@@ -219,10 +220,10 @@ int	Webserv::removeFdFromIdMap(int fd)
 
 void	Webserv::closeFds(void)
 {
-	std::map<int, SubServ*>::iterator	iter;
+	std::map<int, Port*>::iterator	iter;
 
-	iter = this->idMap.begin();
-	while (iter != this->idMap.end())
+	iter = this->_idMap.begin();
+	while (iter != this->_idMap.end())
 	{
 		protectedClose((*iter).first);
 		iter++;
@@ -232,11 +233,11 @@ void	Webserv::closeFds(void)
 
 void	Webserv::setServerSockets(void)
 {
-	mapSubServs::iterator	iter;
+	mapPorts::iterator	iter;
 	int						serverSocket;
 
-	iter = this->_subServs.begin();
-	while (iter != this->_subServs.end())
+	iter = this->_Ports.begin();
+	while (iter != this->_Ports.end())
 	{
 		serverSocket = (*iter).second.initPortSocket();
 		if (serverSocket == -1)
@@ -249,7 +250,7 @@ void	Webserv::setServerSockets(void)
 			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
 		}
-		this->idMap[serverSocket] = &((*iter).second);
+		this->_idMap[serverSocket] = &((*iter).second);
 		iter++;
 	}
 }
@@ -259,15 +260,15 @@ int	Webserv::closeClientConnection(int clientSocket)
 	mapID::iterator	iter;
 	int				status = 0;
 
-	iter = this->idMap.find(clientSocket);
-	if (iter == this->idMap.end())
+	iter = this->_idMap.find(clientSocket);
+	if (iter == this->_idMap.end())
 	{
 		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
 		status = 1;
 	}
 	else if ((*iter).second->removeClientSocket(clientSocket) != 0)
 	{
-		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from subserv" << std::endl;
+		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from Port" << std::endl;
 		status = 1;
 	}
 	this->removeFdFromIdMap(clientSocket);
@@ -293,7 +294,7 @@ int	Webserv::isClientSocket(int fd)
 {
 	try
 	{
-		return (this->idMap.at(fd)->isClientSocket(fd));
+		return (this->_idMap.at(fd)->isClientSocket(fd));
 	}
 	catch(const std::exception& e)
 	{
@@ -305,7 +306,7 @@ int	Webserv::isServerSocket(int fd)
 {
 	try
 	{
-		return (this->idMap.at(fd)->isServerSocket(fd));
+		return (this->_idMap.at(fd)->isServerSocket(fd));
 	}
 	catch(const std::exception& e)
 	{
@@ -316,13 +317,13 @@ int	Webserv::isServerSocket(int fd)
 
 int	Webserv::bounceOldClients(void)
 {
-	mapSubServs::iterator	iter;
+	mapPorts::iterator	iter;
 	std::vector<int>		clientsToBounce;
 
 	try
 	{
-		iter = this->_subServs.begin();
-		while (iter != this->_subServs.end())
+		iter = this->_Ports.begin();
+		while (iter != this->_Ports.end())
 		{
 			(*iter).second.addClientsToBounce(clientsToBounce);
 			iter++;
@@ -335,35 +336,35 @@ int	Webserv::bounceOldClients(void)
 	catch(const std::exception& e)
 	{
 		std::cerr << "webserv: Webserv::bounceOldClients: " << e.what() << std::endl;
-		return (1);
+		return (FAILURE);
 	}
-	return (0);
+	return (SUCCESS);
 }
 
 int	Webserv::handlePortEvent(int serverSocket)
 {
 	int	newClient;
 
-	newClient = this->idMap[serverSocket]->acceptNewConnection();
+	newClient = this->_idMap[serverSocket]->acceptNewConnection();
 	if (newClient == -1)
 	{
 		return (1);
 	}
 	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != 0)
 	{
-		this->idMap[serverSocket]->removeClientSocket(newClient);
+		this->_idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
 		return (1);
 	}
 	try
 	{
-		this->idMap[newClient] = this->idMap[serverSocket];
+		this->_idMap[newClient] = this->_idMap[serverSocket];
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
 		/* Send error to client */
-		this->idMap[serverSocket]->removeClientSocket(newClient);
+		this->_idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
 		return (1);
 	}
@@ -393,7 +394,7 @@ int	Webserv::receive(int clientSocket)
 		else
 		{
 			buffer[bytesRead] = '\0';
-			clientRequest = this->idMap[clientSocket]->getClient(clientSocket);
+			clientRequest = this->_idMap[clientSocket]->getClient(clientSocket);
 			if (clientRequest == NULL)
 			{
 				return(this->closeClientConnection(clientSocket));
@@ -425,7 +426,7 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 
 	try
 	{
-		clientRequest = this->idMap[clientSocket]->getClient(clientSocket);
+		clientRequest = this->_idMap[clientSocket]->getClient(clientSocket);
 		if (checkEvent(events, EPOLLIN) == true)
 		{
 			clientRequest->add400Response();
@@ -436,6 +437,7 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 		}
 		remainRequest = clientRequest->sendResponse(response);
 		bytesSend = send(clientSocket, response.c_str(), response.size(), 0);
+		std::cout << "Bytes send to fd " << clientSocket << " = " << bytesSend << std::endl;
 		if (bytesSend < 0)
 		{
 			std::cerr << "webserv: Webserv::respond: send: " << strerror(errno) << std::endl;
@@ -510,19 +512,11 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 
 void	Webserv::printAllConfig(void)
 {
-	mapSubServs::iterator	iter = this->_subServs.begin();
-	while (iter != this->_subServs.end())
+	mapPorts::iterator	iter = this->_Ports.begin();
+	while (iter != this->_Ports.end())
 	{
-
 		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
-		std::cout << "Main = "<< *((*iter).second._main) << std::endl;
-		mapConfs::iterator	iter2 = (*iter).second._portConfs.begin();
-		while (iter2 != (*iter).second._portConfs.end())
-		{
-			std::cout << "---SERVER NAME : " <<(*iter2).first << "---" << std::endl << std::endl;
-			std::cout << *(*iter2).second << std::endl;
-			iter2++;
-		}
+		(*iter).second.printPortConfs();
 		++iter;
 	}
 }
@@ -543,26 +537,26 @@ void	Webserv::doCheckRoutine(void)
 
 int	Webserv::start(void)
 {
-	int	status;
+	int					nbEvent;
 	struct epoll_event	events[MAX_EVENTS];
 	
 	this->printAllConfig();
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)
 	{
-		status = epoll_wait(this->_epollFd, events, MAX_EVENTS, 2000);
-		if (status == -1)
+		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 2000);
+		if (nbEvent == -1)
 		{
 			std::cerr << "webserv: Webserv::start: epoll_wait: " << strerror(errno) << std::endl;
 			continue;
 		}
-		else if (status == 0)
+		else if (nbEvent == 0)
 		{
 			std::cout << "webserv: waiting..." << std::endl;
 		}
 		else
 		{
-			this->handleEvents(events, status);
+			this->handleEvents(events, nbEvent);
 		}
 		this->doCheckRoutine();
 	}

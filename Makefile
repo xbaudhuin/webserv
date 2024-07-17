@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/16 18:35:34 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/17 13:33:26 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -67,12 +67,12 @@ DEP_PATH			=	dep/
 HEADER_FILES	=	 Webserv.hpp \
 					 ServerConf.hpp \
 					 Error.hpp \
-					 SubServ.hpp \
+					 Port.hpp \
 					 Typedef.hpp \
 					 Utils.hpp \
 					 Client.hpp \
 					 Response.hpp \
-					 SubServ.hpp \
+					 Port.hpp \
 					 sockets.hpp \
 					 Colors.hpp \
 					 security_error.hpp \
@@ -102,7 +102,7 @@ AR						=	ar rcs
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					main/handleSignal.cpp \
-					exec/SubServ.cpp \
+					exec/Port.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -129,10 +129,8 @@ SRCS_MAIN		=	main/main.cpp \
 
 REQUEST = requester
 
-SRCS_REQUEST 	=	request_parsing/main.cpp \
-					main/Webserv.cpp \
-					main/handleSignal.cpp \
-					exec/SubServ.cpp \
+
+SRCS_REQUEST 	=	exec/Port.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -167,7 +165,7 @@ OBJS_REQUEST	=	$(addprefix ${OBJ_PATH}, ${SRCS_REQUEST:.cpp=.o}) \
 ################################################################################
 
 SRCS_TESTS		=	main/unitTests.cpp \
-					exec/SubServ.cpp \
+					exec/Port.cpp \
 					sockets/createServerSocket.cpp \
 					main/Webserv.cpp \
 					parser/Config.cpp \

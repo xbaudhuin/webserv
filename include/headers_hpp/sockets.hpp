@@ -3,22 +3,23 @@
 
 # include <errno.h>
 # include <netdb.h>
-# include <stdio.h>
-# include <stdlib.h>
-# include <string>
 # include <iostream>
-# include <sstream>
-# include <vector>
 # include <unistd.h>
 # include <sys/socket.h>
-# include <string.h>
 # include <sys/epoll.h>
-# include <algorithm>
-# include <cstring>
-# include <iterator>
 # include <fcntl.h>
+# include <cstring>
 
-int		createServerSocket(int port);
+const int BACKLOG_LISTEN = 100;
+
+enum	status
+{
+	SUCCESS = 0,
+	FAILURE = 1,
+	BAD_FD = -1,
+};
+
+int		createServerSocket(int port, uint32_t address);
 int		changeEpollEvents(int epollFd, int socket, uint32_t	events);
 int		addSocketToEpoll(int epollFd, int socketFd, uint32_t events);
 int		protectedClose(int fd);

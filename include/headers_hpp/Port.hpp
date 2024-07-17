@@ -1,34 +1,36 @@
-#ifndef SUBSERV_HPP
-# define SUBSERV_HPP
+#ifndef Port_HPP
+# define Port_HPP
 
 # include "sockets.hpp"
 # include "Client.hpp"
+# include "Typedef.hpp"
+# include "ServerConf.hpp"
 
-typedef std::map<std::string, ServerConf*> mapConfs;
-
-class	SubServ
+class	Port
 {
 	public:
-							SubServ(void);
-							SubServ(ServerConf &conf);
-							~SubServ(void);
-							SubServ(const SubServ &otherSubServ);
-		SubServ				&operator=(const SubServ &otherSubServ);
-		mapConfs			_portConfs;
-		ServerConf			*_main;
+							Port(void);
+							Port(ServerConf &conf);
+							~Port(void);
+							Port(const Port &otherPort);
+		Port				&operator=(const Port &otherPort);
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int clientSocket);
 		bool				isClientSocket(int fd);
 		bool				isServerSocket(int fd);
 		int					initPortSocket(void);
-		const ServerConf	*getConf(const std::string &serverName);
 		int					getPort(void);
 		Client				*getClient(int clientSocket);
-		void				addClientsToBounce(std::vector<int> &clientsToBounce);
+		int					addClientsToBounce(std::vector<int> &clientsToBounce);
+		void				printPortConfs(void);
+		void				addToConf(const std::string &name, ServerConf *newConf);
 
 	protected:
 
 	private:
+		ServerConf			*_main;
+		mapConfs			_portConfs;
+		uint32_t			_address;
 		int					_port;
 		int					_serverSocket;
 		std::vector<int>	_clientSockets;
