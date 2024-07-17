@@ -334,20 +334,6 @@ int	Webserv::bounceClientsVector(const std::vector<int> &clients)
 	return (status);
 }
 
-int	Webserv::bounceAllClientsFromPort(Port &port)
-{
-	std::vector<int>::const_iterator iter;
-
-	iter = port.getClientsVector().begin();
-	while (iter != port.getClientsVector().end())
-	{
-		this->closeClientConnection(*iter);
-		iter = port.getClientsVector().begin();
-	}
-	std::cout << "webserv: all client listening on " << port.getAddress() << ":" << port.getPort() << "will be bounced due to a internal problem" << std::endl;
-	return (SUCCESS);
-}
-
 int	Webserv::bounceOldClients(void)
 {
 	mapPorts::iterator	iter;
@@ -365,7 +351,6 @@ int	Webserv::bounceOldClients(void)
 		{
 			std::cerr << "webserv: Webserv::bounceOldClients: could not bounce old clients for address "
 				<< (*iter).first.first << ":" << (*iter).first.second << ": " << e.what() << std::endl;
-			this->bounceAllClientsFromPort((*iter).second);
 		}
 		clientsToBounce.clear();
 		iter++;

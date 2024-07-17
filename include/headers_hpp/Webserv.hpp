@@ -48,7 +48,6 @@ class Webserv
 		void		doCheckRoutine(void);
 		int			handleEndResponse(int clientSocket, const Client* clientRequest);
 		int			bounceClientsVector(const std::vector<int> &clients);
-		int			bounceAllClientsFromPort(Port	&port);
 
     public:
       		 	 Webserv(const char *s);
