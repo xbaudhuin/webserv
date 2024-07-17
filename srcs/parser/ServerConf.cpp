@@ -103,7 +103,8 @@ ServerConf::~ServerConf()
 
 void ServerConf::addServerName(const std::string &name)
 {
-    this->server_names.push_back(name);
+    if(!this->nameExist(name))
+        this->server_names.push_back(name);
 }
 
 vec_string& ServerConf::getServerNames()
@@ -170,12 +171,6 @@ void ServerConf::addHost(const std::string &str)
         throw std::logic_error("syntax error for host target");
 
     vec_string vec = split(str, ".");
-
-    /* Future condition to handle * and localhost if necessary 
-    if(vec.size() == 1)
-    {
-    }
-    else */
 
     if(vec.size() == 4)
     {

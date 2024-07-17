@@ -77,11 +77,11 @@ private:
   size_t parseRequestLine(const std::string &requestLine);
   int parseUri(const std::string &uri);
   void uriDecoder(std::string &uri);
-  void readRequest(void);
   ServerConf *getServerConf(void);
   void findPages(const std::string &url);
   bool findIndex(std::string &url);
   bool getResponse(std::string &response);
+  void buildListingDirectory(std::string &url);
   void buildResponse(void);
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);
@@ -93,6 +93,7 @@ private:
 
   void resetClient(void);
   time_t getTime(void);
+  std::string getDateOfFile(time_t rawtime) const;
 };
 
 #endif //! CLIENT_HPP

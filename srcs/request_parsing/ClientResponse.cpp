@@ -1,6 +1,10 @@
 #include "Client.hpp"
 #include "Error.hpp"
 #include "Utils.hpp"
+#include <asm-generic/errno.h>
+#include <cerrno>
+#include <dirent.h>
+#include <ostream>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -26,12 +30,83 @@ bool Client::findIndex(std::string &url) {
   return (true);
 }
 
+void Client::buildListingDirectory(std::string &url) {
+  _uri = "." + _uri;
+  _response.setStatusCode(200);
+  _response.setDate();
+  _response.setHeader("Content-Type", "text/html");
+  addConnectionHeader();
+  std::string body = "<html>\r\n";
+  body += "<head><title>Index of ";
+  body += _uri + "</title></head>\r\n";
+  body += "<body>\r\n<h1>Index of ";
+  body += _uri + "</h1>";
+  if (_uri != url)
+    body += "<hr><pre><a href=\"../\">../</a>\r\n";
+  DIR *dir;
+  dir = opendir(_uri.c_str());
+  if (dir == NULL) {
+    std::cout << RED << "buildListingDirectory: dir = NULL" << RESET
+              << std::endl;
+    if (errno == EACCES)
+      _statusCode = 403;
+    else if (errno == ENONET)
+      _statusCode = 404;
+    else
+      _statusCode = 500;
+    return;
+  }
+  struct dirent *ent;
+  errno = 0;
+  while (true) {
+    ent = readdir(dir);
+    while (ent && ent->d_name[0] == '.') {
+      if (ent->d_name[1] == '.' && ent->d_name[2] == '\0' && url != _uri)
+        break;
+      ent = readdir(dir);
+    }
+    if (ent == NULL)
+      break;
+    std::cout << YELLOW << "ent: " << ent->d_name << RESET << std::endl;
+    struct stat file;
+    if (stat(ent->d_name, &file) == -1) {
+      std::cout << RED << "buildListingDirectory: stat = -1; ent->d_name ="
+                << ent->d_name << RESET << std::endl;
+      if (errno == EACCES) {
+        _statusCode = 403;
+      } else
+        _statusCode = 500;
+      return;
+    }
+    std::string time = body += "<a href=\"";
+    body += ent->d_name;
+    body += "\">";
+    body += ent->d_name;
+    body += "</a> Date: " + getDateOfFile(file.st_mtim.tv_sec);
+    body += " ";
+    if (ent->d_type == DT_REG) {
+      std::ostringstream ss;
+      ss << file.st_size;
+      body += ss.str();
+    } else
+      body += "-";
+    body += "\r\n";
+  }
+  body += "</pre><hr></body>\r\n";
+  body += "</html>\r\n";
+  _response.setBody(body);
+  _response.BuildResponse();
+}
+
 void Client::findPages(const std::string &urlu) {
   std::string url = "." + urlu;
   if (_location->isADir() == true) {
-    findIndex(url);
-    // if (findIndex(url) == false)
-      // return (buildListingDirectory());
+    if (_uri[_uri.size() - 1] == '/') {
+      if (findIndex(url) == false) {
+        return (buildListingDirectory(url));
+      }
+    } else
+      url += _uri.substr(_uri.find_last_of('/'));
   }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
@@ -146,7 +221,7 @@ bool Client::sendResponse(std::string &response) {
   if (_response.isReady() == false)
     buildResponse();
   response = _response.getResponse();
-  std::cout << BLUE << "response:\n" << response << RESET << std::endl;
+  // std::cout << BLUE << "response:\n" << response << RESET << std::endl;
   bool ret = _response.isNotDone();
   if (ret == false)
     resetClient();

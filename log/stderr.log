@@ -1,1 +1,2 @@
-webserv: Webserv::start: epoll_wait: Interrupted system call
+Webserv: Error:
+No configuration found

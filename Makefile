@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/16 14:56:53 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/16 18:35:34 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -74,7 +74,8 @@ HEADER_FILES	=	 Webserv.hpp \
 					 Response.hpp \
 					 SubServ.hpp \
 					 sockets.hpp \
-					 Colors.hpp
+					 Colors.hpp \
+					 security_error.hpp \
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -118,6 +119,7 @@ SRCS_MAIN		=	main/main.cpp \
 					sockets/changeEpollEvents.cpp \
 					sockets/checkEvent.cpp \
 					error_logs/logs.cpp \
+					error_logs/Security_error.cpp \
 					error_pages/singleton.cpp \
 					request_parsing/Client.cpp \
 					request_parsing/ClientConst.cpp \

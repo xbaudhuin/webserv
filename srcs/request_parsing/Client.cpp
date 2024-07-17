@@ -97,6 +97,14 @@ int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
 bool Client::keepConnectionOpen(void) const { return (_keepConnectionAlive); }
 
+std::string Client::getDateOfFile(time_t rawtime) const{
+
+  tm *gmtTime = gmtime(&rawtime);
+  char buffer[80] = {0};
+  std::strftime(buffer, 80, "%d-%m-%y %H:%M:%S GMT;", gmtTime);
+  return (buffer);
+}
+
 void Client::print() {
 
   if (_server == NULL)

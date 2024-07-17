@@ -18,15 +18,15 @@ Webserv::Webserv(const char* file)
     this->parseConfig(config);
 #if PRINT == 2
     vec_string v;
-    v.push_back("/error_pages/htmli");
-    v.push_back("/error_pages/c");
-    v.push_back("/coucou/file");
-    v.push_back("/error_pages/test/");
-    v.push_back("/error_pages/coucou/html/");
-    v.push_back("/error_pages/test/");
-    v.push_back("/coucou");
-    v.push_back("/notfound/");
-    v.push_back("/no");
+    v.push_back("/error_pages/htmli/../../../../");
+    // v.push_back("/error_pages/c");
+    // v.push_back("/coucou/file");
+    // v.push_back("/error_pages/test/");
+    // v.push_back("/error_pages/coucou/html/");
+    // v.push_back("/error_pages/test/");
+    // v.push_back("/coucou");
+    // v.push_back("/notfound/");
+    // v.push_back("/no");
     
     for (size_t i = 0; i < v.size(); i++)
     {
