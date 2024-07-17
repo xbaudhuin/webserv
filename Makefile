@@ -67,12 +67,12 @@ DEP_PATH			=	dep/
 HEADER_FILES	=	 Webserv.hpp \
 					 ServerConf.hpp \
 					 Error.hpp \
-					 SubServ.hpp \
+					 Port.hpp \
 					 Typedef.hpp \
 					 Utils.hpp \
 					 Client.hpp \
 					 Response.hpp \
-					 SubServ.hpp \
+					 Port.hpp \
 					 sockets.hpp \
 					 Colors.hpp \
 					 security_error.hpp \
@@ -102,7 +102,7 @@ AR						=	ar rcs
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					main/handleSignal.cpp \
-					exec/SubServ.cpp \
+					exec/Port.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -129,7 +129,7 @@ SRCS_MAIN		=	main/main.cpp \
 
 REQUEST = requester
 
-SRCS_REQUEST 	=	exec/SubServ.cpp \
+SRCS_REQUEST 	=	exec/Port.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \
@@ -163,7 +163,7 @@ OBJS_REQUEST	=	$(addprefix ${OBJ_PATH}, ${SRCS_REQUEST:.cpp=.o}) \
 ################################################################################
 
 SRCS_TESTS		=	main/unitTests.cpp \
-					exec/SubServ.cpp \
+					exec/Port.cpp \
 					sockets/createServerSocket.cpp \
 					main/Webserv.cpp \
 					parser/Config.cpp \

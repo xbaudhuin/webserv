@@ -10,7 +10,7 @@ static int	initMain(int argc)
 		return (FAILURE);
 	}
     int fd = open("./log/stderr.log", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if(fd > 0)
+    if(fd != BAD_FD)
     {
         dup2(fd, STDERR_FILENO);
         close(fd);

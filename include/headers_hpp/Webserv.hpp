@@ -2,13 +2,12 @@
 #define WEBSERV_HPP
 
 #include "Error.hpp"
-#include "SubServ.hpp"
+#include "Port.hpp"
 #include "ServerConf.hpp"
 #include "sockets.hpp"
 #include <signal.h>
 #include "Client.hpp"
 
-const int BACKLOG_LISTEN = 100;
 const int MAX_EVENTS = 500;
 
 enum	signal_handler
@@ -18,26 +17,19 @@ enum	signal_handler
 	STOP = 2,
 };
 
-enum	status
-{
-	SUCCESS = 0,
-	FAILURE = 1,
-	BAD_FD = -1,
-};
-
 class Webserv
 {
     private:
 		int			_epollFd;
-		mapSubServs	_subServs;
-        vec_string	env;
-        char		**env_char;
-        vec_confs	confs;
+		mapPorts	_Ports;
+        vec_string	_env;
+        char		**_env_char;
+        vec_confs	_confs;
         			Webserv();
         void		parseConfig(const std::string &conf);
         void		parse(vec_string split); 
 		void		checkConfigs(void);
-		mapID		idMap;
+		mapID		_idMap;
         void		createMaps(void);
 		void		setServerSockets(void);
 		void		closeFds(void);
