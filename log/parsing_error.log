@@ -1,1 +1,2 @@
-Error inside the root directive, ';' not found
+Error:
+Unknown directive found in the server block: default

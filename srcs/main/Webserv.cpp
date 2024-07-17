@@ -9,6 +9,7 @@ Webserv::Webserv()
 Webserv::Webserv(const char* file)
 {
     std::string config;
+
     if(file)
         config = file;
     else
@@ -38,7 +39,6 @@ Webserv::Webserv(const char* file)
         {
             std::cout << PURP2 << e.what() << RESET << '\n';
         }
-        
     }
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
@@ -91,6 +91,7 @@ bool checkNumberBrackets(const vec_string &split)
 {
     size_t size = split.size();
     size_t count = 0;
+
     for (size_t i = 0; i < size; i++)
     {
         if(split[i] == "{")
@@ -110,20 +111,26 @@ bool checkNumberBrackets(const vec_string &split)
 void Webserv::createMaps(void)
 {
     size_t size = this->_confs.size();
+
     for (size_t i = 0; i < size; i++)
     {
-        mapPorts::iterator it = this->_Ports.find(this->_confs[i].second.getPort());
+		std::pair<uint32_t, int> IpPortPair(this->_confs[i].second.getHost(), this->_confs[i].second.getPort());
+        //mapPorts::iterator it = this->_Ports.find(this->_confs[i].second.getPort());
+		mapPorts::iterator it = this->_Ports.find(IpPortPair);
+
         if(it == this->_Ports.end())
         {
-            this->_Ports.insert(std::make_pair(this->_confs[i].second.getPort(), Port(this->_confs[i].second)));
+            //this->_Ports.insert(std::make_pair(this->_confs[i].second.getPort(), Port(this->_confs[i].second)));
+			this->_Ports.insert(std::make_pair(IpPortPair, Port(this->_confs[i].second)));
         }
         else
         {
 			for (size_t j = 0; j < this->_confs[i].second.getServerNames().size(); j++)
 			{
             	std::string name = this->_confs[i].second.getServerNames()[j];
-            	//this->_Ports[this->_confs[i].second.getPort()]._portConfs[name] =  &(this->_confs[i].second);
-				this->_Ports[this->_confs[i].second.getPort()].addToConf(name, &(this->_confs[i].second));
+				// std::pair<uint32_t, int>(this->_confs[i].second.getHost(), this->_confs[i].second.getPort());
+				this->_Ports[IpPortPair].addToConf(name, &(this->_confs[i].second));
+				//this->_Ports[this->_confs[i].second.getPort()].addToConf(name, &(this->_confs[i].second));
 			}
         }
     }
@@ -139,7 +146,6 @@ void Webserv::createMaps(void)
             std::cout << (*ite->second) << std::endl;
             ite++;
         }
-        
         it++;
     }
 #endif
@@ -147,8 +153,8 @@ void Webserv::createMaps(void)
 
 void Webserv::parse(vec_string split)
 {
-    int check = 0;
-    size_t size = split.size();
+    int 	check = 0;
+    size_t	size = split.size();
     // for(size_t jt = 0; jt < size; jt++)
     // {
     //     std::cout << split[jt] << std::endl;
@@ -186,8 +192,9 @@ void Webserv::parse(vec_string split)
 
 void Webserv::parseConfig(const std::string &conf)
 {
-    std::ifstream config;
-    size_t check = conf.find(".conf", 0);
+    std::ifstream	config;
+    size_t 			check = conf.find(".conf", 0);
+
     if(check == std::string::npos)
         throw std::invalid_argument("Error\nFile extension isn't a .conf");
     config.open(conf.c_str());
@@ -209,12 +216,12 @@ int	Webserv::removeFdFromIdMap(int fd)
 	if (result == 1)
 	{
 		std::cout << "webserv: successfully erased socket fd " << fd << " from ID Map" << std::endl;
-		return (0);
+		return (SUCCESS);
 	}
 	else
 	{
 		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd " << fd << std::endl;
-		return (1);
+		return (FAILURE);
 	}
 }
 
@@ -234,18 +241,18 @@ void	Webserv::closeFds(void)
 void	Webserv::setServerSockets(void)
 {
 	mapPorts::iterator	iter;
-	int						serverSocket;
+	int					serverSocket;
 
 	iter = this->_Ports.begin();
 	while (iter != this->_Ports.end())
 	{
 		serverSocket = (*iter).second.initPortSocket();
-		if (serverSocket == -1)
+		if (serverSocket == BAD_FD)
 		{
 			this->closeFds();
 			throw std::logic_error("Can not create server socket");
 		}
-		if (addSocketToEpoll(this->_epollFd, serverSocket, EPOLLIN) != 0)
+		if (addSocketToEpoll(this->_epollFd, serverSocket, EPOLLIN) != SUCCESS)
 		{
 			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
@@ -315,28 +322,53 @@ int	Webserv::isServerSocket(int fd) const
 	
 }
 
+int	Webserv::bounceClientsVector(const std::vector<int> &clients)
+{
+	int	status;
+
+	status = 0;
+	for (size_t i = 0; i < clients.size(); i++)
+	{
+		status += this->closeClientConnection(clients[i]);
+	}
+	return (status);
+}
+
+int	Webserv::bounceAllClientsFromPort(Port &port)
+{
+	std::vector<int>::const_iterator iter;
+
+	iter = port.getClientsVector().begin();
+	while (iter != port.getClientsVector().end())
+	{
+		this->closeClientConnection(*iter);
+		iter = port.getClientsVector().begin();
+	}
+	std::cout << "webserv: all client listening on " << port.getAddress() << ":" << port.getPort() << "will be bounced due to a internal problem" << std::endl;
+	return (SUCCESS);
+}
+
 int	Webserv::bounceOldClients(void)
 {
 	mapPorts::iterator	iter;
-	std::vector<int>		clientsToBounce;
+	std::vector<int>	clientsToBounce;
 
-	try
+	iter = this->_Ports.begin();
+	while (iter != this->_Ports.end())
 	{
-		iter = this->_Ports.begin();
-		while (iter != this->_Ports.end())
+		try
 		{
 			(*iter).second.addClientsToBounce(clientsToBounce);
-			iter++;
+			this->bounceClientsVector(clientsToBounce);
 		}
-		for (size_t i = 0; i < clientsToBounce.size(); i++)
+		catch(const std::exception& e)
 		{
-			this->closeClientConnection(clientsToBounce[i]);
-		}		
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << "webserv: Webserv::bounceOldClients: " << e.what() << std::endl;
-		return (FAILURE);
+			std::cerr << "webserv: Webserv::bounceOldClients: could not bounce old clients for address "
+				<< (*iter).first.first << ":" << (*iter).first.second << ": " << e.what() << std::endl;
+			this->bounceAllClientsFromPort((*iter).second);
+		}
+		clientsToBounce.clear();
+		iter++;
 	}
 	return (SUCCESS);
 }
@@ -528,6 +560,7 @@ void	Webserv::printAllConfig(void)
 	mapPorts::iterator	iter = this->_Ports.begin();
 	while (iter != this->_Ports.end())
 	{
+		std::cout << "adress IP map key = " << (*iter).first.first << " | port map key = " << (*iter).first.second << std::endl;
 		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
 		(*iter).second.printPortConfs();
 		++iter;
@@ -548,11 +581,36 @@ void	Webserv::doCheckRoutine(void)
 	this->bounceOldClients();
 }
 
+// int	test(void)
+// {
+// 	std::vector<int> vec;
+
+// 	for (size_t i = 0; i < 5; i++)
+// 	{
+// 		try
+// 		{
+			
+// 				vec.push_back(i);
+// 			if (i == 2)
+// 				throw std::logic_error("test");
+// 		}
+// 		catch(const std::exception& e)
+// 		{
+// 			std::cerr << e.what() << '\n';
+// 		}
+// 	}
+// 	for (size_t i = 0; i < vec.size(); i++)
+// 	{
+// 		std::cout << "[" << i << "] = " << vec[i] << std::endl;
+// 	}
+// 	return (SUCCESS);
+// }
+
 int	Webserv::start(void)
 {
 	int					nbEvent;
 	struct epoll_event	events[MAX_EVENTS];
-	
+
 	this->printAllConfig();
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)

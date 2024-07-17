@@ -100,12 +100,12 @@ int	Port::removeSocketFromClientVector(int socket)
 	if (iter != this->_clientSockets.end())
 	{
 		this->_clientSockets.erase(iter);
-		std::cout << "webserv: successfully remove client socket " << socket << " in Porter vector listening on port " << this->_port << std::endl;
+		std::cout << "webserv: successfully remove client socket " << socket << " in Porter vector listening on port " << this->_address << ":" << this->_port << std::endl;
 		return (SUCCESS);
 	}
 	else
 	{
-		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of Port port " <<  this->_port << std::endl;
+		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of Port port " << this->_address << ":" << this->_port << std::endl;
 		return (FAILURE);
 	}
 }
@@ -204,4 +204,14 @@ void	Port::printPortConfs(void)
 void	Port::addToConf(const std::string &name, ServerConf *newConf)
 {
 	this->_portConfs[name] = newConf;
+}
+
+const std::vector<int>	Port::getClientsVector(void) const
+{
+	return (this->_clientSockets);
+}
+
+uint32_t	Port::getAddress(void) const
+{
+	return (this->_address);
 }
