@@ -120,7 +120,7 @@ int	Port::removeClientSocket(int clientSocket)
 	return (status);
 }
 
-bool	Port::isClientSocket(int fd)
+bool	Port::isClientSocket(int fd) const
 {
 	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end())
 	{
@@ -132,7 +132,7 @@ bool	Port::isClientSocket(int fd)
 	}
 }
 
-bool	Port::isServerSocket(int fd)
+bool	Port::isServerSocket(int fd) const
 {
 	if (fd == this->_serverSocket)
 	{
@@ -150,7 +150,7 @@ int	Port::initPortSocket(void)
 	return (this->_serverSocket);
 }
 
-int	Port::getPort(void)
+int	Port::getPort(void) const
 {
 	return (this->_port);
 }

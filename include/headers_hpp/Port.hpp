@@ -16,10 +16,10 @@ class	Port
 		Port				&operator=(const Port &otherPort);
 		int					acceptNewConnection(void);
 		int					removeClientSocket(int clientSocket);
-		bool				isClientSocket(int fd);
-		bool				isServerSocket(int fd);
+		bool				isClientSocket(int fd) const;
+		bool				isServerSocket(int fd) const;
 		int					initPortSocket(void);
-		int					getPort(void);
+		int					getPort(void) const;
 		Client				*getClient(int clientSocket);
 		int					addClientsToBounce(std::vector<int> &clientsToBounce);
 		void				printPortConfs(void);

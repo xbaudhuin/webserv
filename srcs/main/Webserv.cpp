@@ -82,7 +82,7 @@ void Webserv::addEnv(char **env)
     }
 }
 
-char** Webserv::getEnv()
+char** Webserv::getEnv() const
 {
     return(this->_env_char);
 }
@@ -285,12 +285,12 @@ int	Webserv::closeClientConnection(int clientSocket)
 	return (status);
 }
 
-int	Webserv::getEpollFd(void)
+int	Webserv::getEpollFd(void) const
 {
 	return (this->_epollFd);
 }
 
-int	Webserv::isClientSocket(int fd)
+int	Webserv::isClientSocket(int fd) const
 {
 	try
 	{
@@ -302,7 +302,7 @@ int	Webserv::isClientSocket(int fd)
 	}
 }
 
-int	Webserv::isServerSocket(int fd)
+int	Webserv::isServerSocket(int fd) const
 {
 	try
 	{
@@ -346,15 +346,15 @@ int	Webserv::handlePortEvent(int serverSocket)
 	int	newClient;
 
 	newClient = this->_idMap[serverSocket]->acceptNewConnection();
-	if (newClient == -1)
+	if (newClient == BAD_FD)
 	{
-		return (1);
+		return (FAILURE);
 	}
-	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != 0)
+	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != SUCCESS)
 	{
 		this->_idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
-		return (1);
+		return (FAILURE);
 	}
 	try
 	{
@@ -363,12 +363,13 @@ int	Webserv::handlePortEvent(int serverSocket)
 	catch(const std::exception& e)
 	{
 		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
-		/* Send error to client */
+		if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, newClient, NULL) != SUCCESS)
+			std::cerr << "webserv: Webserv::handlePortEvent: epoll_ctl: " << strerror(errno) << std::endl;
 		this->_idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
-		return (1);
+		return (FAILURE);
 	}
-	return (0);
+	return (SUCCESS);
 }
 
 int	Webserv::receive(int clientSocket)
@@ -417,6 +418,24 @@ int	Webserv::receive(int clientSocket)
 	return (SUCCESS);
 }
 
+int	Webserv::handleEndResponse(int clientSocket, const Client* clientRequest)
+{
+	if (clientRequest->keepConnectionOpen() == false)
+	{
+		return (this->closeClientConnection(clientSocket));
+	}
+	else
+	{
+		if (changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLRDHUP)) != SUCCESS)
+		{
+			this->closeClientConnection(clientSocket);
+			return (FAILURE);
+		}
+		std::cout << "webserv: changing epoll event to EPOLLIN | EPOLLRDHUP for fd " << clientSocket << std::endl;
+		return (SUCCESS);
+	}	
+}
+
 int	Webserv::respond(int clientSocket, uint32_t events)
 {
 	int			bytesSend;
@@ -427,13 +446,13 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 	try
 	{
 		clientRequest = this->_idMap[clientSocket]->getClient(clientSocket);
-		if (checkEvent(events, EPOLLIN) == true)
-		{
-			clientRequest->add400Response();
-		}
 		if (clientRequest == NULL)
 		{
 			return(this->closeClientConnection(clientSocket));
+		}
+		if (checkEvent(events, EPOLLIN) == true)
+		{
+			clientRequest->add400Response();
 		}
 		remainRequest = clientRequest->sendResponse(response);
 		bytesSend = send(clientSocket, response.c_str(), response.size(), 0);
@@ -445,20 +464,14 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 		}
 		if (remainRequest == false)
 		{
-			if (clientRequest->keepConnectionOpen() == false)
-				return (this->closeClientConnection(clientSocket));
-			else
-			{
-				if (changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLRDHUP)) != SUCCESS)
-					return (this->closeClientConnection(clientSocket));
-				std::cout << "webserv: changing epoll event to EPOLLIN | EPOLLRDHUP for fd " << clientSocket << std::endl;
-			}
+			return (this->handleEndResponse(clientSocket, clientRequest));
 		}
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << "webserv: Webserv::respond: catch error: " << e.what() << std::endl;
-		return (this->closeClientConnection(clientSocket));
+		this->closeClientConnection(clientSocket);
+		return (FAILURE);
 	}
 	return (SUCCESS);
 }
@@ -521,7 +534,7 @@ void	Webserv::printAllConfig(void)
 	}
 }
 
-void	Webserv::checkSigint(void)
+void	Webserv::checkSigint(void) const
 {
 	if (gSignal == SIGINT)
 	{
@@ -560,7 +573,7 @@ int	Webserv::start(void)
 		}
 		this->doCheckRoutine();
 	}
-	return (0);
+	return (SUCCESS);
 }
 
 const char	*Webserv::StopServer::what(void) const throw()
