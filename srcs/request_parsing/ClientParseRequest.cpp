@@ -104,8 +104,8 @@ size_t Client::insertInMap(std::string &line) {
     return (400);
   }
   trimWhitespace(value, _whiteSpaces);
-  std::cout << "KEY = " << key << std::endl;
-  std::cout << "VALUE = " << value << std::endl;
+  // std::cout << "KEY = " << key << std::endl;
+  // std::cout << "VALUE = " << value << std::endl;
 
   if (pos != line.npos) {
     if (_headers.insert(std::make_pair(key, value)).second == false &&
@@ -138,6 +138,8 @@ bool Client::checkIfValid(void) {
 void Client::parseRequest(std::string &buffer) {
   if (buffer.empty() == true)
     return;
+  if (buffer.substr(0, 16) == "GET /favicon.ico")
+    _favicon = true;
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
@@ -179,46 +181,52 @@ void Client::parseRequest(std::string &buffer) {
   _server = getServerConf();
   std::cout << YELLOW << "serverName = " << _server->getMainServerName()
             << " on port: " << _server->getPort() << RESET << std::endl;
-  try {
-    _location = &(_server->getPreciseLocation(_uri));
-    std::cout << YELLOW << "location = " << _location->getUrl() << RESET
-              << std::endl;
-  } catch (security_error &e) {
+  if (_favicon == true) {
     _location = NULL;
-    _statusCode = 400;
-    std::cout << RED << "caught security_error" << RESET << std::endl;
-    return;
-  } catch (std::exception &e) {
-    _location = NULL;
-    _statusCode = 404;
-    std::cout << RED << "changin statusCode because caught exception to "
-              << _statusCode << RESET << std::endl;
-    return;
-  }
-  if (checkIfValid() == false)
-    return;
-  std::map<std::string, std::string>::iterator it =
-      _headers.find("content-length");
-  if (it != _headers.end()) {
-    if (_method != "POST") {
-      _statusCode = 413;
-      std::cout << RED
-                << "changin statusCode because if (_method != \"POST\")to "
+    _server = _defaultConf;
+  } else {
+    try {
+      _location = &(_server->getPreciseLocation(_uri));
+      std::cout << YELLOW << "location = " << _location->getUrl() << RESET
+                << std::endl;
+    } catch (security_error &e) {
+      _location = NULL;
+      _statusCode = 400;
+      std::cout << RED << "caught security_error" << RESET << std::endl;
+      return;
+    } catch (std::exception &e) {
+      _location = NULL;
+      _statusCode = 404;
+      std::cout << RED << "changin statusCode because caught exception to "
                 << _statusCode << RESET << std::endl;
       return;
     }
-    _bodyToRead = std::strtol(((*it).second).c_str(), NULL, 10);
-    if (errno == ERANGE || _bodyToRead < 0 ||
-        (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
-         _server->getLimitBodySize() != 0)) {
-      std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
-                << RESET << std::endl;
-      _statusCode = 413;
-      std::cout << RED
-                << "changin statusCode because (_bodyToRead > "
-                   "static_cast<int>(_server->getLimitBodySize()) to "
-                << _statusCode << RESET << std::endl;
+    if (checkIfValid() == false)
       return;
+    std::map<std::string, std::string>::iterator it =
+        _headers.find("content-length");
+    if (it != _headers.end()) {
+      if (_method != "POST") {
+        _statusCode = 413;
+        std::cout << RED
+                  << "changin statusCode because if (_method != \"POST\")to "
+                  << _statusCode << RESET << std::endl;
+        return;
+      }
+      _bodyToRead = std::strtol(((*it).second).c_str(), NULL, 10);
+      if (errno == ERANGE || _bodyToRead < 0 ||
+          (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
+           _server->getLimitBodySize() != 0)) {
+        std::cout << PURP
+                  << "exit limitBdySize: " << _server->getLimitBodySize()
+                  << RESET << std::endl;
+        _statusCode = 413;
+        std::cout << RED
+                  << "changin statusCode because (_bodyToRead > "
+                     "static_cast<int>(_server->getLimitBodySize()) to "
+                  << _statusCode << RESET << std::endl;
+        return;
+      }
     }
   }
   if (_bodyToRead > 0) {
@@ -268,16 +276,16 @@ bool Client::addBuffer(std::string buffer) {
     return (false);
   }
   size_t start = 0;
-  std::cout << GREEN << "start = " << start << RESET << std::endl;
+  // std::cout << GREEN << "start = " << start << RESET << std::endl;
   while (true) {
     start = buffer.find_first_of('\r', start);
     if (start == buffer.npos) {
-      std::cout << RED << "No \\r found" << RESET << std::endl;
+      // std::cout << RED << "No \\r found" << RESET << std::endl;
       break;
     }
-    std::cout << GREEN << "found at start = " << start << RESET << std::endl;
+    // std::cout << GREEN << "found at start = " << start << RESET << std::endl;
     if (buffer[start + 1] == '\n') {
-      std::cout << GREEN << "erasing 1 \\r" << RESET << std::endl;
+      // std::cout << GREEN << "erasing 1 \\r" << RESET << std::endl;
       buffer.erase(start, 1);
     }
   }
@@ -293,7 +301,7 @@ bool Client::addBuffer(std::string buffer) {
       return (true);
     }
   }
-  std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
+  // std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   size_t pos = _buffer.find("\n\n", _requestSize);
   if (pos == _buffer.npos) {
     std::cout << RED << "No empty line in buffer" << RESET << std::endl;
@@ -303,9 +311,9 @@ bool Client::addBuffer(std::string buffer) {
   std::string request = _buffer.substr(0, pos);
   pos++;
   _buffer = _buffer.substr(pos, _buffer.size() - pos);
-  std::cout << RED << "separating request from buffer\n" << RESET;
-  std::cout << GREEN << "request:\n" << request << RESET;
-  std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
+  // std::cout << RED << "separating request from buffer\n" << RESET;
+  // std::cout << GREEN << "request:\n" << request << RESET;
+  // std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
   parseRequest(request);
   _time = getTime();
   if (_statusCode != 0)

@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/17 13:33:26 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/17 13:34:59 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -130,7 +130,8 @@ SRCS_MAIN		=	main/main.cpp \
 REQUEST = requester
 
 
-SRCS_REQUEST 	=	exec/Port.cpp \
+SRCS_REQUEST 	=	request_parsing/main.cpp \
+					exec/Port.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/CreateSocket.cpp \

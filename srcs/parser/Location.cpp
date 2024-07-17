@@ -3,6 +3,7 @@
 Location::Location(){
     this->url = "";
     this->root = "";
+    _root_server = "";
     this->redirection = "";
     this->_directory_listing = 0;
     this->limit_body_size = 0;
@@ -41,6 +42,7 @@ Location& Location::operator=(const Location &rhs){
         this->_root_check = rhs._root_check;
         this->upload_location = rhs.upload_location;
         this->_is_a_dir = rhs._is_a_dir;
+        this->_root_server = rhs._root_server;
     }
     return(*this);
 }
@@ -263,6 +265,8 @@ void Location::setMethod(const std::string &method, const std::string &status){
 
 void Location::fixUrl(const std::string &url){
     std::string s;
+    this->_root_server = url;
+    std::cout << this->_root_server << std::endl;
     // std::cout << this->root << std::endl;
     if(this->root[this->root.size() - 1] == '/')
         s = this->root.substr(0, this->root.size() - 1);
@@ -347,4 +351,8 @@ bool Location::isRedirected(void) const{
 
 const bool& Location::isADir(void) const{
     return(this->_is_a_dir);
+}
+
+const std::string& Location::getRootServer(void) const{
+    return (this->_root_server);
 }

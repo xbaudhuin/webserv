@@ -121,7 +121,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         // std::cout << "HERE IDIOT: " << s1 << std::endl;
         for (size_t i = 0; i < size; i++)
         {
-            if(this->_locations[i].isADir() && this->_locations[i].getUrl() == s1)
+            if(!this->_locations[i].isExactMatch() && this->_locations[i].isADir() && this->_locations[i].getUrl() == s1)
             {
 #if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;

@@ -62,6 +62,7 @@ private:
   bool _keepConnectionAlive;
   bool _chunkRequest;
   bool _epollIn;
+  bool _favicon;
 
   static const char *_validMethods[];
   static const size_t _methodSize;

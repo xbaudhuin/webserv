@@ -71,7 +71,7 @@ static std::map<size_t, std::string> initializeStatusMap() {
 const std::map<size_t, std::string> Response::_mapReasonPhrase =
     initializeStatusMap();
 
-const size_t Response::_sizeMaxResponse = 100;
+const size_t Response::_sizeMaxResponse = 8000;
 
 Response::Response(void)
     : _responseLine("HTTP/1.1 "), _body(""), _response(""), _ready(false) {

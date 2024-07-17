@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <dirent.h>
 #include <ostream>
+#include <stdio.h>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -12,7 +13,8 @@ bool Client::findIndex(std::string &url) {
   struct stat statbuf;
   size_t it = 0;
   for (; it < vector.size(); it++) {
-    tmp = url + vector[it];
+    tmp = "." + vector[it];
+    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET << std::endl;
     if (stat(tmp.c_str(), &statbuf) == 0) {
       break;
     }
@@ -26,28 +28,34 @@ bool Client::findIndex(std::string &url) {
     return (true);
   if (it == vector.size())
     return (false);
-  url += vector[it];
+  url = tmp;
   return (true);
 }
 
 void Client::buildListingDirectory(std::string &url) {
-  _uri = "." + _uri;
+  if (_location->getAutoIndex() == 0) {
+    _statusCode = 404;
+    return;
+  }
+  _uri = "." + _location->getRootServer() + _uri;
   _response.setStatusCode(200);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
   addConnectionHeader();
-  std::string body = "<html>\r\n";
+  std::string body = "<!DOCTYPE html>\r\n";
+  body += "<html>\r\n";
   body += "<head><title>Index of ";
   body += _uri + "</title></head>\r\n";
   body += "<body>\r\n<h1>Index of ";
   body += _uri + "</h1>";
-  if (_uri != url)
+  std::string loc = "." + _location->getUrl();
+  if (_uri != loc)
     body += "<hr><pre><a href=\"../\">../</a>\r\n";
   DIR *dir;
   dir = opendir(_uri.c_str());
   if (dir == NULL) {
-    std::cout << RED << "buildListingDirectory: dir = NULL" << RESET
-              << std::endl;
+    std::cout << RED << "buildListingDirectory: dir = NULL; _uri = " << _uri
+              << RESET << std::endl;
     if (errno == EACCES)
       _statusCode = 403;
     else if (errno == ENONET)
@@ -69,7 +77,11 @@ void Client::buildListingDirectory(std::string &url) {
       break;
     std::cout << YELLOW << "ent: " << ent->d_name << RESET << std::endl;
     struct stat file;
-    if (stat(ent->d_name, &file) == -1) {
+    std::string tmp = _uri + ent->d_name;
+    if (stat(tmp.c_str(), &file) == -1) {
+      int err = errno;
+      perror("ListtingDirectory");
+      errno = err;
       std::cout << RED << "buildListingDirectory: stat = -1; ent->d_name ="
                 << ent->d_name << RESET << std::endl;
       if (errno == EACCES) {
@@ -78,10 +90,15 @@ void Client::buildListingDirectory(std::string &url) {
         _statusCode = 500;
       return;
     }
+    
     std::string time = body += "<a href=\"";
     body += ent->d_name;
+    if (ent->d_type == DT_DIR)
+      body += "/";
     body += "\">";
     body += ent->d_name;
+    if (ent->d_type == DT_DIR)
+      body += "/";
     body += "</a> Date: " + getDateOfFile(file.st_mtim.tv_sec);
     body += " ";
     if (ent->d_type == DT_REG) {
@@ -99,14 +116,22 @@ void Client::buildListingDirectory(std::string &url) {
 }
 
 void Client::findPages(const std::string &urlu) {
-  std::string url = "." + urlu;
+  (void)urlu;
+  std::string url = "." + _location->getRootServer() + _uri;
   if (_location->isADir() == true) {
+    std::cout << RED << "Location is a Dir" << RESET << std::endl;
     if (_uri[_uri.size() - 1] == '/') {
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
-    } else
-      url += _uri.substr(_uri.find_last_of('/'));
+    }
+  } else if (_location->isExactMatch() == false) {
+    if (findIndex(url) == false) {
+      std::cout << *_location << BLUE << "no exact match, index == false;"
+                << RESET << std::endl;
+      _statusCode = 404;
+      return;
+    }
   }
   std::ifstream file(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
@@ -123,10 +148,10 @@ void Client::findPages(const std::string &urlu) {
     std::cout << PURP << "adding line to body: " << s << std::endl;
     _response.addLineToBoddy(s);
   }
-  if (file.bad()) {
-    std::cout << RED << "fail to read all file" << RESET << std::endl;
-    _statusCode = 400;
-  }
+  // if (file.bad()) {
+  //   std::cout << RED << "fail to read all file" << RESET << std::endl;
+  //   _statusCode = 500;
+  // }
 }
 
 void Client::createResponseBody(void) {
@@ -181,10 +206,20 @@ void Client::handleError(void) {
   return;
 }
 
+void Client::handleFavicon(void){
+  _response.setStatusCode(200);
+  _response.setDate();
+  _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
+  _response.setHeader("Content-encoding", "gzip");
+
+}
+
 void Client::buildResponse(void) {
   if (_server == NULL) {
     _server = _defaultConf;
   }
+  if (_favicon == true && _statusCode < 400)
+    return (handleFavicon());
   if (_statusCode < 400 && _location->isRedirected()) {
     return (handleRedirection());
   }

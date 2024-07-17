@@ -544,7 +544,7 @@ int	Webserv::start(void)
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)
 	{
-		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 2000);
+		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 500);
 		if (nbEvent == -1)
 		{
 			std::cerr << "webserv: Webserv::start: epoll_wait: " << strerror(errno) << std::endl;

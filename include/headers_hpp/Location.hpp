@@ -15,6 +15,7 @@ class Location
         bool _get;
         bool _delete;
         bool _is_a_dir;
+        std::string _root_server;
         /* POST */
         /* DELETE */
         /* FAST_CGI */
@@ -53,6 +54,7 @@ public:
         std::string getUploadLocation(void) const;
         bool isRedirected(void) const;
         const bool& isADir(void) const;
+        const std::string& getRootServer(void) const;
         /* setters */
         void addLimitBodySize(const std::string &limit);
         void addUrl(const std::string &url, std::string root);
