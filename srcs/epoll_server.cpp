@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <map>
 #include <fcntl.h>
+#include "../include/headers_hpp/Port.hpp"
 
 
 #define PORT_1 4244
@@ -194,14 +195,6 @@ void	respondToClient(int epoll_fd, int client_socket)
 	std::cout << "status send = " << status << std::endl;
 	changeEpollEvents(epoll_fd, client_socket, EPOLLIN | EPOLLRDHUP);
 	return ;
-}
-
-int	checkEvent(uint32_t events, uint32_t eventToCheck)
-{
-	if ((events & eventToCheck) != 0)
-		return (true);
-	else
-		return (false);
 }
 
 int	main()

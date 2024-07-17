@@ -1,11 +1,11 @@
-#include "Webserv.hpp"
+#include "sockets.hpp"
 
 int	protectedClose(int fd)
 {
 	int	status;
 
 	status = close(fd);
-	if (status == -1)
+	if (status == BAD_FD)
 	{
 		std::cerr << "webserv: close on fd " << fd << ": " << strerror(errno) << std::endl;
 	}

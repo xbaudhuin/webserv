@@ -197,15 +197,15 @@ void isSameVec_string(const vec_string &v, const vec_string &v1)
 
 void Webserv::checkConfigs(void)
 {
-    for (size_t i = 0; i < this->confs.size(); i++)
+    for (size_t i = 0; i < this->_confs.size(); i++)
     {
-        vec_string v = this->confs[i].first;
-        int port = this->confs[i].second.getPort();
-        for (size_t j = i + 1; j < this->confs.size(); j++)
+        vec_string v = this->_confs[i].first;
+        int port = this->_confs[i].second.getPort();
+        for (size_t j = i + 1; j < this->_confs.size(); j++)
         {
-            if(this->confs[j].second.getPort() == port)
+            if(this->_confs[j].second.getPort() == port)
             {
-                isSameVec_string(v, this->confs[j].first);
+                isSameVec_string(v, this->_confs[j].first);
             }
         }
         
