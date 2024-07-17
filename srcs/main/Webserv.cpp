@@ -18,15 +18,7 @@ Webserv::Webserv(const char* file)
     this->parseConfig(config);
 #if PRINT == 2
     vec_string v;
-    v.push_back("/error_pages/htmli/../../../../");
-    // v.push_back("/error_pages/c");
-    // v.push_back("/coucou/file");
-    // v.push_back("/error_pages/test/");
-    // v.push_back("/error_pages/coucou/html/");
-    // v.push_back("/error_pages/test/");
-    // v.push_back("/coucou");
-    // v.push_back("/notfound/");
-    // v.push_back("/no");
+    v.push_back("/coucou/test/test2");
     
     for (size_t i = 0; i < v.size(); i++)
     {
@@ -122,37 +114,16 @@ void Webserv::createMaps(void)
 			for (size_t j = 0; j < this->_confs[i].second.getServerNames().size(); j++)
 			{
             	std::string name = this->_confs[i].second.getServerNames()[j];
-            	//this->_Ports[this->_confs[i].second.getPort()]._portConfs[name] =  &(this->_confs[i].second);
 				this->_Ports[this->_confs[i].second.getPort()].addToConf(name, &(this->_confs[i].second));
 			}
         }
     }
-    //std::cout << this->_Ports.size() << std::endl;
-#ifdef PRINT
-    mapPorts::iterator it = this->_Ports.begin();
-    while(it != this->_Ports.end())
-    {
-        mapConfs::iterator ite = it->second._portConfs.begin();
-        while (ite != it->second._portConfs.end())
-        {
-			std::cout << "CONF NAME: " << ite->first << std::endl;
-            std::cout << (*ite->second) << std::endl;
-            ite++;
-        }
-        
-        it++;
-    }
-#endif
 }
 
 void Webserv::parse(vec_string split)
 {
     int check = 0;
     size_t size = split.size();
-    // for(size_t jt = 0; jt < size; jt++)
-    // {
-    //     std::cout << split[jt] << std::endl;
-    // }
     if(checkNumberBrackets(split))
         return(errorParsing("Issue with the file, uneven number of {}"));
     for(size_t i = 0; i < size; i++)
@@ -170,11 +141,9 @@ void Webserv::parse(vec_string split)
             catch(const std::exception& e)
             {
                 writeInsideLog(e, errorParsing);
-                // throw;
             }
         }
     }
-    // std::cout << "Test: " << this->_confs.size() << std::endl;
     if(!check)
     {
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
@@ -197,7 +166,6 @@ void Webserv::parseConfig(const std::string &conf)
     strm << config.rdbuf();
     std::string str = strm.str();
     config.close();
-   //this->conf.parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
     this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
 }
 
@@ -539,8 +507,10 @@ int	Webserv::start(void)
 {
 	int					nbEvent;
 	struct epoll_event	events[MAX_EVENTS];
-	
+
+#ifdef PRINT
 	this->printAllConfig();
+#endif
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)
 	{
