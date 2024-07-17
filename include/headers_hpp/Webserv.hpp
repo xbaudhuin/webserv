@@ -22,14 +22,14 @@ class Webserv
     private:
 		int			_epollFd;
 		mapPorts	_Ports;
-        vec_string	env;
-        char		**env_char;
-        vec_confs	confs;
+        vec_string	_env;
+        char		**_env_char;
+        vec_confs	_confs;
         			Webserv();
         void		parseConfig(const std::string &conf);
         void		parse(vec_string split); 
 		void		checkConfigs(void);
-		mapID		idMap;
+		mapID		_idMap;
         void		createMaps(void);
 		void		setServerSockets(void);
 		void		closeFds(void);
