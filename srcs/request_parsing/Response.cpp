@@ -71,7 +71,7 @@ static std::map<size_t, std::string> initializeStatusMap() {
 const std::map<size_t, std::string> Response::_mapReasonPhrase =
     initializeStatusMap();
 
-const size_t Response::_sizeMaxResponse = 8000;
+const size_t Response::_sizeMaxResponse = 20000;
 
 Response::Response(void)
     : _responseLine("HTTP/1.1 "), _body(""), _response(""), _ready(false) {
@@ -142,6 +142,8 @@ void Response::addLineToBoddy(const std::string &line) {
   _body += line + "\r\n";
 }
 
+std::string Response::getBody(void) { return (_body); }
+
 void Response::setBody(const std::string &body) {
   _body = body;
   std::ostringstream ss;
@@ -166,6 +168,8 @@ void Response::reset(void) {
   _headers.clear();
   _headers.insert(std::make_pair("Server", "Webserv/1.0.0"));
   _body = "";
+  _response = "";
+  _ready = false;
 }
 
 size_t Response::getBodySize(void) const { return (_body.size()); }
@@ -182,7 +186,8 @@ void Response::add400(const Response &error) {
 }
 
 std::string Response::getResponse(void) {
-  // std::cout << BLUE << "inside response: " << _response << RESET << std::endl;
+  // std::cout << BLUE << "inside response: " << _response << RESET <<
+  // std::endl;
   std::string ret = _response.substr(0, _sizeMaxResponse);
   _response.erase(0, _sizeMaxResponse);
   return (ret);

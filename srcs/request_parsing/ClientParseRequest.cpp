@@ -138,8 +138,6 @@ bool Client::checkIfValid(void) {
 void Client::parseRequest(std::string &buffer) {
   if (buffer.empty() == true)
     return;
-  if (buffer.substr(0, 16) == "GET /favicon.ico")
-    _favicon = true;
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
@@ -181,52 +179,51 @@ void Client::parseRequest(std::string &buffer) {
   _server = getServerConf();
   std::cout << YELLOW << "serverName = " << _server->getMainServerName()
             << " on port: " << _server->getPort() << RESET << std::endl;
-  if (_favicon == true) {
+  try {
+    _location = &(_server->getPreciseLocation(_uri));
+    std::cout << YELLOW << "location = " << _location->getUrl() << RESET
+              << std::endl;
+  } catch (security_error &e) {
     _location = NULL;
-    _server = _defaultConf;
-  } else {
-    try {
-      _location = &(_server->getPreciseLocation(_uri));
-      std::cout << YELLOW << "location = " << _location->getUrl() << RESET
-                << std::endl;
-    } catch (security_error &e) {
-      _location = NULL;
-      _statusCode = 400;
-      std::cout << RED << "caught security_error" << RESET << std::endl;
-      return;
-    } catch (std::exception &e) {
-      _location = NULL;
-      _statusCode = 404;
-      std::cout << RED << "changin statusCode because caught exception to "
+    _statusCode = 400;
+    std::cout << RED << "caught security_error" << RESET << std::endl;
+    return;
+  } catch (std::exception &e) {
+    _location = NULL;
+    _statusCode = 404;
+    std::cout << RED << "changin statusCode because caught exception to "
+              << _statusCode << RESET << std::endl;
+    return;
+  }
+  if (_location == NULL) {
+    std::cout << RED << "THOMAS EST NULL" << RESET << std::endl;
+  } else
+    std::cout << RED << "location = " << _location->getUrl() << RESET
+              << std::endl;
+  if (checkIfValid() == false)
+    return;
+  std::map<std::string, std::string>::iterator it =
+      _headers.find("content-length");
+  if (it != _headers.end()) {
+    if (_method != "POST") {
+      _statusCode = 413;
+      std::cout << RED
+                << "changin statusCode because if (_method != \"POST\")to "
                 << _statusCode << RESET << std::endl;
       return;
     }
-    if (checkIfValid() == false)
+    _bodyToRead = std::strtol(((*it).second).c_str(), NULL, 10);
+    if (errno == ERANGE || _bodyToRead < 0 ||
+        (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
+         _server->getLimitBodySize() != 0)) {
+      std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
+                << RESET << std::endl;
+      _statusCode = 413;
+      std::cout << RED
+                << "changin statusCode because (_bodyToRead > "
+                   "static_cast<int>(_server->getLimitBodySize()) to "
+                << _statusCode << RESET << std::endl;
       return;
-    std::map<std::string, std::string>::iterator it =
-        _headers.find("content-length");
-    if (it != _headers.end()) {
-      if (_method != "POST") {
-        _statusCode = 413;
-        std::cout << RED
-                  << "changin statusCode because if (_method != \"POST\")to "
-                  << _statusCode << RESET << std::endl;
-        return;
-      }
-      _bodyToRead = std::strtol(((*it).second).c_str(), NULL, 10);
-      if (errno == ERANGE || _bodyToRead < 0 ||
-          (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
-           _server->getLimitBodySize() != 0)) {
-        std::cout << PURP
-                  << "exit limitBdySize: " << _server->getLimitBodySize()
-                  << RESET << std::endl;
-        _statusCode = 413;
-        std::cout << RED
-                  << "changin statusCode because (_bodyToRead > "
-                     "static_cast<int>(_server->getLimitBodySize()) to "
-                  << _statusCode << RESET << std::endl;
-        return;
-      }
     }
   }
   if (_bodyToRead > 0) {
@@ -275,6 +272,7 @@ bool Client::addBuffer(std::string buffer) {
       return (true);
     return (false);
   }
+  std::cout << BLUE << "buffer = " << buffer << RESET << std::endl;
   size_t start = 0;
   // std::cout << GREEN << "start = " << start << RESET << std::endl;
   while (true) {
@@ -314,8 +312,14 @@ bool Client::addBuffer(std::string buffer) {
   // std::cout << RED << "separating request from buffer\n" << RESET;
   // std::cout << GREEN << "request:\n" << request << RESET;
   // std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
+  std::cout << RED << "End before parseRequest; StatusCode = " << _statusCode
+            << RESET << std::endl;
   parseRequest(request);
+  std::cout << RED << "End after parseRequest; StatusCode = " << _statusCode
+            << RESET << std::endl;
   _time = getTime();
+  std::cout << RED << "End add buffer; StatusCode = " << _statusCode << RESET
+            << std::endl;
   if (_statusCode != 0)
     return (true);
   return (false);

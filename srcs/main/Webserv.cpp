@@ -445,8 +445,10 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 		}
 		if (remainRequest == false)
 		{
-			if (clientRequest->keepConnectionOpen() == false)
+			if (clientRequest->keepConnectionOpen() == false){
+				std::cout << RED << "keepConnectionOpen = false" << RESET << std::endl;
 				return (this->closeClientConnection(clientSocket));
+			}
 			else
 			{
 				if (changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLRDHUP)) != SUCCESS)

@@ -1,14 +1,14 @@
 #include "Client.hpp"
 #include "Error.hpp"
-#include "ServerConf.hpp"
 #include "Port.hpp"
+#include "ServerConf.hpp"
 #include <stdexcept>
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
       _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
-      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false), _favicon(false) {
+      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false) {
   _time = getTime();
   if (defaultConf == NULL)
     throw(std::logic_error("Default server is NULL"));
@@ -44,7 +44,6 @@ Client &Client::operator=(Client const &rhs) {
     _chunkRequest = rhs._chunkRequest;
     _response = rhs._response;
     _epollIn = rhs._epollIn;
-    _favicon = rhs._favicon;
   }
   return (*this);
 }
@@ -61,6 +60,7 @@ bool Client::isTimedOut(void) {
 }
 
 void Client::resetClient(void) {
+  std::cout << YELLOW << "reset client + response" << RESET << std::endl;
   _server = NULL;
   _location = NULL;
   _time = getTime();
@@ -77,7 +77,6 @@ void Client::resetClient(void) {
   _chunkRequest = false;
   _response.reset();
   _epollIn = false;
-  _favicon = false;
 }
 
 ServerConf *Client::getServerConf(void) {
@@ -99,7 +98,7 @@ int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
 bool Client::keepConnectionOpen(void) const { return (_keepConnectionAlive); }
 
-std::string Client::getDateOfFile(time_t rawtime) const{
+std::string Client::getDateOfFile(time_t rawtime) const {
 
   tm *gmtTime = gmtime(&rawtime);
   char buffer[80] = {0};

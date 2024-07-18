@@ -37,6 +37,8 @@ public:
   void add400(const Response &error);
   bool isNotDone(void) const;
 
+  std::string getBody(void);
+
 protected:
 private:
   static const size_t _sizeMaxResponse;

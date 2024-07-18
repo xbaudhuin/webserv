@@ -14,7 +14,8 @@ bool Client::findIndex(std::string &url) {
   size_t it = 0;
   for (; it < vector.size(); it++) {
     tmp = "." + vector[it];
-    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET << std::endl;
+    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET
+              << std::endl;
     if (stat(tmp.c_str(), &statbuf) == 0) {
       break;
     }
@@ -90,7 +91,7 @@ void Client::buildListingDirectory(std::string &url) {
         _statusCode = 500;
       return;
     }
-    
+
     std::string time = body += "<a href=\"";
     body += ent->d_name;
     if (ent->d_type == DT_DIR)
@@ -143,15 +144,29 @@ void Client::findPages(const std::string &urlu) {
       _statusCode = 403;
     return;
   }
-  std::string s;
-  while (getline(file, s)) {
-    std::cout << PURP << "adding line to body: " << s << std::endl;
-    _response.addLineToBoddy(s);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  _response.setBody(buffer.str());
+  if (_uri[_uri.size() - 1] == 'o') {
+    std::fstream filetest("testInWebserv.png",
+                          std::ios::out | std::ios::in | std::ios::trunc);
+
+    if (!filetest.is_open()) {
+      std::cerr << "Failed to open the file." << std::endl;
+    }
+
+    filetest.write(_response.getBody().c_str(), _response.getBody().size());
+    if (!file) {
+      std::cerr << "Failed to write to the file." << std::endl;
+    }
+    filetest.flush();
+    file.close();
+
+    if (file.bad()) {
+      std::cout << RED << "fail to read all file" << RESET << std::endl;
+      _statusCode = 500;
+    }
   }
-  // if (file.bad()) {
-  //   std::cout << RED << "fail to read all file" << RESET << std::endl;
-  //   _statusCode = 500;
-  // }
 }
 
 void Client::createResponseBody(void) {
@@ -206,21 +221,18 @@ void Client::handleError(void) {
   return;
 }
 
-void Client::handleFavicon(void){
-  _response.setStatusCode(200);
-  _response.setDate();
-  _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
-  _response.setHeader("Content-encoding", "gzip");
-
-}
-
 void Client::buildResponse(void) {
+  if (_location != NULL) {
+    std::cout << RED << "location = " << _location->getUrl()
+              << ";statusCode = " << _statusCode << RESET << std::endl;
+  } else {
+    std::cout << RED << "location = NULL" << ";statusCode = " << _statusCode
+              << RESET << std::endl;
+  }
   if (_server == NULL) {
     _server = _defaultConf;
   }
-  if (_favicon == true && _statusCode < 400)
-    return (handleFavicon());
-  if (_statusCode < 400 && _location->isRedirected()) {
+  if (_statusCode < 400 && _location != NULL && _location->isRedirected()) {
     return (handleRedirection());
   }
   if (_statusCode >= 400)
@@ -233,7 +245,26 @@ void Client::buildResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   addConnectionHeader();
-  _response.setHeader("Content-Type", "text/html");
+  size_t dot = _uri.find_last_of('.');
+  if (dot < 100) {
+    std::cout << BLUE << "dot found _uri.substr = " << _uri.substr(dot) << RESET
+              << std::endl;
+  } else
+    std::cout << BLUE << "dot not found :" << dot << RESET << std::endl;
+  std::cout << "uri.size() = " << _uri.size() << "; dot = " << dot << RESET
+            << std::endl;
+  if (_uri.size() > 5 && _uri.size() - dot < 5 && dot < _uri.size()) {
+    std::cout << PURP << "inside dot file " << RESET << std::endl;
+    if (_uri.substr(dot) == ".ico") {
+      _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
+      _response.setHeader("Content-encoding", "gzip");
+    } else if (_uri.substr(dot) == ".png") {
+      std::cout << PURP << "found .png" << RESET << std::endl;
+      _response.setHeader("Content-Type", "image/png");
+    }
+  } else {
+    _response.setHeader("Content-Type", "text/html");
+  }
   _response.setHeader("Content-Length", _response.getBodySize());
   _response.BuildResponse();
 }
@@ -256,11 +287,16 @@ void Client::add400Response(void) {
 }
 
 bool Client::sendResponse(std::string &response) {
-  if (_response.isReady() == false)
+  if (_response.isReady() == false) {
+    std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
-  response = _response.getResponse();
-  // std::cout << BLUE << "response:\n" << response << RESET << std::endl;
+  }
+  response = _response.getResponse() + "\r\n";
+  std::cout << BLUE << "response for _uri:\n"
+            << _uri << "; of size : " << response.size() << "; " << response
+            << RESET << std::endl;
   bool ret = _response.isNotDone();
+  std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
   if (ret == false)
     resetClient();
   return (ret);
