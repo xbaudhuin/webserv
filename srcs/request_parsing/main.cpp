@@ -1,8 +1,8 @@
 #include "Client.hpp"
 #include "Error.hpp"
 #include "Location.hpp"
-#include "ServerConf.hpp"
 #include "Port.hpp"
+#include "ServerConf.hpp"
 #include "Webserv.hpp"
 #include <exception>
 #include <iostream>
@@ -12,12 +12,14 @@ int gSignal = 0;
 
 int main() {
   try {
-    std::string http_request =
-        "GET /..//coucou?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
-    http_request += "host: bonjour\r\n";
-    // http_request += "host: bonjour2\n\r";
-    // http_request += "Content-Length: 115\r\n";
-    http_request += "\r\n";
+    std::string http_request = "";
+    // std::string http_request =
+    // "GET /418.html?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
+    // http_request += "host: bonjour\r\n";
+    // http_request += "host: bonjour2\r\n";
+    http_request += "GET ";
+    http_request += "Content-Length: 10\r\n";
+    // http_request += "\r\n";
     // http_request += "bonjour=2\n";
     // http_request += "bonjour=20";
     ServerConf *cf = new ServerConf;
@@ -71,17 +73,20 @@ int main() {
     else
       std::cout << GREEN << "found \\r" << RESET << std::endl;
     std::string empty = "";
-    request.addBuffer(http_request);
+    std::vector<char> buf(&http_request[0], &http_request[http_request.size()]);
+
+    request.addBuffer(buf);
     int a = 0;
     if (a == 10)
       std::cout << RED << "a == 10" << std::endl;
     request.print();
-    std::string response;
-    std::string final;
+    std::vector<char> response;
+    std::vector<char> final;
     while (request.sendResponse(response) != 0) {
-      final += response;
+      final.insert(final.end(), &response[0], &response[response.size()]);
     }
-    final += response;
+    final.insert(final.end(), &response[0], &response[response.size()]);
+    // final += response;
     std::cout << GREEN << "response: \n" << final << RESET << std::endl;
 
     // while (request.isTimedOut() == false)

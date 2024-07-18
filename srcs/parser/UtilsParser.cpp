@@ -61,3 +61,17 @@ void insertStringInVector(std::vector<char> &vec, const std::string &str) {
     vec.push_back(str[i]);
   }
 }
+
+std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec) {
+  for (std::vector<char>::const_iterator it = vec.begin(); it != vec.end();
+       it++) {
+    std::cout << *it;
+  }
+  return (stream);
+}
+
+void resetVector(std::vector<char> &vec) {
+  std::vector<char> tmp;
+  vec.clear();
+  vec.swap(tmp);
+}

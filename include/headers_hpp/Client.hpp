@@ -31,10 +31,10 @@ public:
   Client &operator=(Client const &rhs);
   // method
   void print();
-  bool addBuffer(std::string buffer);
-  const std::string &getBuffer(void) const;
+  bool addBuffer(std::vector<char> buffer);
+  const std::vector<char> &getBuffer(void) const;
   int getBodyToRead(void) const;
-  bool sendResponse(std::string &response);
+  bool sendResponse(std::vector<char> &response);
   bool isTimedOut(void);
   void add400Response(void);
   bool keepConnectionOpen(void) const;
@@ -56,9 +56,9 @@ private:
   std::string _host;
   std::map<std::string, std::string> _headers;
   size_t _requestSize;
-  std::string _body;
+  std::vector<char> _body;
   int _bodyToRead;
-  std::string _buffer;
+  std::vector<char> _buffer;
   bool _keepConnectionAlive;
   bool _chunkRequest;
   bool _epollIn;
@@ -97,11 +97,14 @@ private:
   bool earlyParsing(void);
   bool checkMethod(void);
   bool checkIfValid(void);
-  void readFile(std::string &response);
+  void readFile(std::vector<char> &response);
 
   void resetClient(void);
   time_t getTime(void);
   std::string getDateOfFile(time_t rawtime) const;
+
+  bool hasNewLine(void) const;
+  void removeReturnCarriage(std::vector<char> &vec);
 };
 
 #endif //! CLIENT_HPP

@@ -19,4 +19,7 @@ std::string findErrorPage(int error_code, ServerConf &map);
 void trimWhitespace(std::string &str, const char *whiteSpaces);
 unsigned char toLower(char c);
 void insertStringInVector(std::vector<char> &vec, const std::string &str);
+std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec);
+void resetVector(std::vector<char> &vec);
+
 #endif

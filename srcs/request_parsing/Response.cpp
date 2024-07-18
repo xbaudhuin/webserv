@@ -163,7 +163,7 @@ void Response::BuildResponse(void) {
   std::map<std::string, std::string>::const_iterator it = _headers.begin();
   for (; it != _headers.end(); it++) {
     // _response += (*it).first + ": " + (*it).second + "\r\n";
-    insertStringInVector(_response, (*it).first + ": " + (*it).second);
+    insertStringInVector(_response, (*it).first + ": " + (*it).second + "\r\n");
   }
   // _response += "\r\n";
   insertStringInVector(_response, "\r\n");
@@ -180,8 +180,11 @@ void Response::reset(void) {
   _headers.clear();
   _headers.insert(std::make_pair("Server", "Webserv/1.0.0"));
   _body.clear();
+  std::vector<char> tmp;
+  _body.swap(tmp);
   _response.clear();
-  _response.shrink_to_fit();
+  std::vector<char> tmp2;
+  _response.swap(tmp2);
   _ready = false;
 }
 

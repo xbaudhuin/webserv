@@ -7,7 +7,7 @@
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
-      _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
+      _version(0), _host(""), _requestSize(0), _bodyToRead(-1),
       _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false),
       _leftToRead(0), _nbRead(0) {
   _time = getTime();
@@ -81,7 +81,9 @@ void Client::resetClient(void) {
   _headers.clear();
   _requestSize = 0;
   _bodyToRead = -1;
-  _buffer = "";
+  _buffer.clear();
+  std::vector<char> tmp;
+  _buffer.swap(tmp);
   _chunkRequest = false;
   _response.reset();
   _epollIn = false;
@@ -107,7 +109,7 @@ ServerConf *Client::getServerConf(void) {
   return (_defaultConf);
 }
 
-const std::string &Client::getBuffer(void) const { return (_buffer); }
+const std::vector<char> &Client::getBuffer(void) const { return (_buffer); }
 
 int Client::getBodyToRead(void) const { return (_bodyToRead); }
 

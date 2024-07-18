@@ -300,7 +300,7 @@ void Client::add400Response(void) {
   return;
 }
 
-void Client::readFile(std::string &response) {
+void Client::readFile(std::vector<char> &response) {
   char buf[_sizeMaxResponse];
   std::memset(buf, 0, _sizeMaxResponse);
   // std::vector<char> buf(_sizeMaxResponse);
@@ -321,12 +321,14 @@ void Client::readFile(std::string &response) {
   else
     _leftToRead -= _sizeMaxResponse;
   _nbRead++;
-  response = buf;
+  response.reserve(_file.gcount() + 1);
+  response.insert(response.begin(), &buf[0], &buf[_file.gcount() - 1]);
   std::cout << BLUE << "readFile: " << buf << RESET << std::endl;
   return;
 }
 
-bool Client::sendResponse(std::string &response) {
+bool Client::sendResponse(std::vector<char> &response) {
+  response.clear();
   if (_response.isReady() == false) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
