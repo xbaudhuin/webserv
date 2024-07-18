@@ -3,6 +3,7 @@
 #include "Utils.hpp"
 #include <asm-generic/errno.h>
 #include <cerrno>
+#include <cstring>
 #include <dirent.h>
 #include <ostream>
 #include <stdio.h>
@@ -112,7 +113,7 @@ void Client::buildListingDirectory(std::string &url) {
   }
   body += "</pre><hr></body>\r\n";
   body += "</html>\r\n";
-  _response.setBody(body);
+  _response.setBody(body, body.size());
   _response.BuildResponse();
 }
 
@@ -134,9 +135,10 @@ void Client::findPages(const std::string &urlu) {
       return;
     }
   }
-  std::ifstream file(url.c_str(), std::ios::in);
+  _path = url;
+  _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
-  if (file.is_open() == false) {
+  if (_file.is_open() == false) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
       _statusCode = 404;
@@ -144,29 +146,32 @@ void Client::findPages(const std::string &urlu) {
       _statusCode = 403;
     return;
   }
-  std::stringstream buffer;
-  buffer << file.rdbuf();
-  _response.setBody(buffer.str());
-  if (_uri[_uri.size() - 1] == 'o') {
-    std::fstream filetest("testInWebserv.png",
-                          std::ios::out | std::ios::in | std::ios::trunc);
+  struct stat st;
+  stat(url.c_str(), &st);
+  // std::memset(buf, 0, _sizeMaxResponse + 1);
+  // std::vector<char> buf(_sizeMaxResponse);
+  // char buf[_sizeMaxResponse] = {0};
 
-    if (!filetest.is_open()) {
-      std::cerr << "Failed to open the file." << std::endl;
-    }
+  int toRead = std::min(static_cast<long int>(_sizeMaxResponse), st.st_size);
+  std::vector<char> buf(toRead + 1);
+  _file.read(&buf[0], toRead);
 
-    filetest.write(_response.getBody().c_str(), _response.getBody().size());
-    if (!file) {
-      std::cerr << "Failed to write to the file." << std::endl;
-    }
-    filetest.flush();
-    file.close();
-
-    if (file.bad()) {
-      std::cout << RED << "fail to read all file" << RESET << std::endl;
-      _statusCode = 500;
-    }
+  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+            << std::endl;
+  if (_file.gcount() <= 0) {
+    _statusCode = 500;
+    return;
   }
+  // std::stringstream buffer;
+  // buffer << file.rdbuf();
+  std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
+  _response.setBody(buf, st.st_size);
+
+  if (st.st_size < static_cast<long int>(_sizeMaxResponse))
+    _leftToRead = 0;
+  else
+    _leftToRead = st.st_size - _sizeMaxResponse;
+  _nbRead++;
 }
 
 void Client::createResponseBody(void) {
@@ -176,7 +181,8 @@ void Client::createResponseBody(void) {
     findPages(_location->getUrl());
   }
   if (_statusCode >= 400) {
-    _response.setBody(findErrorPage(_statusCode, *_server));
+    const std::string &ref = findErrorPage(_statusCode, *_server);
+    _response.setBody(ref, ref.size());
   }
 }
 
@@ -201,8 +207,8 @@ void Client::defaultHTMLResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
-  _response.setBody(findErrorPage(_statusCode, *_server));
-  _response.setHeader("Content-Length", _response.getBodySize());
+  const std::string &ref = findErrorPage(_statusCode, *_server);
+  _response.setBody(ref, ref.size());
 }
 
 void Client::handleRedirection(void) {
@@ -238,6 +244,9 @@ void Client::buildResponse(void) {
   if (_statusCode >= 400)
     return (handleError());
   createResponseBody();
+  std::cout << PURP
+            << "After createResponseBody Client::buildResponse: body.size() = "
+            << _response.getBody().size() << RESET << std::endl;
   if (_statusCode >= 400) {
     _response.reset();
     return (handleError());
@@ -255,17 +264,21 @@ void Client::buildResponse(void) {
             << std::endl;
   if (_uri.size() > 5 && _uri.size() - dot < 5 && dot < _uri.size()) {
     std::cout << PURP << "inside dot file " << RESET << std::endl;
-    if (_uri.substr(dot) == ".ico") {
+    std::string extension = _uri.substr(dot);
+    if (extension == ".ico") {
       _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
-      _response.setHeader("Content-encoding", "gzip");
-    } else if (_uri.substr(dot) == ".png") {
+      // _response.setHeader("Content-encoding", "gzip");
+    } else if (extension == ".png") {
       std::cout << PURP << "found .png" << RESET << std::endl;
       _response.setHeader("Content-Type", "image/png");
+    } else if (extension == ".gif") {
+      _response.setHeader("Content-Type", "image/gif");
     }
   } else {
     _response.setHeader("Content-Type", "text/html");
   }
-  _response.setHeader("Content-Length", _response.getBodySize());
+  std::cout << PURP << "End of Client::buildResponse: body.size() = "
+            << _response.getBody().size() << RESET << std::endl;
   _response.BuildResponse();
 }
 
@@ -276,7 +289,8 @@ void Client::add400Response(void) {
   error400.setStatusCode(400);
   error400.setDate();
   error400.setHeader("Content-Type", "text/html");
-  error400.setBody(findErrorPage(_statusCode, *_server));
+  const std::string &ref = findErrorPage(_statusCode, *_server);
+  _response.setBody(ref, ref.size());
   error400.setHeader("Content-Length", _response.getBodySize());
   error400.setHeader("Connection", "close");
   error400.BuildResponse();
@@ -286,18 +300,54 @@ void Client::add400Response(void) {
   return;
 }
 
+void Client::readFile(std::string &response) {
+  char buf[_sizeMaxResponse];
+  std::memset(buf, 0, _sizeMaxResponse);
+  // std::vector<char> buf(_sizeMaxResponse);
+  // char buf[_sizeMaxResponse] = {0};
+  _file.read(buf, _sizeMaxResponse - 1);
+  if (_file.gcount() < 0) {
+    _statusCode = 500;
+    return;
+  }
+  if (_file.gcount() == 0) {
+    _leftToRead = 0;
+  }
+  // std::stringstream buffer;
+  // buffer << file.rdbuf();
+
+  if (_leftToRead < _sizeMaxResponse)
+    _leftToRead = 0;
+  else
+    _leftToRead -= _sizeMaxResponse;
+  _nbRead++;
+  response = buf;
+  std::cout << BLUE << "readFile: " << buf << RESET << std::endl;
+  return;
+}
+
 bool Client::sendResponse(std::string &response) {
   if (_response.isReady() == false) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
+    response = _response.getResponse();
+    std::cout << BLUE << "response for _uri:\n"
+              << _uri << "; of size : " << response.size() << RESET
+              << std::endl;
+    bool ret = _leftToRead != 0;
+    std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
+    if (_leftToRead == 0)
+      resetClient();
+    return (_leftToRead != 0);
   }
-  response = _response.getResponse() + "\r\n";
-  std::cout << BLUE << "response for _uri:\n"
-            << _uri << "; of size : " << response.size() << "; " << response
-            << RESET << std::endl;
-  bool ret = _response.isNotDone();
-  std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
-  if (ret == false)
+  std::cout << PURP << "leftToRead = " << _leftToRead << RESET << std::endl;
+  if (_leftToRead > 0) {
+    readFile(response);
+  }
+  // std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
+  if (_leftToRead == 0)
     resetClient();
-  return (ret);
+  bool ret = _leftToRead != 0;
+  std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
+  return (_leftToRead != 0);
 }

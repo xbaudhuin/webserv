@@ -62,11 +62,16 @@ private:
   bool _keepConnectionAlive;
   bool _chunkRequest;
   bool _epollIn;
+  std::string _path;
+  std::ifstream _file;
+  size_t _leftToRead;
+  size_t _nbRead;
 
   static const char *_validMethods[];
   static const size_t _methodSize;
   static const char *_whiteSpaces;
   static const size_t _uriMaxSize;
+  static const size_t _sizeMaxResponse;
   static const size_t _headerMaxSize;
   static const size_t _headersMaxBuffer;
   static const std::map<std::string, char> _uriEncoding;
@@ -92,6 +97,7 @@ private:
   bool earlyParsing(void);
   bool checkMethod(void);
   bool checkIfValid(void);
+  void readFile(std::string &response);
 
   void resetClient(void);
   time_t getTime(void);

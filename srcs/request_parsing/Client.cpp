@@ -8,7 +8,8 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
       _version(0), _host(""), _requestSize(0), _bodyToRead(-1), _buffer(""),
-      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false) {
+      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false),
+      _leftToRead(0), _nbRead(0) {
   _time = getTime();
   if (defaultConf == NULL)
     throw(std::logic_error("Default server is NULL"));
@@ -44,6 +45,13 @@ Client &Client::operator=(Client const &rhs) {
     _chunkRequest = rhs._chunkRequest;
     _response = rhs._response;
     _epollIn = rhs._epollIn;
+    _leftToRead = rhs._leftToRead;
+    _nbRead = rhs._nbRead;
+    if (_file.is_open())
+      _file.close();
+    if (rhs._file.is_open())
+      _file.open(rhs._path.c_str());
+    _path = rhs._path;
   }
   return (*this);
 }
@@ -77,6 +85,13 @@ void Client::resetClient(void) {
   _chunkRequest = false;
   _response.reset();
   _epollIn = false;
+  _leftToRead = 0;
+  _nbRead = 0;
+  _path = "";
+  if (_file.is_open()) {
+    std::cout << GREEN << "closing _file" << RESET << std::endl;
+    _file.close();
+  }
 }
 
 ServerConf *Client::getServerConf(void) {
