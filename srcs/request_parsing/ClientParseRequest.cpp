@@ -28,12 +28,12 @@ int Client::parseUri(const std::string &uri) {
   if (uri.size() > _uriMaxSize)
     return (414);
   size_t pos = uri.find_first_of('?');
-  _uri = uri.substr(0, pos);
-  uriDecoder(_uri);
-  if (_uri.size() > 2048)
+  _sUri = uri.substr(0, pos);
+  uriDecoder(_sUri);
+  if (_sUri.size() > 2048)
     return (414);
   if (pos != uri.npos) {
-    _queryUri = uri.substr(pos + 1);
+    _sQueryUri = uri.substr(pos + 1);
   }
 
   return (0);
@@ -43,14 +43,14 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   vec_string split_request = split(requestLine, " ");
   if (split_request.size() != 3) {
 
-    std::cout << RED << "StatusCode(split.size()): " << "400" << RESET
-              << std::endl;
+    std::cout << RED << "StatusCode(split.size()): " << split_request.size()
+              << RESET << std::endl;
 
     return (400);
   }
-  _method = split_request[0];
+  _sMethod = split_request[0];
   size_t i = 0;
-  for (; i < _methodSize && _method != _validMethods[i]; i++) {
+  for (; i < _methodSize && _sMethod != _validMethods[i]; i++) {
   }
   if (i == _methodSize) {
     return (400);
@@ -90,7 +90,7 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   i++;
   char *after = NULL;
   long int nb = std::strtol(version.c_str() + i, &after, 10);
-  if (nb < 0 || nb > 999 || *after != '\0') {
+  if (nb < 0 || nb > 999 || *after != '\0' || errno == ERANGE) {
 
     std::cout << RED << "StatusCode(nb): " << "400" << RESET << std::endl;
 
@@ -129,13 +129,13 @@ size_t Client::insertInMap(std::string &line) {
 }
 
 bool Client::checkMethod(void) {
-  if (_method == "GET" && _location->getGetStatus() == false) {
+  if (_sMethod == "GET" && _location->getGetStatus() == false) {
     _statusCode = 405;
     return (false);
-  } else if (_method == "POST" && _location->getPostStatus() == false) {
+  } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
     _statusCode = 405;
     return (false);
-  } else if (_method == "POST" && _location->getDeleteStatus() == false) {
+  } else if (_sMethod == "POST" && _location->getDeleteStatus() == false) {
     _statusCode = 405;
     return (false);
   }
@@ -197,7 +197,7 @@ void Client::parseRequest(std::string &buffer) {
 
   std::cout << RED << "Before at" << RESET << std::endl;
 
-  _host = _headers.at("host");
+  _sHost = _headers.at("host");
 
   std::cout << YELLOW << "HERE: " << "host : " << _headers.at("host") << RESET
             << std::endl;
@@ -208,7 +208,7 @@ void Client::parseRequest(std::string &buffer) {
             << " on port: " << _server->getPort() << RESET << std::endl;
 
   try {
-    _location = &(_server->getPreciseLocation(_uri));
+    _location = &(_server->getPreciseLocation(_sUri));
 
     std::cout << YELLOW << "location = " << _location->getUrl() << RESET
               << std::endl;
@@ -243,11 +243,11 @@ void Client::parseRequest(std::string &buffer) {
   std::map<std::string, std::string>::iterator it =
       _headers.find("content-length");
   if (it != _headers.end()) {
-    if (_method != "POST") {
+    if (_sMethod != "POST") {
       _statusCode = 413;
 
       std::cout << RED
-                << "changin statusCode because if (_method != \"POST\")to "
+                << "changin statusCode because if (_sMethod != \"POST\")to "
                 << _statusCode << RESET << std::endl;
 
       return;
@@ -270,81 +270,74 @@ void Client::parseRequest(std::string &buffer) {
   }
   if (_bodyToRead > 0) {
 
-    std::cout << PURP << "_bodysize = " << _bodyToRead
-              << "; body.size() = " << _body.size() << RESET << std::endl;
+    std::cout << PURP << "_vBodysize = " << _bodyToRead
+              << "; body.size() = " << _vBody.size() << RESET << std::endl;
 
-    _body.insert(_body.end(), _buffer.begin(), _buffer.begin() + _bodyToRead);
-    if (static_cast<int>(_buffer.size()) > _bodyToRead)
-      _buffer.erase(_buffer.begin(), _buffer.begin() + _bodyToRead);
-    _bodyToRead -= _body.size();
+    _vBody.insert(_vBody.end(), _vBuffer.begin(),
+                  _vBuffer.begin() + _bodyToRead);
+    if (static_cast<int>(_vBuffer.size()) > _bodyToRead)
+      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+    _bodyToRead -= _vBody.size();
     if (_bodyToRead <= 0)
       _bodyToRead = -1;
   } else {
 
     std::cout << PURP << "No body" << RESET << std::endl;
   }
-  if (_buffer.size() != 0) {
+  if (_vBuffer.size() != 0) {
     _statusCode = 400;
 
-    std::cout << RED << "buffer != 0 : " << _buffer << RESET << std::endl;
+    std::cout << RED << "buffer != 0 : " << _vBuffer << RESET << std::endl;
     std::cout << RED
-              << "changin statusCode because if (_buffer.size() != 0) to "
+              << "changin statusCode because if (_vBuffer.size() != 0) to "
               << _statusCode << RESET << std::endl;
   } else
     _statusCode = 200;
   return;
 }
 
-bool Client::earlyParsing(void) {
+bool Client::earlyParsing(int newLine) {
 
-  std::cout << PURP << "EARLY PARSING: _buffer.size() = " << _buffer.size()
+  std::cout << PURP << "EARLY PARSING: _vBuffer.size() = " << _vBuffer.size()
             << RESET << std::endl;
 
-  std::string early(&_buffer[0], _buffer[_buffer.size() - 1]);
-  size_t pos = early.find_first_of(' ');
-  if (pos == early.npos && early.size() > 8) {
-    _statusCode = 400;
-    return (false);
-  }
-  early = early.substr(0, pos);
-  size_t i = 0;
-  for (; i < _methodSize && early != _validMethods[i]; i++) {
-  }
-  if (i == _methodSize) {
-    _statusCode = 400;
-    return (false);
+  if (newLine) {
+
+    std::cout << PURP << "earlyPARSING: NEWLINE" << RESET << std::endl;
+
+    std::string early(&_vBuffer[0], &_vBuffer[newLine]);
+    std::cout << BLUE << "earlyParsing: early = " << early << RESET
+              << std::endl;
+    size_t tmpStatusCode = parseRequestLine(early);
+    _sMethod = "";
+    _sUri = "";
+    _sQueryUri = "";
+    _version = 1;
+    if (tmpStatusCode == 400) {
+      return (false);
+    }
+  } else {
+    std::string early(&_vBuffer[0], &_vBuffer[_vBuffer.size()]);
+
+    size_t pos = early.find_first_of(' ');
+    if (pos == early.npos && early.size() > 8) {
+      return (false);
+    }
+    early = early.substr(0, pos);
+    size_t i = 0;
+    for (; i < _methodSize && early != _validMethods[i]; i++) {
+    }
+    if (i == _methodSize) {
+      return (false);
+    }
+    return (true);
   }
   return (true);
 }
 
 void Client::removeReturnCarriage(std::vector<char> &vec) {
-  // std::vector<char>::iterator first = vec.begin();
-  // std::vector<char>::iterator second = first;
-  // second++;
-  //
-  // std::cout << BLUE << "vec: " << vec << RESET << std::endl;
-  // if (_buffer.empty() == true && vec.size() > 2) {
-  //   while (true) {
-  //     if (second == vec.end())
-  //       break;
-  //     if (*first == '\r' && *second == '\n') {
-  //       if (first == vec.begin()) {
-  //         vec.erase(first);
-  //         first = vec.begin();
-  //       } else {
-  //         std::vector<char>::iterator tmp = first;
-  //         tmp--;
-  //         vec.erase(first);
-  //         first = tmp;
-  //       }
-  //       second = first;
-  //       if (first == vec.end() || ++second == vec.end())
-  //         break;
-  //     } else
-  //       break;
-  //   }
-  // }
-  _buffer.reserve(_buffer.size() + vec.size());
+
+  _vBuffer.reserve(_vBuffer.size() + vec.size());
   for (size_t it = 0; it < vec.size(); it++) {
     if (vec[it] == '\r') {
       size_t tmp = it;
@@ -352,77 +345,84 @@ void Client::removeReturnCarriage(std::vector<char> &vec) {
       if (it == vec.size())
         break;
       if (vec[it] != '\n') {
-        _buffer.push_back(*(vec.begin() + tmp));
+        _vBuffer.push_back(*(vec.begin() + tmp));
       }
     }
-    _buffer.push_back(*(vec.begin() + it));
+    _vBuffer.push_back(*(vec.begin() + it));
   }
-  std::vector<char>::iterator second = _buffer.begin();
-  for (std::vector<char>::iterator i = _buffer.begin(); i != _buffer.end();
-       i++) {
-    if (*i == '\n') {
-      second = i;
-      second++;
-      if (second == _buffer.end() || *second != '\n')
-        break;
-      _buffer.erase(_buffer.begin(), _buffer.begin() + 2);
-      i = _buffer.begin();
-      if (i == _buffer.end())
-        break;
+  while (true) {
+    if (_vBuffer.size() == 0)
+      break;
+    std::vector<char>::iterator it = _vBuffer.begin();
+    if (*it == '\n') {
+      _vBuffer.erase(it);
     } else {
       break;
     }
   }
+
   std::cout << BLUE << "vec: " << vec << RESET << std::endl;
-  std::cout << PURP << "buffer: " << _buffer << RESET << std::endl;
+  std::cout << PURP << "buffer: " << _vBuffer << RESET << std::endl;
+
   return;
 }
 
-bool Client::hasNewLine(void) const {
-  for (size_t i = 0; i < _buffer.size(); i++) {
-    if (_buffer[i] == '\n')
-      return (true);
+size_t Client::hasNewLine(void) const {
+  for (size_t i = 0; i < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\n')
+      return (i);
   }
+  return (0);
+}
+
+bool Client::checkBodyToRead(std::vector<char> buffer) {
+
+  std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
+
+  if (buffer.size() > static_cast<long unsigned int>(_bodyToRead)) {
+    _statusCode = 400;
+  }
+  _vBody.insert(_vBody.end(), buffer.begin(), buffer.end());
+  _bodyToRead -= buffer.size();
+  _time = getTime();
+  if (_bodyToRead <= 0 || _statusCode != 0)
+    return (true);
   return (false);
 }
 
 bool Client::addBuffer(std::vector<char> buffer) {
 
   std::cout << BLUE << "Client::addBuffer: " << buffer << RESET << std::endl;
-
   if (_bodyToRead > 0) {
-
-    std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
-
-    if (buffer.size() > static_cast<long unsigned int>(_bodyToRead)) {
-      _statusCode = 400;
-    }
-    _body.insert(_body.end(), buffer.begin(), buffer.end());
-    _bodyToRead -= buffer.size();
-    _time = getTime();
-    if (_bodyToRead <= 0 || _statusCode != 0)
-      return (true);
-    return (false);
+    return (checkBodyToRead(buffer));
   }
-  // std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
-  // size_t pos = _buffer.find("\n\n", _requestSize);
-  // if (pos == _buffer.npos) {
+  // std::cout << YELLOW << "buffer:\n" << _vBuffer << RESET << std::endl;
+  // size_t pos = _vBuffer.find("\n\n", _requestSize);
+  // if (pos == _vBuffer.npos) {
   //   std::cout << RED << "No empty line in buffer" << RESET << std::endl;
   //   _time = getTime();
   //   return (false);
   // }
+
   removeReturnCarriage(buffer);
-  bool newLine = hasNewLine();
-  if (_buffer.size() < 20 || newLine == true) {
-    if (earlyParsing() == false) {
+  int newLine = hasNewLine();
+
+  std::cout << PURP << "earlyPARSING: NEWLINE = " << newLine << RESET
+            << std::endl;
+
+  if (_vBuffer.size() < 20 || newLine > 0) {
+    if (earlyParsing(newLine) == false) {
       _statusCode = 400;
       _server = _defaultConf;
       return (true);
     }
   }
+  if (newLine == 0) {
+    return (false);
+  }
   int pos = -1;
-  for (size_t i = 0; i + 1 < _buffer.size(); i++) {
-    if (_buffer[i] == '\n' && _buffer[i + 1] == '\n') {
+  for (size_t i = newLine; i + 1 < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\n' && _vBuffer[i + 1] == '\n') {
       pos = i;
 
       std::cout << GREEN << "FOUND EMPTY LINE" << RESET << std::endl;
@@ -438,15 +438,22 @@ bool Client::addBuffer(std::vector<char> buffer) {
     return (false);
   }
 
-  std::string request(&_buffer[0], &_buffer[pos]);
-  _buffer.erase(_buffer.begin(), _buffer.begin() + pos + 2);
-  std::cout << YELLOW << "buffer after request: " << _buffer << RESET
+  std::string request(&_vBuffer[0], &_vBuffer[pos]);
+
+  std::cout << RED << "_vbuffer[pos] = " << _vBuffer[pos] << "\n";
+  std::cout << RED << "_vbuffer[pos + 1] = " << _vBuffer[pos + 1] << "\n";
+  // std::cout << RED << "_vbuffer[pos + 2] = " << _vBuffer[pos + 2] << "\n";
+  //
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + pos + 2);
+
+  std::cout << YELLOW << "buffer after request: " << _vBuffer << RESET
             << std::endl;
   std::cout << PURP << "requestLine: " << request << RESET << std::endl;
-  // _buffer = _buffer.substr(pos, _buffer.size() - pos);
+
+  // _vBuffer = _vBuffer.substr(pos, _vBuffer.size() - pos);
   // std::cout << RED << "separating request from buffer\n" << RESET;
   // std::cout << GREEN << "request:\n" << request << RESET;
-  // std::cout << YELLOW << "buffer:\n" << _buffer << RESET << std::endl;
+  // std::cout << YELLOW << "buffer:\n" << _vBuffer << RESET << std::endl;
   std::cout << RED << "End before parseRequest; StatusCode = " << _statusCode
             << RESET << std::endl;
 
@@ -455,6 +462,12 @@ bool Client::addBuffer(std::vector<char> buffer) {
   std::cout << RED << "End after parseRequest; StatusCode = " << _statusCode
             << RESET << std::endl;
 
+  if (_vBuffer.empty() == false) {
+    if (_bodyToRead > 0) {
+      return (checkBodyToRead(_vBuffer));
+    } else
+      _statusCode = 400;
+  }
   _time = getTime();
   if (_statusCode != 0)
     return (true);

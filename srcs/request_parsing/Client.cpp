@@ -6,8 +6,8 @@
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _response(), _location(NULL), _statusCode(0), _method(""), _uri(""),
-      _version(0), _host(""), _requestSize(0), _bodyToRead(-1),
+      _response(), _location(NULL), _statusCode(0), _sMethod(""), _sUri(""),
+      _version(0), _sHost(""), _requestSize(0), _bodyToRead(-1),
       _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false),
       _leftToRead(0), _nbRead(0) {
   _time = getTime();
@@ -32,15 +32,15 @@ Client &Client::operator=(Client const &rhs) {
     _location = rhs._location;
     _time = rhs._time;
     _statusCode = rhs._statusCode;
-    _method = rhs._method;
-    _uri = rhs._uri;
-    _queryUri = rhs._queryUri;
+    _sMethod = rhs._sMethod;
+    _sUri = rhs._sUri;
+    _sQueryUri = rhs._sQueryUri;
     _version = rhs._version;
-    _host = rhs._host;
+    _sHost = rhs._sHost;
     _headers = rhs._headers;
     _requestSize = rhs._requestSize;
     _bodyToRead = rhs._bodyToRead;
-    _buffer = rhs._buffer;
+    _vBuffer = rhs._vBuffer;
     _keepConnectionAlive = rhs._keepConnectionAlive;
     _chunkRequest = rhs._chunkRequest;
     _response = rhs._response;
@@ -50,15 +50,15 @@ Client &Client::operator=(Client const &rhs) {
     if (_file.is_open())
       _file.close();
     if (rhs._file.is_open())
-      _file.open(rhs._path.c_str());
-    _path = rhs._path;
+      _file.open(rhs._sPath.c_str());
+    _sPath = rhs._sPath;
   }
   return (*this);
 }
 
 time_t Client::getTime(void) { return (std::time(0)); }
 
-bool Client::isTimedOut(void) {
+bool Client::isTimedOut(void)const {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);
@@ -73,23 +73,23 @@ void Client::resetClient(void) {
   _location = NULL;
   _time = getTime();
   _statusCode = 0;
-  _method = "";
-  _uri = "";
-  _queryUri = "";
+  _sMethod = "";
+  _sUri = "";
+  _sQueryUri = "";
   _version = 0;
-  _host = "";
+  _sHost = "";
   _headers.clear();
   _requestSize = 0;
   _bodyToRead = -1;
-  _buffer.clear();
+  _vBuffer.clear();
   std::vector<char> tmp;
-  _buffer.swap(tmp);
+  _vBuffer.swap(tmp);
   _chunkRequest = false;
   _response.reset();
   _epollIn = false;
   _leftToRead = 0;
   _nbRead = 0;
-  _path = "";
+  _sPath = "";
   if (_file.is_open()) {
     std::cout << GREEN << "closing _file" << RESET << std::endl;
     _file.close();
@@ -98,9 +98,9 @@ void Client::resetClient(void) {
 
 ServerConf *Client::getServerConf(void) {
   mapConfs::const_iterator it;
-  it = _mapConf.find(_host);
+  it = _mapConf.find(_sHost);
   if (it != _mapConf.end()) {
-    std::cout << YELLOW << "found via host: " << _host
+    std::cout << YELLOW << "found via host: " << _sHost
               << "; server name: " << ((*it).second)->getMainServerName()
               << RESET << std::endl;
     return ((*it).second);
@@ -109,7 +109,7 @@ ServerConf *Client::getServerConf(void) {
   return (_defaultConf);
 }
 
-const std::vector<char> &Client::getBuffer(void) const { return (_buffer); }
+const std::vector<char> &Client::getBuffer(void) const { return (_vBuffer); }
 
 int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
@@ -139,17 +139,17 @@ void Client::print() {
 
   std::cout << "_socket     = " << _socket << "\n";
   std::cout << "status code = " << _statusCode << "\n";
-  std::cout << "method      = " << _method << "\n";
-  std::cout << "uri         = " << _uri << "\n";
-  std::cout << "queryUri    = " << _queryUri << "\n";
+  std::cout << "method      = " << _sMethod << "\n";
+  std::cout << "uri         = " << _sUri << "\n";
+  std::cout << "queryUri    = " << _sQueryUri << "\n";
   std::cout << "_requestSize= " << _requestSize << "\n";
   std::cout << "_version    = " << _version << "\n";
-  std::cout << "_host       = " << _host << "\n";
+  std::cout << "_sHost       = " << _sHost << "\n";
   std::cout << "_headers: key = value" << "\n";
   for (std::map<std::string, std::string>::iterator i = _headers.begin();
        i != _headers.end(); i++) {
     std::cout << (*i).first << " = " << (*i).second << "\n";
   }
   std::cout << "_bodyToRead    = " << _bodyToRead << "\n";
-  std::cout << "remain buffer = " << _buffer << std::endl;
+  std::cout << "remain buffer = " << _vBuffer << std::endl;
 }

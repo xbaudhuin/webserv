@@ -12,14 +12,14 @@ int gSignal = 0;
 
 int main() {
   try {
-    std::string http_request = "";
-    // std::string http_request =
-    // "GET /418.html?bonj%20our=2&salut=3 HTTP/1.0145\r\n";
+    // std::string http_request = "";
+    std::string http_request =
+    "GET /418.html?bonj%20our=2&salut=3 HTTP/1.0145\n";
+    http_request += "host: bonjour2\r\n";
+    // http_request += "GET /favicon.ico HTTP/1.0\r\n";
     // http_request += "host: bonjour\r\n";
-    // http_request += "host: bonjour2\r\n";
-    http_request += "GET ";
-    http_request += "Content-Length: 10\r\n";
-    // http_request += "\r\n";
+    // http_request += "Content-Length: 10\r\n";
+    http_request += "\r\n";
     // http_request += "bonjour=2\n";
     // http_request += "bonjour=20";
     ServerConf *cf = new ServerConf;

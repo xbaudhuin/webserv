@@ -35,7 +35,7 @@ public:
   const std::vector<char> &getBuffer(void) const;
   int getBodyToRead(void) const;
   bool sendResponse(std::vector<char> &response);
-  bool isTimedOut(void);
+  bool isTimedOut(void) const;
   void add400Response(void);
   bool keepConnectionOpen(void) const;
 
@@ -49,20 +49,20 @@ private:
   Location *_location;
   time_t _time;
   size_t _statusCode;
-  std::string _method;
-  std::string _uri;
-  std::string _queryUri;
+  std::string _sMethod;
+  std::string _sUri;
+  std::string _sQueryUri;
   size_t _version;
-  std::string _host;
+  std::string _sHost;
   std::map<std::string, std::string> _headers;
   size_t _requestSize;
-  std::vector<char> _body;
+  std::vector<char> _vBody;
   int _bodyToRead;
-  std::vector<char> _buffer;
+  std::vector<char> _vBuffer;
   bool _keepConnectionAlive;
   bool _chunkRequest;
   bool _epollIn;
-  std::string _path;
+  std::string _sPath;
   std::ifstream _file;
   size_t _leftToRead;
   size_t _nbRead;
@@ -94,7 +94,7 @@ private:
   void handleError(void);
   void handleRedirection(void);
   void createResponseBody(void);
-  bool earlyParsing(void);
+  bool earlyParsing(int newLine);
   bool checkMethod(void);
   bool checkIfValid(void);
   void readFile(std::vector<char> &response);
@@ -103,7 +103,8 @@ private:
   time_t getTime(void);
   std::string getDateOfFile(time_t rawtime) const;
 
-  bool hasNewLine(void) const;
+bool checkBodyToRead(std::vector<char> buffer);
+  size_t hasNewLine(void) const;
   void removeReturnCarriage(std::vector<char> &vec);
 };
 

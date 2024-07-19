@@ -39,7 +39,7 @@ void Client::buildListingDirectory(std::string &url) {
     _statusCode = 404;
     return;
   }
-  _uri = "." + _location->getRootServer() + _uri;
+  _sUri = "." + _location->getRootServer() + _sUri;
   _response.setStatusCode(200);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
@@ -47,16 +47,16 @@ void Client::buildListingDirectory(std::string &url) {
   std::string body = "<!DOCTYPE html>\r\n";
   body += "<html>\r\n";
   body += "<head><title>Index of ";
-  body += _uri + "</title></head>\r\n";
+  body += _sUri + "</title></head>\r\n";
   body += "<body>\r\n<h1>Index of ";
-  body += _uri + "</h1>";
+  body += _sUri + "</h1>";
   std::string loc = "." + _location->getUrl();
-  if (_uri != loc)
+  if (_sUri != loc)
     body += "<hr><pre><a href=\"../\">../</a>\r\n";
   DIR *dir;
-  dir = opendir(_uri.c_str());
+  dir = opendir(_sUri.c_str());
   if (dir == NULL) {
-    std::cout << RED << "buildListingDirectory: dir = NULL; _uri = " << _uri
+    std::cout << RED << "buildListingDirectory: dir = NULL; _sUri = " << _sUri
               << RESET << std::endl;
     if (errno == EACCES)
       _statusCode = 403;
@@ -71,7 +71,7 @@ void Client::buildListingDirectory(std::string &url) {
   while (true) {
     ent = readdir(dir);
     while (ent && ent->d_name[0] == '.') {
-      if (ent->d_name[1] == '.' && ent->d_name[2] == '\0' && url != _uri)
+      if (ent->d_name[1] == '.' && ent->d_name[2] == '\0' && url != _sUri)
         break;
       ent = readdir(dir);
     }
@@ -79,7 +79,7 @@ void Client::buildListingDirectory(std::string &url) {
       break;
     std::cout << YELLOW << "ent: " << ent->d_name << RESET << std::endl;
     struct stat file;
-    std::string tmp = _uri + ent->d_name;
+    std::string tmp = _sUri + ent->d_name;
     if (stat(tmp.c_str(), &file) == -1) {
       int err = errno;
       perror("ListtingDirectory");
@@ -119,10 +119,10 @@ void Client::buildListingDirectory(std::string &url) {
 
 void Client::findPages(const std::string &urlu) {
   (void)urlu;
-  std::string url = "." + _location->getRootServer() + _uri;
+  std::string url = "." + _location->getRootServer() + _sUri;
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
-    if (_uri[_uri.size() - 1] == '/') {
+    if (_sUri[_sUri.size() - 1] == '/') {
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
@@ -135,7 +135,7 @@ void Client::findPages(const std::string &urlu) {
       return;
     }
   }
-  _path = url;
+  _sPath = url;
   _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
   if (_file.is_open() == false) {
@@ -254,17 +254,17 @@ void Client::buildResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   addConnectionHeader();
-  size_t dot = _uri.find_last_of('.');
+  size_t dot = _sUri.find_last_of('.');
   if (dot < 100) {
-    std::cout << BLUE << "dot found _uri.substr = " << _uri.substr(dot) << RESET
+    std::cout << BLUE << "dot found _sUri.substr = " << _sUri.substr(dot) << RESET
               << std::endl;
   } else
     std::cout << BLUE << "dot not found :" << dot << RESET << std::endl;
-  std::cout << "uri.size() = " << _uri.size() << "; dot = " << dot << RESET
+  std::cout << "uri.size() = " << _sUri.size() << "; dot = " << dot << RESET
             << std::endl;
-  if (_uri.size() > 5 && _uri.size() - dot < 5 && dot < _uri.size()) {
+  if (_sUri.size() > 5 && _sUri.size() - dot < 5 && dot < _sUri.size()) {
     std::cout << PURP << "inside dot file " << RESET << std::endl;
-    std::string extension = _uri.substr(dot);
+    std::string extension = _sUri.substr(dot);
     if (extension == ".ico") {
       _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
       // _response.setHeader("Content-encoding", "gzip");
@@ -333,8 +333,8 @@ bool Client::sendResponse(std::vector<char> &response) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
     response = _response.getResponse();
-    std::cout << BLUE << "response for _uri:\n"
-              << _uri << "; of size : " << response.size() << RESET
+    std::cout << BLUE << "response for _sUri:\n"
+              << _sUri << "; of size : " << response.size() << RESET
               << std::endl;
     bool ret = _leftToRead != 0;
     std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
