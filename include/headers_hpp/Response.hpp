@@ -27,6 +27,7 @@ public:
   void setHeader(const std::string &headerName, const std::string &headerValue);
   void removeHeader(const std::string &headerName);
   void addReadToBoddy(const std::string &read);
+  void setBody(const std::vector<char> &body);
   void setBody(const std::vector<char> &body, size_t size);
   void setBody(const std::string &body, size_t size);
   size_t getBodySize(void) const;
@@ -34,10 +35,11 @@ public:
   bool isReady(void) const;
   void reset(void);
   std::string &getAllResponse(void);
-  std::vector<char> getResponse(void);
+  std::vector<char> &getResponse(void);
   void add400(const Response &error);
   bool isNotDone(void) const;
 
+  void addMapToVector(void);
   std::vector<char> getBody(void);
 
 protected:

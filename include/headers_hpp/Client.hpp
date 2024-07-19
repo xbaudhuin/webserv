@@ -97,7 +97,9 @@ private:
   bool earlyParsing(int newLine);
   bool checkMethod(void);
   bool checkIfValid(void);
-  void readFile(std::vector<char> &response);
+
+  void readFile(std::vector<char> &vec);
+  void readFile(void);
 
   void resetClient(void);
   time_t getTime(void);

@@ -116,7 +116,7 @@ void Response::setStatusCode(size_t statusCode) {
   ss << statusCode;
   _responseLine = "HTTP/1.1 ";
   _responseLine += ss.str();
-  _responseLine += _mapReasonPhrase.at(statusCode);
+  _responseLine += _mapReasonPhrase.at(statusCode) + "\r\n";
 }
 
 void Response::removeHeader(const std::string &headerName) {
@@ -143,7 +143,7 @@ void Response::setHeader(const std::string &headerName,
 std::vector<char> Response::getBody(void) { return (_body); }
 
 void Response::setBody(const std::string &body, size_t size) {
-  insertStringInVector(_body, body);
+  _body.insert(_body.end(), body.begin(), body.end());
   std::cout << YELLOW << "setting Content-Length: " << size
             << "body.size() = " << body.size() << RESET << std::endl;
   setHeader("Content-Length", size);
@@ -156,17 +156,30 @@ void Response::setBody(const std::vector<char> &body, size_t size) {
   setHeader("Content-Length", size);
 }
 
-void Response::BuildResponse(void) {
-  // _response = _responseLine + "\r\n";
-  insertStringInVector(_response, _responseLine + "\r\n");
+void Response::setBody(const std::vector<char> &body){
+  _body.insert(_body.end(), body.begin(), body.end());
+}
 
+void Response::addMapToVector(void) {
   std::map<std::string, std::string>::const_iterator it = _headers.begin();
   for (; it != _headers.end(); it++) {
     // _response += (*it).first + ": " + (*it).second + "\r\n";
-    insertStringInVector(_response, (*it).first + ": " + (*it).second + "\r\n");
+    // insertStringInVector(_response, (*it).first + ": " + (*it).second +
+    // "\r\n");
+    std::string tmp = (*it).first + ": " + (*it).second + "\r\n";
+    _response.insert(_response.end(), &tmp[0], &tmp[tmp.size()]);
   }
-  // _response += "\r\n";
-  insertStringInVector(_response, "\r\n");
+  _response.push_back('\r');
+  _response.push_back('\n');
+}
+
+void Response::BuildResponse(void) {
+  // _response = _responseLine + "\r\n";
+  resetVector(_response);
+  _response.insert(_response.begin(), &_responseLine[0],
+                   &_responseLine[_responseLine.size()]);
+
+  addMapToVector();
   _response.insert(_response.end(), _body.begin(), _body.end());
   std::cout << PURP
             << "Response::BuildResponse: _body.size() = " << _body.size()
@@ -180,11 +193,9 @@ void Response::reset(void) {
   _headers.clear();
   _headers.insert(std::make_pair("Server", "Webserv/1.0.0"));
   _body.clear();
-  std::vector<char> tmp;
-  _body.swap(tmp);
+  resetVector(_body);
   _response.clear();
-  std::vector<char> tmp2;
-  _response.swap(tmp2);
+  resetVector(_response);
   _ready = false;
 }
 
@@ -198,15 +209,15 @@ bool Response::isNotDone(void) const {
 
 void Response::add400(const Response &error) {
   // _response + "\r\n";
-  insertStringInVector(_response, "\r\n");
+  _response.push_back('r');
+  _response.push_back('\n');
   _response.insert(_response.end(), error._response.begin(),
                    error._response.end());
   // _response += error._response;
 }
 
-std::vector<char> Response::getResponse(void) {
+std::vector<char> &Response::getResponse(void) {
   // std::cout << BLUE << "inside response: " << _response << RESET <<
   // std::endl;
-  std::vector<char> ret = _response;
-  return (ret);
+  return (_response);
 }

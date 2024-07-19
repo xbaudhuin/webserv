@@ -145,15 +145,23 @@ void Client::findPages(const std::string &urlu) {
     else
       _statusCode = 403;
     return;
+    struct stat st;
+    stat(_sPath.c_str(), &st);
+    std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
+    _leftToRead = st.st_size;
+    _response.setHeader("Content-Length", st.st_size);
+    readFile();
   }
-  struct stat st;
-  stat(url.c_str(), &st);
+}
+
+void Client::readFile(void) {
+
   // std::memset(buf, 0, _sizeMaxResponse + 1);
   // std::vector<char> buf(_sizeMaxResponse);
   // char buf[_sizeMaxResponse] = {0};
 
-  int toRead = std::min(static_cast<long int>(_sizeMaxResponse), st.st_size);
-  std::vector<char> buf(toRead + 1);
+  int toRead = std::min(_sizeMaxResponse, _leftToRead);
+  std::vector<char> buf(toRead);
   _file.read(&buf[0], toRead);
 
   std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
@@ -164,13 +172,40 @@ void Client::findPages(const std::string &urlu) {
   }
   // std::stringstream buffer;
   // buffer << file.rdbuf();
-  std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
-  _response.setBody(buf, st.st_size);
+  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  _response.setBody(buf);
 
-  if (st.st_size < static_cast<long int>(_sizeMaxResponse))
+  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
     _leftToRead = 0;
   else
-    _leftToRead = st.st_size - _sizeMaxResponse;
+    _leftToRead = _leftToRead - _sizeMaxResponse;
+  _nbRead++;
+}
+
+void Client::readFile(std::vector<char> &vec) {
+
+  // std::memset(buf, 0, _sizeMaxResponse + 1);
+  // std::vector<char> buf(_sizeMaxResponse);
+  // char buf[_sizeMaxResponse] = {0};
+
+  int toRead = std::min(_sizeMaxResponse, _leftToRead);
+  std::vector<char> buf(toRead);
+  _file.read(&buf[0], toRead);
+
+  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+            << std::endl;
+  if (_file.gcount() <= 0) {
+    _statusCode = 500;
+    return;
+  }
+  // std::stringstream buffer;
+  // buffer << file.rdbuf();
+  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  vec.swap(buf);
+  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+    _leftToRead = 0;
+  else
+    _leftToRead = _leftToRead - _sizeMaxResponse;
   _nbRead++;
 }
 
@@ -180,10 +215,10 @@ void Client::createResponseBody(void) {
               << std::endl;
     findPages(_location->getUrl());
   }
-  if (_statusCode >= 400) {
-    const std::string &ref = findErrorPage(_statusCode, *_server);
-    _response.setBody(ref, ref.size());
-  }
+  // if (_statusCode >= 400) {
+  //   const std::vector<char> ref = findErrorPage(_statusCode, *_server);
+  //   _response.setBody(ref, ref.size());
+  // }
 }
 
 void Client::addConnectionHeader(void) {
@@ -207,7 +242,7 @@ void Client::defaultHTMLResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
-  const std::string &ref = findErrorPage(_statusCode, *_server);
+  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
   _response.setBody(ref, ref.size());
 }
 
@@ -256,8 +291,8 @@ void Client::buildResponse(void) {
   addConnectionHeader();
   size_t dot = _sUri.find_last_of('.');
   if (dot < 100) {
-    std::cout << BLUE << "dot found _sUri.substr = " << _sUri.substr(dot) << RESET
-              << std::endl;
+    std::cout << BLUE << "dot found _sUri.substr = " << _sUri.substr(dot)
+              << RESET << std::endl;
   } else
     std::cout << BLUE << "dot not found :" << dot << RESET << std::endl;
   std::cout << "uri.size() = " << _sUri.size() << "; dot = " << dot << RESET
@@ -289,7 +324,7 @@ void Client::add400Response(void) {
   error400.setStatusCode(400);
   error400.setDate();
   error400.setHeader("Content-Type", "text/html");
-  const std::string &ref = findErrorPage(_statusCode, *_server);
+  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
   _response.setBody(ref, ref.size());
   error400.setHeader("Content-Length", _response.getBodySize());
   error400.setHeader("Connection", "close");
@@ -300,35 +335,8 @@ void Client::add400Response(void) {
   return;
 }
 
-void Client::readFile(std::vector<char> &response) {
-  char buf[_sizeMaxResponse];
-  std::memset(buf, 0, _sizeMaxResponse);
-  // std::vector<char> buf(_sizeMaxResponse);
-  // char buf[_sizeMaxResponse] = {0};
-  _file.read(buf, _sizeMaxResponse - 1);
-  if (_file.gcount() < 0) {
-    _statusCode = 500;
-    return;
-  }
-  if (_file.gcount() == 0) {
-    _leftToRead = 0;
-  }
-  // std::stringstream buffer;
-  // buffer << file.rdbuf();
-
-  if (_leftToRead < _sizeMaxResponse)
-    _leftToRead = 0;
-  else
-    _leftToRead -= _sizeMaxResponse;
-  _nbRead++;
-  response.reserve(_file.gcount() + 1);
-  response.insert(response.begin(), &buf[0], &buf[_file.gcount() - 1]);
-  std::cout << BLUE << "readFile: " << buf << RESET << std::endl;
-  return;
-}
-
 bool Client::sendResponse(std::vector<char> &response) {
-  response.clear();
+  resetVector(response);
   if (_response.isReady() == false) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
