@@ -9,21 +9,23 @@
 class	Port
 {
 	public:
-							Port(void);
-							Port(ServerConf &conf);
-							~Port(void);
-							Port(const Port &otherPort);
-		Port				&operator=(const Port &otherPort);
-		int					acceptNewConnection(void);
-		int					removeClientSocket(int clientSocket);
-		bool				isClientSocket(int fd);
-		bool				isServerSocket(int fd);
-		int					initPortSocket(void);
-		int					getPort(void);
-		Client				*getClient(int clientSocket);
-		int					addClientsToBounce(std::vector<int> &clientsToBounce);
-		void				printPortConfs(void);
-		void				addToConf(const std::string &name, ServerConf *newConf);
+								Port(void);
+								Port(ServerConf &conf);
+								~Port(void);
+								Port(const Port &otherPort);
+		Port					&operator=(const Port &otherPort);
+		int						acceptNewConnection(void);
+		int						removeClientSocket(int clientSocket);
+		bool					isClientSocket(int fd) const;
+		bool					isServerSocket(int fd) const;
+		int						initPortSocket(void);
+		int						getPort(void) const;
+		uint32_t				getAddress(void) const;
+		Client					*getClient(int clientSocket);
+		bool					isOldClient(int fd) const;
+		void					printPortConfs(void);
+		void					addToConf(const std::string &name, ServerConf *newConf);
+		const std::vector<int>	getClientsVector(void) const;
 
 	protected:
 
