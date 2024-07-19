@@ -22,7 +22,7 @@ class	Port
 		int						getPort(void) const;
 		uint32_t				getAddress(void) const;
 		Client					*getClient(int clientSocket);
-		int						addClientsToBounce(std::vector<int> &clientsToBounce);
+		bool					isOldClient(int fd) const;
 		void					printPortConfs(void);
 		void					addToConf(const std::string &name, ServerConf *newConf);
 		const std::vector<int>	getClientsVector(void) const;

@@ -322,38 +322,39 @@ int	Webserv::isServerSocket(int fd) const
 	
 }
 
-int	Webserv::bounceClientsVector(const std::vector<int> &clients)
+int	Webserv::isOldClient(int fd) const
 {
-	int	status;
-
-	status = 0;
-	for (size_t i = 0; i < clients.size(); i++)
+	try
 	{
-		status += this->closeClientConnection(clients[i]);
+		return (this->_idMap.at(fd)->isOldClient(fd));
 	}
-	return (status);
+	catch(const std::exception& e)
+	{
+		return (false);
+	}
 }
 
 int	Webserv::bounceOldClients(void)
 {
-	mapPorts::iterator	iter;
-	std::vector<int>	clientsToBounce;
+	mapID::iterator	current;
+	mapID::iterator	next;
+	int				socket;
 
-	iter = this->_Ports.begin();
-	while (iter != this->_Ports.end())
+	current = this->_idMap.begin();
+	while (true)
 	{
-		try
+		if (current == this->_idMap.end())
 		{
-			(*iter).second.addClientsToBounce(clientsToBounce);
-			this->bounceClientsVector(clientsToBounce);
+			break ;
 		}
-		catch(const std::exception& e)
+		next = ++current;
+		current--;
+		socket = (*current).first;
+		if (this->isClientSocket(socket) == true && this->isOldClient(socket) == true)
 		{
-			std::cerr << "webserv: Webserv::bounceOldClients: could not bounce old clients for address "
-				<< (*iter).first.first << ":" << (*iter).first.second << ": " << e.what() << std::endl;
+			this->closeClientConnection(socket);
 		}
-		clientsToBounce.clear();
-		iter++;
+		current = next;
 	}
 	return (SUCCESS);
 }

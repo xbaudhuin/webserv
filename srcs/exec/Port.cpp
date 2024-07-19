@@ -155,23 +155,16 @@ int	Port::getPort(void) const
 	return (this->_port);
 }
 
-int	Port::addClientsToBounce(std::vector<int> &clientsToBounce)
+bool	Port::isOldClient(int fd) const
 {
-	mapClients::iterator	iter;
-	int						nbBounce;
-
-	nbBounce = 0;
-	iter = this->_clientRequests.begin();
-	while (iter != this->_clientRequests.end())
+	try
 	{
-		if ((*iter).second.isTimedOut() == true)
-		{
-			clientsToBounce.push_back((*iter).first);
-		}
-		nbBounce++;
-		iter++;
+		return (this->_clientRequests.at(fd).isTimedOut());
 	}
-	return (nbBounce);
+	catch(const std::exception& e)
+	{
+		return (false);
+	}
 }
 
 Client	*Port::getClient(int clientSocket)

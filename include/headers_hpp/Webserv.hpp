@@ -47,7 +47,7 @@ class Webserv
 		void		checkSigint(void) const;
 		void		doCheckRoutine(void);
 		int			handleEndResponse(int clientSocket, const Client* clientRequest);
-		int			bounceClientsVector(const std::vector<int> &clients);
+		int			isOldClient(int fd) const;
 
     public:
       		 	 Webserv(const char *s);
