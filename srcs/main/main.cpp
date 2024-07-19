@@ -32,6 +32,7 @@ int main(int argc, char **argv, char **env)
     {
         Webserv serv(argv[1]);
         serv.addEnv(env);
+		std::cout << "Coucou" << std::endl;
 		serv.start();
     }
     catch(const std::runtime_error &e)

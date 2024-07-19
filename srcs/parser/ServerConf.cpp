@@ -4,7 +4,6 @@ ServerConf::ServerConf()
 {
     port = 80;
     host = 0;
-    socket = -1;
     limit_body_size = 0;
     rank = -1;
     root = "/html";
@@ -87,7 +86,6 @@ ServerConf& ServerConf::operator=(const ServerConf &rhs)
         this->server_names = rhs.server_names;
         this->port = rhs.port;
         this->host = rhs.host;
-        this->socket = rhs.socket;
         this->err_pages = rhs.err_pages;
         this->limit_body_size = rhs.limit_body_size;
         this->_locations = rhs._locations;
