@@ -14,6 +14,8 @@ const size_t Client::_headerMaxSize = 8192;
 
 const size_t Client::_headersMaxBuffer = 32768;
 
+const size_t Client::_sizeMaxResponse = 8000;
+
 std::map<std::string, char> initMap() {
   std::map<std::string, char> m;
 
@@ -117,4 +119,3 @@ std::map<std::string, char> initMap() {
 }
 
 const std::map<std::string, char> Client::_uriEncoding = initMap();
-

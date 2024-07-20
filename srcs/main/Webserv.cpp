@@ -364,10 +364,10 @@ int	Webserv::handlePortEvent(int serverSocket)
 
 int	Webserv::receive(int clientSocket)
 {
-	char	buffer[BUFSIZ];
-	int		bytesRead;
-	Client	*clientRequest;
-
+	char				buffer[BUFSIZ];
+	int					bytesRead;
+	Client				*clientRequest;
+	std::vector<char>	vecBuffer;
 	try
 	{
 		bytesRead = recv(clientSocket, buffer, BUFSIZ - 1, 0);
@@ -384,13 +384,13 @@ int	Webserv::receive(int clientSocket)
 		}
 		else
 		{
-			buffer[bytesRead] = '\0';
+			vecBuffer.insert(vecBuffer.begin(), &buffer[0], &buffer[bytesRead]);
 			clientRequest = this->_idMap[clientSocket]->getClient(clientSocket);
 			if (clientRequest == NULL)
 			{
 				return(this->closeClientConnection(clientSocket));
 			}
-			if (clientRequest->addBuffer(buffer) == true)
+			if (clientRequest->addBuffer(vecBuffer) == true)
 			{
 				if (changeEpollEvents(this-> _epollFd, clientSocket, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
 				{
@@ -428,10 +428,10 @@ int	Webserv::handleEndResponse(int clientSocket, const Client* clientRequest)
 
 int	Webserv::respond(int clientSocket, uint32_t events)
 {
-	int			bytesSend;
-	std::string	response;
-	bool		remainRequest;
-	Client		*clientRequest;
+	int					bytesSend;
+	std::vector<char>	response;
+	bool				remainRequest;
+	Client				*clientRequest;
 
 	try
 	{
@@ -445,7 +445,7 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 			clientRequest->add400Response();
 		}
 		remainRequest = clientRequest->sendResponse(response);
-		bytesSend = send(clientSocket, response.c_str(), response.size(), 0);
+		bytesSend = send(clientSocket, &response[0], response.size(), 0);
 		std::cout << "Bytes send to fd " << clientSocket << " = " << bytesSend << std::endl;
 		if (bytesSend < 0)
 		{
@@ -575,7 +575,7 @@ int	Webserv::start(void)
 	std::cout << "webserv: starting server..." << std::endl;
 	while (true)
 	{
-		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 2000);
+		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 500);
 		if (nbEvent == -1)
 		{
 			std::cerr << "webserv: Webserv::start: epoll_wait: " << strerror(errno) << std::endl;
