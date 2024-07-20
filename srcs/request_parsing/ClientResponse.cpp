@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cstring>
 #include <dirent.h>
+#include <fcntl.h>
 #include <ostream>
 #include <stdio.h>
 
@@ -138,9 +139,10 @@ void Client::findPages(const std::string &urlu) {
     }
   }
   _sPath = url;
-  _file.open(url.c_str(), std::ios::in);
+  _filefd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
+  // _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying to open file: " << url << RESET << std::endl;
-  if (_file.is_open() == false) {
+  if (_filefd == -1) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
       _statusCode = 404;
@@ -164,23 +166,34 @@ void Client::readFile(void) {
 
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
   std::vector<char> buf(toRead);
-  _file.read(&buf[0], toRead);
+  ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
-  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+  std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
             << std::endl;
-  if (_file.gcount() <= 0) {
+  if (readBytes < 0) {
     _statusCode = 500;
     return;
   }
+  // if (readBytes == 0) {
+  //   close(_filefd);
+  //   _filefd = -1;
+  //   return;
+  // }
   // std::stringstream buffer;
   // buffer << file.rdbuf();
-  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  // std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
   _response.setBody(buf);
 
-  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+  if (_leftToRead <= static_cast<size_t>(readBytes)) {
+    std::cout << GREEN << "Finished to read file" << RESET << std::endl;
     _leftToRead = 0;
-  else
+    // close(_filefd);
+    // _filefd = -1;
+  } else {
     _leftToRead = _leftToRead - _sizeMaxResponse;
+    std::cout << BLUE << "still have to read: " << _leftToRead << RESET
+              << std::endl;
+  }
   _nbRead++;
 }
 
@@ -189,25 +202,38 @@ void Client::readFile(std::vector<char> &vec) {
   // std::memset(buf, 0, _sizeMaxResponse + 1);
   // std::vector<char> buf(_sizeMaxResponse);
   // char buf[_sizeMaxResponse] = {0};
-
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
   std::vector<char> buf(toRead);
-  _file.read(&buf[0], toRead);
+  ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
-  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+  std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
             << std::endl;
-  if (_file.gcount() <= 0) {
+  if (readBytes < 0) {
+    std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
+              << "; _leftToRead = " << _leftToRead << std::endl;
     _statusCode = 500;
     return;
   }
+  // if (readBytes == 0) {
+  //   close(_filefd);
+  //   _filefd = -1;
+  //   return;
+  // }
   // std::stringstream buffer;
   // buffer << file.rdbuf();
-  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  // std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
   vec.swap(buf);
-  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+
+  if (_leftToRead <= static_cast<size_t>(readBytes)) {
+    std::cout << GREEN << "Finished to read file" << RESET << std::endl;
     _leftToRead = 0;
-  else
+    // close(_filefd);
+    // _filefd = -1;
+  } else {
     _leftToRead = _leftToRead - _sizeMaxResponse;
+    std::cout << BLUE << "still have to read: " << _leftToRead << RESET
+              << std::endl;
+  }
   _nbRead++;
 }
 
@@ -355,6 +381,9 @@ bool Client::sendResponse(std::vector<char> &response) {
   std::cout << PURP << "leftToRead = " << _leftToRead << RESET << std::endl;
   if (_leftToRead > 0) {
     readFile(response);
+    if (_statusCode == 500) {
+      return (false);
+    }
   }
   // std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
   if (_leftToRead == 0)

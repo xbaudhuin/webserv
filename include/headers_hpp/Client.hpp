@@ -38,6 +38,7 @@ public:
   bool isTimedOut(void) const;
   void add400Response(void);
   bool keepConnectionOpen(void) const;
+  void addCgiToMap(std::map<int, pid_t> &mapCgi) const;
 
 protected:
 private:
@@ -63,9 +64,12 @@ private:
   bool _chunkRequest;
   bool _epollIn;
   std::string _sPath;
-  std::ifstream _file;
+  int _filefd;
   size_t _leftToRead;
   size_t _nbRead;
+  std::string _infileCgi;
+  std::string _outfileCgi;
+  pid_t _cgiPid;
 
   static const char *_validMethods[];
   static const size_t _methodSize;
@@ -105,7 +109,7 @@ private:
   time_t getTime(void);
   std::string getDateOfFile(time_t rawtime) const;
 
-bool checkBodyToRead(std::vector<char> buffer);
+  bool checkBodyToRead(std::vector<char> buffer);
   size_t hasNewLine(void) const;
   void removeReturnCarriage(std::vector<char> &vec);
 };

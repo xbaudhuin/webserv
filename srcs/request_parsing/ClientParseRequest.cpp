@@ -284,6 +284,7 @@ void Client::parseRequest(std::string &buffer) {
 
     std::cout << PURP << "No body" << RESET << std::endl;
   }
+
   if (_vBuffer.size() != 0) {
     _statusCode = 400;
 
@@ -291,7 +292,11 @@ void Client::parseRequest(std::string &buffer) {
     std::cout << RED
               << "changin statusCode because if (_vBuffer.size() != 0) to "
               << _statusCode << RESET << std::endl;
-  } else
+  }
+  // if (_location && _location->isCgi(_sUri) == true) {
+  //   setupCgi();
+  // }
+  if (_statusCode == 0)
     _statusCode = 200;
   return;
 }

@@ -129,8 +129,9 @@ REQUEST = requester
 
 
 SRCS_REQUEST 	=	request_parsing/main.cpp \
+					main/Webserv.cpp \
+					main/handleSignal.cpp \
 					exec/Port.cpp \
-					parser/Config.cpp \
 					parser/Split.cpp \
 					parser/Parser.cpp \
 					parser/ServerConf.cpp \
