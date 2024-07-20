@@ -17,7 +17,7 @@ int	createServerSocket(int port, uint32_t address)
 	struct sockaddr_in	socketAddress;
 
 	socketAddress = getSocketAddress(address, port);
-	serverSocket = socket(socketAddress.sin_family, SOCK_STREAM, 0);
+	serverSocket = socket(socketAddress.sin_family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (serverSocket == BAD_FD)
 	{
 		std::cerr << "webserv: createServerSocket: socket: " << strerror(errno) << std::endl;
