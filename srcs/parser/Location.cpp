@@ -9,14 +9,16 @@ Location::Location(){
     this->limit_body_size = 0;
     this->code_redirection = 0;
     this->_exact_match = 0;
-    this->available_extension.push_back("py");
-    this->available_extension.push_back("sh");
+    this->available_extension.push_back(".py");
+    this->available_extension.push_back(".php");
     this->_get = 1;
     this->_post = 0;
     this->_delete = 1;
     this->_root_check = 0;
     this->upload_location = "";
     this->_is_a_dir = 0;
+    this->_exec_path[".php"] = "/bin/php";
+    this->_exec_path[".py"] = "/bin/python3";
 }
 
 Location::Location(const Location &rhs){
@@ -43,6 +45,7 @@ Location& Location::operator=(const Location &rhs){
         this->upload_location = rhs.upload_location;
         this->_is_a_dir = rhs._is_a_dir;
         this->_root_server = rhs._root_server;
+        this->_exec_path = rhs._exec_path;
     }
     return(*this);
 }
@@ -355,4 +358,112 @@ const bool& Location::isADir(void) const{
 
 const std::string& Location::getRootServer(void) const{
     return (this->_root_server);
+}
+
+std::string getFile(const std::string &uri)
+{
+    size_t pos = uri.size();
+    pos = uri.find_last_of("/", pos);
+    if(pos == std::string::npos)
+        return(std::string(uri));
+    std::string s1 = uri.substr(0, pos + 1);
+    if(s1 == uri)
+        throw std::logic_error("not a file");
+    std::string s2 = uri.substr(pos, uri.size());
+    s2.erase(0, 1);
+    return(s2);
+}
+
+std::string getDirectory(const std::string &uri)
+{
+    size_t pos = uri.size();
+    pos = uri.find_last_of("/", pos);
+    if(pos == std::string::npos)
+        return("./");
+    std::string s1 = uri.substr(0, pos + 1);
+    s1.insert(0, 1, '.');
+    return(s1);
+}
+
+std::string Location::getCgiPath(const std::string &uri) const{
+    std::string uri_file = getFile(uri);
+    std::string ext = getExtension(uri);
+    for (size_t i = 0; i < this->cgi.size(); i++)
+    {
+        if(this->cgi[i].first == ext)
+        {
+            std::string file = getFile(this->cgi[i].second);
+            if(uri_file == file)
+                return(getDirectory(this->cgi[i].second));
+        }
+    }
+    return("");
+}
+
+std::string Location::getCgiFile(const std::string& uri) const{
+    std::string uri_file = getFile(uri);
+    std::string ext = getExtension(uri);
+    for (size_t i = 0; i < this->cgi.size(); i++)
+    {
+        if(this->cgi[i].first == ext)
+        {
+            std::string file = getFile(this->cgi[i].second);
+            if(uri_file == file)
+                return(file);
+        }
+    }
+    return("");
+}
+
+std::string Location::getExtension(const std::string& uri) const
+{
+    size_t pos = uri.size();
+    pos = uri.find_last_of("/", pos);
+    std::string s1 = uri.substr(0, pos + 1);
+    if(s1 == uri)
+        throw std::logic_error("not a file");
+    std::string s2 = uri.substr(pos, uri.size());
+    std::string extension;
+    for (size_t i = 0; i < this->available_extension.size(); i++)
+    {
+        if(s2.find(this->available_extension[i], 0) != std::string::npos)
+            return(this->available_extension[i]);
+    }
+    throw std::logic_error("not a file");
+    return(s2);
+}
+
+bool Location::isCgi(const std::string& uri) const{
+    try
+    {
+        std::string ex = this->getExtension(uri);
+        std::string uri_file = getFile(uri);
+        for (size_t i = 0; i < this->cgi.size(); i++)
+        {
+            if(ex == this->cgi[i].first)
+            {
+                std::string cgi_file = getFile(cgi[i].second);
+                if(cgi_file == uri_file)
+                    return(1);
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        return(0);
+    }
+    return(0);
+}
+
+const std::string& Location::getExecutePath(const std::string& uri){
+    try
+    {
+        std::string ex = this->getExtension(uri);
+        return(this->_exec_path[ex]);
+    }
+    catch(const std::exception& e)
+    {
+        throw std::logic_error("wtf");
+    }
+    return(uri);
 }
