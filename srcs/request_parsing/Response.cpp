@@ -1,5 +1,6 @@
 #include "Response.hpp"
 #include "Utils.hpp"
+#include <fstream>
 
 static std::map<size_t, std::string> initializeStatusMap() {
   std::map<size_t, std::string> m;
@@ -156,7 +157,7 @@ void Response::setBody(const std::vector<char> &body, size_t size) {
   setHeader("Content-Length", size);
 }
 
-void Response::setBody(const std::vector<char> &body){
+void Response::setBody(const std::vector<char> &body) {
   _body.insert(_body.end(), body.begin(), body.end());
 }
 

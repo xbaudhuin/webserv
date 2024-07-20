@@ -90,6 +90,7 @@ void Client::buildListingDirectory(std::string &url) {
         _statusCode = 403;
       } else
         _statusCode = 500;
+      closedir(dir);
       return;
     }
 
@@ -109,8 +110,9 @@ void Client::buildListingDirectory(std::string &url) {
       body += ss.str();
     } else
       body += "-";
-    body += "\r\n";
+    body += "<br>\r\n";
   }
+  closedir(dir);
   body += "</pre><hr></body>\r\n";
   body += "</html>\r\n";
   _response.setBody(body, body.size());
@@ -137,7 +139,7 @@ void Client::findPages(const std::string &urlu) {
   }
   _sPath = url;
   _file.open(url.c_str(), std::ios::in);
-  std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
+  std::cout << RED << "trying to open file: " << url << RESET << std::endl;
   if (_file.is_open() == false) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
@@ -145,13 +147,13 @@ void Client::findPages(const std::string &urlu) {
     else
       _statusCode = 403;
     return;
-    struct stat st;
-    stat(_sPath.c_str(), &st);
-    std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
-    _leftToRead = st.st_size;
-    _response.setHeader("Content-Length", st.st_size);
-    readFile();
   }
+  struct stat st;
+  stat(_sPath.c_str(), &st);
+  std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
+  _leftToRead = st.st_size;
+  _response.setHeader("Content-Length", st.st_size);
+  readFile();
 }
 
 void Client::readFile(void) {
@@ -265,9 +267,9 @@ void Client::handleError(void) {
 void Client::buildResponse(void) {
   if (_location != NULL) {
     std::cout << RED << "location = " << _location->getUrl()
-              << ";statusCode = " << _statusCode << RESET << std::endl;
+              << "; statusCode = " << _statusCode << RESET << std::endl;
   } else {
-    std::cout << RED << "location = NULL" << ";statusCode = " << _statusCode
+    std::cout << RED << "location = NULL" << "; statusCode = " << _statusCode
               << RESET << std::endl;
   }
   if (_server == NULL) {
