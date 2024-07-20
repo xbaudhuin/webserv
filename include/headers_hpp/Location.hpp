@@ -31,6 +31,7 @@ class Location
         uint64_t limit_body_size;
         int _root_check;
         std::string upload_location;
+        std::map<std::string, std::string> _exec_path;
 
 public:
   Location();
@@ -55,6 +56,11 @@ public:
         bool isRedirected(void) const;
         const bool& isADir(void) const;
         const std::string& getRootServer(void) const;
+        std::string getCgiPath(const std::string &uri) const;
+        std::string getCgiFile(const std::string& uri) const;
+        bool isCgi(const std::string& uri) const;
+        const std::string& getExecutePath(const std::string& uri);
+        std::string getExtension(const std::string& uri) const;
         /* setters */
         void addLimitBodySize(const std::string &limit);
         void addUrl(const std::string &url, std::string root);
