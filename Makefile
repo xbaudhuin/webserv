@@ -103,9 +103,7 @@ SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
 					main/handleSignal.cpp \
 					exec/Port.cpp \
-					parser/Config.cpp \
 					parser/Split.cpp \
-					parser/CreateSocket.cpp \
 					parser/Parser.cpp \
 					parser/ServerConf.cpp \
 					parser/ServerConfGetter.cpp \
@@ -134,7 +132,6 @@ SRCS_REQUEST 	=	request_parsing/main.cpp \
 					exec/Port.cpp \
 					parser/Config.cpp \
 					parser/Split.cpp \
-					parser/CreateSocket.cpp \
 					parser/Parser.cpp \
 					parser/ServerConf.cpp \
 					parser/ServerConfGetter.cpp \

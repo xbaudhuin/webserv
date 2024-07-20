@@ -9,7 +9,6 @@ private:
   vec_string server_names;
   int port;
   uint32_t host;
-  uint32_t socket;
   map_err_pages err_pages;
   uint64_t limit_body_size;
   vec_location _locations;
@@ -29,7 +28,6 @@ public:
 
         /* getters */
         vec_string& getServerNames();        
-        uint32_t& getSocket(void);
         std::string& getIndexErrorPage(int errorCode);
         const int& getPort(void) const;
         const uint32_t& getHost(void) const;
