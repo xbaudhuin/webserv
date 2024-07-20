@@ -39,13 +39,15 @@ class Webserv
 		int			handleClientEvent(int clientSocket, uint32_t event);
 		void		handleEvents(const struct epoll_event *events, int nbEvents);
 		int			removeFdFromIdMap(int fd);
-		int			isClientSocket(int fd);
-		int			isServerSocket(int fd);
+		int			isClientSocket(int fd) const;
+		int			isServerSocket(int fd) const;
 		int			bounceOldClients(void);
 		int			closeClientConnection(int clientSocket);
 		void		printAllConfig(void);	
-		void		checkSigint(void);
+		void		checkSigint(void) const;
 		void		doCheckRoutine(void);
+		int			handleEndResponse(int clientSocket, const Client* clientRequest);
+		int			isOldClient(int fd) const;
 
     public:
       		 	 Webserv(const char *s);
@@ -53,8 +55,8 @@ class Webserv
       		 	 Webserv& operator=(const Webserv &rhs);
        		 	~Webserv();
         void	addEnv(char **env);
-        char	** getEnv(void);
-		int		getEpollFd(void);
+        char	** getEnv(void) const;
+		int		getEpollFd(void) const;
 		int		start(void);
 
 		class	StopServer : public std::exception

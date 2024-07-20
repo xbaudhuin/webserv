@@ -100,12 +100,12 @@ int	Port::removeSocketFromClientVector(int socket)
 	if (iter != this->_clientSockets.end())
 	{
 		this->_clientSockets.erase(iter);
-		std::cout << "webserv: successfully remove client socket " << socket << " in Porter vector listening on port " << this->_port << std::endl;
+		std::cout << "webserv: successfully remove client socket " << socket << " in Porter vector listening on port " << this->_address << ":" << this->_port << std::endl;
 		return (SUCCESS);
 	}
 	else
 	{
-		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of Port port " <<  this->_port << std::endl;
+		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of Port port " << this->_address << ":" << this->_port << std::endl;
 		return (FAILURE);
 	}
 }
@@ -120,7 +120,7 @@ int	Port::removeClientSocket(int clientSocket)
 	return (status);
 }
 
-bool	Port::isClientSocket(int fd)
+bool	Port::isClientSocket(int fd) const
 {
 	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end())
 	{
@@ -132,7 +132,7 @@ bool	Port::isClientSocket(int fd)
 	}
 }
 
-bool	Port::isServerSocket(int fd)
+bool	Port::isServerSocket(int fd) const
 {
 	if (fd == this->_serverSocket)
 	{
@@ -150,28 +150,21 @@ int	Port::initPortSocket(void)
 	return (this->_serverSocket);
 }
 
-int	Port::getPort(void)
+int	Port::getPort(void) const
 {
 	return (this->_port);
 }
 
-int	Port::addClientsToBounce(std::vector<int> &clientsToBounce)
+bool	Port::isOldClient(int fd) const
 {
-	mapClients::iterator	iter;
-	int						nbBounce;
-
-	nbBounce = 0;
-	iter = this->_clientRequests.begin();
-	while (iter != this->_clientRequests.end())
+	try
 	{
-		if ((*iter).second.isTimedOut() == true)
-		{
-			clientsToBounce.push_back((*iter).first);
-		}
-		nbBounce++;
-		iter++;
+		return (this->_clientRequests.at(fd).isTimedOut());
 	}
-	return (nbBounce);
+	catch(const std::exception& e)
+	{
+		return (false);
+	}
 }
 
 Client	*Port::getClient(int clientSocket)
@@ -204,4 +197,14 @@ void	Port::printPortConfs(void)
 void	Port::addToConf(const std::string &name, ServerConf *newConf)
 {
 	this->_portConfs[name] = newConf;
+}
+
+const std::vector<int>	Port::getClientsVector(void) const
+{
+	return (this->_clientSockets);
+}
+
+uint32_t	Port::getAddress(void) const
+{
+	return (this->_address);
 }

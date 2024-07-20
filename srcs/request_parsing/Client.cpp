@@ -50,7 +50,7 @@ Client &Client::operator=(Client const &rhs) {
 
 time_t Client::getTime(void) { return (std::time(0)); }
 
-bool Client::isTimedOut(void) {
+bool Client::isTimedOut(void) const {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);

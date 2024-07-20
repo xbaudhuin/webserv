@@ -34,7 +34,7 @@ public:
   const std::string &getBuffer(void) const;
   int getBodyToRead(void) const;
   bool sendResponse(std::string &response);
-  bool isTimedOut(void);
+  bool isTimedOut(void) const;
   void add400Response(void);
   bool keepConnectionOpen(void) const;
 

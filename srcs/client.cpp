@@ -33,7 +33,7 @@ int main(void) {
 //   request += "\r\n";
   // request += "param1=value1&param2=value2";
   // request += "\r\n";
-  std::cout << "SIZE = " << request.size() << std::endl;
+ // std::cout << "SIZE = " << request.size() << std::endl;
   char buffer[2048] = {0};
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     std::cout << "Error: fail to create socket" << std::endl;
@@ -48,20 +48,26 @@ int main(void) {
     close(sock);
     return (1);
   }
-  if (connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) < 0) {
-    std::cout << "Connection failed" << std::endl;
-    close(sock);
-    return (1);
+  for (size_t i = 0; i < 100; i++)
+  {
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr));
   }
-  send(sock, request.c_str(), request.size(), 0);
-  std::cout << "Sent request: \n" << request << std::endl;
-  valread = read(sock, buffer, 2048);
-  std::cout << buffer << std::endl;
-  sleep(3);
+  
+//   if (connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) < 0) {
+//     std::cout << "Connection failed" << std::endl;
+//     close(sock);
+//     return (1);
+//   }
+//   send(sock, request.c_str(), request.size(), 0);
+//   std::cout << "Sent request: \n" << request << std::endl;
+//   valread = read(sock, buffer, 2048);
+//   std::cout << buffer << std::endl;
+  sleep(50);
   // request = "Bonjour: */*\r\n";
   // request += "\r\n";
-  valread = read(sock, buffer, 2048);
-  std::cout << buffer << std::endl;
+//   valread = read(sock, buffer, 2048);
+//   std::cout << buffer << std::endl;
   // valread = read(sock, buffer, 2048);
   // std::cout << buffer << std::endl;
   // valread = read(sock, buffer, 2048);
