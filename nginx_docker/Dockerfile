@@ -25,6 +25,7 @@ COPY index3.html /usr/share/nginx/html/html3/html2/index.html
 COPY ${SPACE} /usr/share/nginx/html/html3/html2/index.html
 COPY ${SPACE} /usr/share/nginx/html/space.html
 COPY index.html /usr/share/nginx/html/bonjour.html
+COPY favicon.ico /usr/share/nginx/html/favicon.ico
 # COPY index2.html /usr/share/nginx/html2/index.html
 
 

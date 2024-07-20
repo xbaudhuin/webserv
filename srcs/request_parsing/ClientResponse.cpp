@@ -3,8 +3,10 @@
 #include "Utils.hpp"
 #include <asm-generic/errno.h>
 #include <cerrno>
+#include <cstring>
 #include <dirent.h>
 #include <ostream>
+#include <stdio.h>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -12,7 +14,9 @@ bool Client::findIndex(std::string &url) {
   struct stat statbuf;
   size_t it = 0;
   for (; it < vector.size(); it++) {
-    tmp = url + vector[it];
+    tmp = "." + vector[it];
+    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET
+              << std::endl;
     if (stat(tmp.c_str(), &statbuf) == 0) {
       break;
     }
@@ -26,28 +30,34 @@ bool Client::findIndex(std::string &url) {
     return (true);
   if (it == vector.size())
     return (false);
-  url += vector[it];
+  url = tmp;
   return (true);
 }
 
 void Client::buildListingDirectory(std::string &url) {
-  _uri = "." + _uri;
+  if (_location->getAutoIndex() == 0) {
+    _statusCode = 404;
+    return;
+  }
+  _sUri = "." + _location->getRootServer() + _sUri;
   _response.setStatusCode(200);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
   addConnectionHeader();
-  std::string body = "<html>\r\n";
+  std::string body = "<!DOCTYPE html>\r\n";
+  body += "<html>\r\n";
   body += "<head><title>Index of ";
-  body += _uri + "</title></head>\r\n";
+  body += _sUri + "</title></head>\r\n";
   body += "<body>\r\n<h1>Index of ";
-  body += _uri + "</h1>";
-  if (_uri != url)
+  body += _sUri + "</h1>";
+  std::string loc = "." + _location->getUrl();
+  if (_sUri != loc)
     body += "<hr><pre><a href=\"../\">../</a>\r\n";
   DIR *dir;
-  dir = opendir(_uri.c_str());
+  dir = opendir(_sUri.c_str());
   if (dir == NULL) {
-    std::cout << RED << "buildListingDirectory: dir = NULL" << RESET
-              << std::endl;
+    std::cout << RED << "buildListingDirectory: dir = NULL; _sUri = " << _sUri
+              << RESET << std::endl;
     if (errno == EACCES)
       _statusCode = 403;
     else if (errno == ENONET)
@@ -61,7 +71,7 @@ void Client::buildListingDirectory(std::string &url) {
   while (true) {
     ent = readdir(dir);
     while (ent && ent->d_name[0] == '.') {
-      if (ent->d_name[1] == '.' && ent->d_name[2] == '\0' && url != _uri)
+      if (ent->d_name[1] == '.' && ent->d_name[2] == '\0' && url != _sUri)
         break;
       ent = readdir(dir);
     }
@@ -69,19 +79,29 @@ void Client::buildListingDirectory(std::string &url) {
       break;
     std::cout << YELLOW << "ent: " << ent->d_name << RESET << std::endl;
     struct stat file;
-    if (stat(ent->d_name, &file) == -1) {
+    std::string tmp = _sUri + ent->d_name;
+    if (stat(tmp.c_str(), &file) == -1) {
+      int err = errno;
+      perror("ListtingDirectory");
+      errno = err;
       std::cout << RED << "buildListingDirectory: stat = -1; ent->d_name ="
                 << ent->d_name << RESET << std::endl;
       if (errno == EACCES) {
         _statusCode = 403;
       } else
         _statusCode = 500;
+      closedir(dir);
       return;
     }
+
     std::string time = body += "<a href=\"";
     body += ent->d_name;
+    if (ent->d_type == DT_DIR)
+      body += "/";
     body += "\">";
     body += ent->d_name;
+    if (ent->d_type == DT_DIR)
+      body += "/";
     body += "</a> Date: " + getDateOfFile(file.st_mtim.tv_sec);
     body += " ";
     if (ent->d_type == DT_REG) {
@@ -90,27 +110,37 @@ void Client::buildListingDirectory(std::string &url) {
       body += ss.str();
     } else
       body += "-";
-    body += "\r\n";
+    body += "<br>\r\n";
   }
+  closedir(dir);
   body += "</pre><hr></body>\r\n";
   body += "</html>\r\n";
-  _response.setBody(body);
+  _response.setBody(body, body.size());
   _response.BuildResponse();
 }
 
 void Client::findPages(const std::string &urlu) {
-  std::string url = "." + urlu;
+  (void)urlu;
+  std::string url = "." + _location->getRootServer() + _sUri;
   if (_location->isADir() == true) {
-    if (_uri[_uri.size() - 1] == '/') {
+    std::cout << RED << "Location is a Dir" << RESET << std::endl;
+    if (_sUri[_sUri.size() - 1] == '/') {
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
-    } else
-      url += _uri.substr(_uri.find_last_of('/'));
+    }
+  } else if (_location->isExactMatch() == false) {
+    if (findIndex(url) == false) {
+      std::cout << *_location << BLUE << "no exact match, index == false;"
+                << RESET << std::endl;
+      _statusCode = 404;
+      return;
+    }
   }
-  std::ifstream file(url.c_str(), std::ios::in);
-  std::cout << RED << "trying  to open file: " << url << RESET << std::endl;
-  if (file.is_open() == false) {
+  _sPath = url;
+  _file.open(url.c_str(), std::ios::in);
+  std::cout << RED << "trying to open file: " << url << RESET << std::endl;
+  if (_file.is_open() == false) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
       _statusCode = 404;
@@ -118,15 +148,67 @@ void Client::findPages(const std::string &urlu) {
       _statusCode = 403;
     return;
   }
-  std::string s;
-  while (getline(file, s)) {
-    std::cout << PURP << "adding line to body: " << s << std::endl;
-    _response.addLineToBoddy(s);
+  struct stat st;
+  stat(_sPath.c_str(), &st);
+  std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
+  _leftToRead = st.st_size;
+  _response.setHeader("Content-Length", st.st_size);
+  readFile();
+}
+
+void Client::readFile(void) {
+
+  // std::memset(buf, 0, _sizeMaxResponse + 1);
+  // std::vector<char> buf(_sizeMaxResponse);
+  // char buf[_sizeMaxResponse] = {0};
+
+  int toRead = std::min(_sizeMaxResponse, _leftToRead);
+  std::vector<char> buf(toRead);
+  _file.read(&buf[0], toRead);
+
+  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+            << std::endl;
+  if (_file.gcount() <= 0) {
+    _statusCode = 500;
+    return;
   }
-  if (file.bad()) {
-    std::cout << RED << "fail to read all file" << RESET << std::endl;
-    _statusCode = 400;
+  // std::stringstream buffer;
+  // buffer << file.rdbuf();
+  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  _response.setBody(buf);
+
+  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+    _leftToRead = 0;
+  else
+    _leftToRead = _leftToRead - _sizeMaxResponse;
+  _nbRead++;
+}
+
+void Client::readFile(std::vector<char> &vec) {
+
+  // std::memset(buf, 0, _sizeMaxResponse + 1);
+  // std::vector<char> buf(_sizeMaxResponse);
+  // char buf[_sizeMaxResponse] = {0};
+
+  int toRead = std::min(_sizeMaxResponse, _leftToRead);
+  std::vector<char> buf(toRead);
+  _file.read(&buf[0], toRead);
+
+  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+            << std::endl;
+  if (_file.gcount() <= 0) {
+    _statusCode = 500;
+    return;
   }
+  // std::stringstream buffer;
+  // buffer << file.rdbuf();
+  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  vec.swap(buf);
+  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+    _leftToRead = 0;
+  else
+    _leftToRead = _leftToRead - _sizeMaxResponse;
+  _nbRead++;
 }
 
 void Client::createResponseBody(void) {
@@ -135,9 +217,10 @@ void Client::createResponseBody(void) {
               << std::endl;
     findPages(_location->getUrl());
   }
-  if (_statusCode >= 400) {
-    _response.setBody(findErrorPage(_statusCode, *_server));
-  }
+  // if (_statusCode >= 400) {
+  //   const std::vector<char> ref = findErrorPage(_statusCode, *_server);
+  //   _response.setBody(ref, ref.size());
+  // }
 }
 
 void Client::addConnectionHeader(void) {
@@ -161,8 +244,8 @@ void Client::defaultHTMLResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
-  _response.setBody(findErrorPage(_statusCode, *_server));
-  _response.setHeader("Content-Length", _response.getBodySize());
+  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
+  _response.setBody(ref, ref.size());
 }
 
 void Client::handleRedirection(void) {
@@ -182,12 +265,25 @@ void Client::handleError(void) {
 }
 
 void Client::buildResponse(void) {
-  if (_statusCode < 400 && _location->isRedirected()) {
+  if (_location != NULL) {
+    std::cout << RED << "location = " << _location->getUrl()
+              << "; statusCode = " << _statusCode << RESET << std::endl;
+  } else {
+    std::cout << RED << "location = NULL" << "; statusCode = " << _statusCode
+              << RESET << std::endl;
+  }
+  if (_server == NULL) {
+    _server = _defaultConf;
+  }
+  if (_statusCode < 400 && _location != NULL && _location->isRedirected()) {
     return (handleRedirection());
   }
   if (_statusCode >= 400)
     return (handleError());
   createResponseBody();
+  std::cout << PURP
+            << "After createResponseBody Client::buildResponse: body.size() = "
+            << _response.getBody().size() << RESET << std::endl;
   if (_statusCode >= 400) {
     _response.reset();
     return (handleError());
@@ -195,8 +291,31 @@ void Client::buildResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   addConnectionHeader();
-  _response.setHeader("Content-Type", "text/html");
-  _response.setHeader("Content-Length", _response.getBodySize());
+  size_t dot = _sUri.find_last_of('.');
+  if (dot < 100) {
+    std::cout << BLUE << "dot found _sUri.substr = " << _sUri.substr(dot)
+              << RESET << std::endl;
+  } else
+    std::cout << BLUE << "dot not found :" << dot << RESET << std::endl;
+  std::cout << "uri.size() = " << _sUri.size() << "; dot = " << dot << RESET
+            << std::endl;
+  if (_sUri.size() > 5 && _sUri.size() - dot < 5 && dot < _sUri.size()) {
+    std::cout << PURP << "inside dot file " << RESET << std::endl;
+    std::string extension = _sUri.substr(dot);
+    if (extension == ".ico") {
+      _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
+      // _response.setHeader("Content-encoding", "gzip");
+    } else if (extension == ".png") {
+      std::cout << PURP << "found .png" << RESET << std::endl;
+      _response.setHeader("Content-Type", "image/png");
+    } else if (extension == ".gif") {
+      _response.setHeader("Content-Type", "image/gif");
+    }
+  } else {
+    _response.setHeader("Content-Type", "text/html");
+  }
+  std::cout << PURP << "End of Client::buildResponse: body.size() = "
+            << _response.getBody().size() << RESET << std::endl;
   _response.BuildResponse();
 }
 
@@ -207,7 +326,8 @@ void Client::add400Response(void) {
   error400.setStatusCode(400);
   error400.setDate();
   error400.setHeader("Content-Type", "text/html");
-  error400.setBody(findErrorPage(_statusCode, *_server));
+  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
+  _response.setBody(ref, ref.size());
   error400.setHeader("Content-Length", _response.getBodySize());
   error400.setHeader("Connection", "close");
   error400.BuildResponse();
@@ -217,13 +337,29 @@ void Client::add400Response(void) {
   return;
 }
 
-bool Client::sendResponse(std::string &response) {
-  if (_response.isReady() == false)
+bool Client::sendResponse(std::vector<char> &response) {
+  resetVector(response);
+  if (_response.isReady() == false) {
+    std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
-  response = _response.getResponse();
-  // std::cout << BLUE << "response:\n" << response << RESET << std::endl;
-  bool ret = _response.isNotDone();
-  if (ret == false)
+    response = _response.getResponse();
+    std::cout << BLUE << "response for _sUri:\n"
+              << _sUri << "; of size : " << response.size() << RESET
+              << std::endl;
+    bool ret = _leftToRead != 0;
+    std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
+    if (_leftToRead == 0)
+      resetClient();
+    return (_leftToRead != 0);
+  }
+  std::cout << PURP << "leftToRead = " << _leftToRead << RESET << std::endl;
+  if (_leftToRead > 0) {
+    readFile(response);
+  }
+  // std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
+  if (_leftToRead == 0)
     resetClient();
-  return (ret);
+  bool ret = _leftToRead != 0;
+  std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
+  return (_leftToRead != 0);
 }

@@ -3,6 +3,7 @@
 
 #include "Response.hpp"
 #include "ServerConf.hpp"
+#include "Utils.hpp"
 #include <ctime>
 #include <ctype.h>
 #include <dirent.h>
@@ -30,10 +31,10 @@ public:
   Client &operator=(Client const &rhs);
   // method
   void print();
-  bool addBuffer(std::string buffer);
-  const std::string &getBuffer(void) const;
+  bool addBuffer(std::vector<char> buffer);
+  const std::vector<char> &getBuffer(void) const;
   int getBodyToRead(void) const;
-  bool sendResponse(std::string &response);
+  bool sendResponse(std::vector<char> &response);
   bool isTimedOut(void) const;
   void add400Response(void);
   bool keepConnectionOpen(void) const;
@@ -48,24 +49,29 @@ private:
   Location *_location;
   time_t _time;
   size_t _statusCode;
-  std::string _method;
-  std::string _uri;
-  std::string _queryUri;
+  std::string _sMethod;
+  std::string _sUri;
+  std::string _sQueryUri;
   size_t _version;
-  std::string _host;
+  std::string _sHost;
   std::map<std::string, std::string> _headers;
   size_t _requestSize;
-  std::string _body;
+  std::vector<char> _vBody;
   int _bodyToRead;
-  std::string _buffer;
+  std::vector<char> _vBuffer;
   bool _keepConnectionAlive;
   bool _chunkRequest;
   bool _epollIn;
+  std::string _sPath;
+  std::ifstream _file;
+  size_t _leftToRead;
+  size_t _nbRead;
 
   static const char *_validMethods[];
   static const size_t _methodSize;
   static const char *_whiteSpaces;
   static const size_t _uriMaxSize;
+  static const size_t _sizeMaxResponse;
   static const size_t _headerMaxSize;
   static const size_t _headersMaxBuffer;
   static const std::map<std::string, char> _uriEncoding;
@@ -88,12 +94,20 @@ private:
   void handleError(void);
   void handleRedirection(void);
   void createResponseBody(void);
+  bool earlyParsing(int newLine);
   bool checkMethod(void);
   bool checkIfValid(void);
+
+  void readFile(std::vector<char> &vec);
+  void readFile(void);
 
   void resetClient(void);
   time_t getTime(void);
   std::string getDateOfFile(time_t rawtime) const;
+
+bool checkBodyToRead(std::vector<char> buffer);
+  size_t hasNewLine(void) const;
+  void removeReturnCarriage(std::vector<char> &vec);
 };
 
 #endif //! CLIENT_HPP

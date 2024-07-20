@@ -806,7 +806,7 @@ std::string getErrorPageFromSingleton(int error_code) {
 #include "ServerConf.hpp"
 using std::string;
 
-std::string findErrorPage(int error_code, ServerConf &map) {
+std::vector<char> findErrorPage(int error_code, ServerConf &map) {
   string s = "";
   try {
     map_err_pages m = map.getErrPages();
@@ -817,34 +817,43 @@ std::string findErrorPage(int error_code, ServerConf &map) {
     for (size_t i = 0; i < loc.getIndexFile().size(); i++) {
       string str = "." + loc.getIndexFile()[i];
       std::ifstream strm;
-      string file;
+      struct stat st;
+      if (stat(s.c_str(), &st) == -1){
+        throw (std::logic_error(""));
+            }
+    std::cout << GREEN << "singleton: first try opened" << RESET << std::endl;
+      std::vector<char> buf(st.st_size);
       strm.open(s.c_str());
       if (strm.is_open()) {
-        std::stringstream str;
-        str << strm.rdbuf();
-        file = str.str();
-        strm.close();
-        return (file);
+        strm.read(&buf[0], st.st_size);
+        return (buf);
       }
     }
     throw std::logic_error("");
   } catch (const std::logic_error &e) {
-    // std::cout << "coucou idiot" << std::endl;
+    std::cout << PURP2 << "coucou idiot"<< RESET << std::endl;
     ;
   }
   std::ifstream strm;
   string file;
+  std::vector<char> tmp;
   s = "." + map.getErrPages().find(error_code)->second;
   strm.open(s.c_str());
-  if (strm.is_open()) {
-    std::stringstream str;
-    str << strm.rdbuf();
-    file = str.str();
-    strm.close();
-    return (file);
+  struct stat st;
+  if ((stat(s.c_str(), &st) == 0)){
+    std::vector<char> buf(st.st_size);
+    std::cout << GREEN << "singleton: second try opened: st_size = " << st.st_size << RESET << std::endl;
+    if (strm.is_open()) {
+        strm.read(&buf[0], st.st_size);
+        std::cout << PURP2 << "buf(" << strm.gcount() << "): " << buf << RESET << std::endl;
+        return (buf);
+    }
   } else {
     file = getErrorPageFromSingleton(error_code);
-    return (file);
+    std::cout << GREEN << "singleton: third try opened" << RESET << std::endl;
+    std::vector<char> ret;
+    ret.insert(ret.begin(), file.begin(), file.end());
+    return (ret);
   }
-  return (file);
+  return (tmp);
 }
