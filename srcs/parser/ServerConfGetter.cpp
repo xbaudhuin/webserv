@@ -99,13 +99,24 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
                 {
                     std::string uri = this->_locations[i].getIndexFile()[0];
                     std::string file = uri.substr(uri.find_last_of("/", uri.size()), uri.size());
-                    std::cout << YELLOW << file << " && " << s2 << " && " << uri<< RESET << std::endl;
                     if(file == s2)
                     {
 #if PRINT == 2
                         std::cout << PURP << "NICE, FOUND IN FILE LOCATION!" << std::endl;
 #endif
                         return(this->_locations[i]);
+                    }
+                    for (size_t z = 0; z < this->_locations[i].getCgi().size(); z++)
+                    {
+                        std::string uri = this->_locations[i].getCgi()[z].second;
+                        std::string file = uri.substr(uri.find_last_of("/", uri.size()), uri.size());
+                        if(file == s2)
+                        {
+#if PRINT == 2
+                            std::cout << PURP << "NICE, FOUND IN FILE CGI LOCATION!" << std::endl;
+#endif
+                            return(this->_locations[i]);
+                        }
                     }
                 }
             }

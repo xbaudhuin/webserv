@@ -1,1 +1,2 @@
-Error inside the autoindex directive, ';' not found
+Error:
+Incorrect extension found inside the cgi directive
