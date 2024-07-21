@@ -158,6 +158,21 @@ void Webserv::parse(vec_string split)
     {
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
 	}
+#if PRINT == 3
+	try
+	{
+		if(this->_confs[0].second.getLocations()[0].isCgi("/html/python/cgi/cookies.php"))
+		{
+			std::cout << RED << this->_confs[0].second.getLocations()[0].getExecutePath("/html/python/cgi/cookies.php") << std::endl;
+			std::cout << this->_confs[0].second.getLocations()[0].getCgiFile("/html/python/cgi/cookies.php") << std::endl;
+			std::cout << this->_confs[0].second.getLocations()[0].getCgiPath("/html/python/cgi/cookies.php") << RESET << std::endl;
+		}
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+#endif
 	this->checkConfigs();
     this->createMaps();
 }
