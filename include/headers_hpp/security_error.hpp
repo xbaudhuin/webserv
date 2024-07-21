@@ -8,10 +8,10 @@ class security_error : public std::exception
 {
   private:
       std::string s;
-      const char* what() const throw();
 
   public:
       security_error(const std::string &s);
+      const char* what() const throw();
       ~security_error() throw();
 };
 
