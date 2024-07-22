@@ -1,5 +1,6 @@
 #include "Client.hpp"
 #include "Error.hpp"
+#include "Utils.hpp"
 #include <vector>
 
 void Client::uriDecoder(std::string &uri) {
@@ -112,6 +113,8 @@ size_t Client::insertInMap(std::string &line) {
   std::transform(line.begin(), line.end(), line.begin(), toLower);
   size_t pos = line.find_first_of(':');
   std::string key = line.substr(0, pos);
+  if (key.find_first_of(":\r\n\x1F") != key.npos)
+    return (400);
   std::string value = line.substr(pos + 1);
   if (value.size() > _headerMaxSize) {
     return (400);
@@ -120,9 +123,17 @@ size_t Client::insertInMap(std::string &line) {
   // std::cout << "KEY = " << key << std::endl;
   // std::cout << "VALUE = " << value << std::endl;
 
+  std::map<std::string, std::string>::iterator it;
   if (pos != line.npos) {
-    if (_headers.insert(std::make_pair(key, value)).second == false &&
-        key == "host")
+    it = _headers.find(key);
+    if (it != _headers.end()) {
+      if (key == "host" || "content-length" || "transfer-encoding" ||
+          "content-type")
+        return (400);
+      (*it).second += ",\n";
+      (*it).second += value;
+    } else if (_headers.insert(std::make_pair(key, value)).second == false &&
+               key == "host")
       return (400);
   }
   return (0);
@@ -148,6 +159,190 @@ bool Client::checkIfValid(void) {
   return (true);
 }
 
+bool Client::isHexadecimal(char c) {
+  if (c >= '0' && c <= '9')
+    return (true);
+  if (c >= 'a' && c <= 'f')
+    return (true);
+  if (c >= 'A' && c <= 'F')
+    return (true);
+  return (false);
+}
+
+int Client::getSizeChunkFromBuffer(void) {
+  size_t i = 0;
+  for (; i < _vBuffer.size(); i++) {
+    if (isHexadecimal(_vBuffer[i]) == false)
+      return (-1);
+    if (_vBuffer[i] == '\n')
+      break;
+  }
+  std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i);
+  int nb = std::strtol(tmp.c_str(), NULL, 16);
+  if (errno == ERANGE || _bodyToRead < 0 ||
+      (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
+       _server->getLimitBodySize() != 0))
+    return (-1);
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + 1);
+  return (nb);
+}
+
+bool Client::getTrailingHeader(void) {
+  std::map<std::string, std::string>::iterator it;
+  std::vector<std::string> trailer;
+  it = _headers.find("trailer");
+  if (it != _headers.end()) {
+    std::string header = (*it).second;
+    size_t pos = 0;
+    size_t start = 0;
+    while (true) {
+      pos = header.find(",\n");
+      if (pos == header.npos)
+        break;
+      trailer.insert(trailer.end(), header.substr(start, pos));
+      start = pos;
+    }
+  }
+  std::vector<std::string> vec;
+  size_t vecIt = 0;
+  bool carriage = false;
+  for (size_t i = 0; i < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\n') {
+      if (i > 0 && _vBuffer[i - 1] == '\r') {
+        carriage = true;
+      }
+      std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i - carriage);
+      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+      vec.push_back(tmp);
+      carriage = false;
+      if (_vBuffer.empty() == true)
+        break;
+    }
+  }
+  vectorToHeadersMap(vec);
+  if (_statusCode != 0)
+    return (true);
+  for (size_t i = 0; i < trailer.size(); i++) {
+    it = _headers.find(trailer[i]);
+    if (it == _headers.end()) {
+      _statusCode = 400;
+      return (true);
+    }
+  }
+  _statusCode = 200;
+  return (true);
+}
+
+bool Client::parseChunkRequest(void) {
+  if (_statusCode != 0)
+    return (true);
+  if (_vBuffer.size() < _bodyToRead) {
+    _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
+    _bodyToRead -= _vBuffer.size();
+    return (false);
+  }
+  if (_bodyToRead <= 0)
+    return (true);
+  _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+  if (_vBody.size() > _headersMaxBuffer) {
+    _statusCode = 413;
+    return (true);
+  }
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+  if (_vBuffer.size() < 3) {
+    _statusCode = 400;
+    return (true);
+  }
+  size_t i = 0;
+  if (_vBuffer[i] == '\r')
+    i++;
+  if (_vBuffer[i] != '\n') {
+    _statusCode = 400;
+    return (true);
+  }
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+  _bodyToRead = getSizeChunkFromBuffer();
+  if (_bodyToRead == -1) {
+    _statusCode = 413;
+    return (true);
+  }
+  if (_bodyToRead == 0) {
+    return (getTrailingHeader());
+  }
+  parseChunkRequest();
+}
+
+void Client::parseBody(void) {
+  std::map<std::string, std::string>::iterator itLength;
+  itLength = _headers.find("content-length");
+  std::map<std::string, std::string>::iterator itChunked;
+  itChunked = _headers.find("transfer-encoding");
+  if (itChunked != _headers.end() && itLength != _headers.end()) {
+    _statusCode = 400;
+    std::cout << RED
+              << "both content-length and transfer-encoding headers found"
+              << RESET << std::endl;
+  }
+  if (itLength != _headers.end()) {
+    if (_sMethod != "POST") {
+      _statusCode = 413;
+
+      std::cout << RED
+                << "changin statusCode because if (_sMethod != \"POST\")to "
+                << _statusCode << RESET << std::endl;
+
+      return;
+    }
+    _bodyToRead = std::strtol(((*itLength).second).c_str(), NULL, 10);
+    if (errno == ERANGE || _bodyToRead < 0 ||
+        (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
+         _server->getLimitBodySize() != 0)) {
+      _statusCode = 413;
+
+      std::cout << RED
+                << "changin statusCode because (_bodyToRead > "
+                   "static_cast<int>(_server->getLimitBodySize()) to "
+                << _statusCode << RESET << std::endl;
+      std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
+                << RESET << std::endl;
+
+      return;
+    }
+  } else if (itChunked != _headers.end()) {
+    if (_sMethod != "POST") {
+      _statusCode = 413;
+
+      std::cout << RED
+                << "changin statusCode because if (_sMethod != \"POST\")to "
+                << _statusCode << RESET << std::endl;
+
+      return;
+    }
+    _chunkRequest = true;
+    parseChunkRequest();
+    return;
+  }
+}
+
+void Client::vectorToHeadersMap(std::vector<std::string> &request) {
+  for (size_t it = 1; it < request.size(); it++) {
+    _requestSize += request[it].size();
+    if (_requestSize > _headersMaxBuffer) {
+      _statusCode = 413;
+
+      std::cout << RED
+                << "changin statusCode because if (_requestSize > "
+                   "_headersMaxBuffer) to "
+                << _statusCode << RESET << std::endl;
+
+      return;
+    }
+    _statusCode = insertInMap(request[it]);
+    if (_statusCode != 0)
+      return;
+  }
+}
+
 void Client::parseRequest(std::string &buffer) {
   if (buffer.empty() == true)
     return;
@@ -168,22 +363,10 @@ void Client::parseRequest(std::string &buffer) {
   _statusCode = parseRequestLine(request[0]);
   if (_statusCode >= 400)
     return;
-  for (size_t it = 1; it < request.size(); it++) {
-    _requestSize += request[it].size();
-    if (_requestSize > _headersMaxBuffer) {
-      _statusCode = 413;
-
-      std::cout << RED
-                << "changin statusCode because if (_requestSize > "
-                   "_headersMaxBuffer) to "
-                << _statusCode << RESET << std::endl;
-
-      return;
-    }
-    _statusCode = insertInMap(request[it]);
-    if (_statusCode != 0)
-      return;
-  }
+  request.erase(request.begin(), request.begin() + 1);
+  vectorToHeadersMap(request);
+  if (_statusCode != 0)
+    return;
   if (_headers.count("host") == 0) {
     _statusCode = 400;
 
@@ -240,34 +423,7 @@ void Client::parseRequest(std::string &buffer) {
   }
   if (checkIfValid() == false)
     return;
-  std::map<std::string, std::string>::iterator it =
-      _headers.find("content-length");
-  if (it != _headers.end()) {
-    if (_sMethod != "POST") {
-      _statusCode = 413;
-
-      std::cout << RED
-                << "changin statusCode because if (_sMethod != \"POST\")to "
-                << _statusCode << RESET << std::endl;
-
-      return;
-    }
-    _bodyToRead = std::strtol(((*it).second).c_str(), NULL, 10);
-    if (errno == ERANGE || _bodyToRead < 0 ||
-        (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
-         _server->getLimitBodySize() != 0)) {
-      _statusCode = 413;
-
-      std::cout << RED
-                << "changin statusCode because (_bodyToRead > "
-                   "static_cast<int>(_server->getLimitBodySize()) to "
-                << _statusCode << RESET << std::endl;
-      std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
-                << RESET << std::endl;
-
-      return;
-    }
-  }
+  parseBody();
   if (_bodyToRead > 0) {
 
     std::cout << PURP << "_vBodysize = " << _bodyToRead
@@ -284,7 +440,6 @@ void Client::parseRequest(std::string &buffer) {
 
     std::cout << PURP << "No body" << RESET << std::endl;
   }
-
   if (_vBuffer.size() != 0) {
     _statusCode = 400;
 
@@ -384,10 +539,13 @@ bool Client::checkBodyToRead(std::vector<char> buffer) {
 
   std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
 
-  if (buffer.size() > static_cast<long unsigned int>(_bodyToRead)) {
-    _statusCode = 400;
-  }
   _vBody.insert(_vBody.end(), buffer.begin(), buffer.end());
+  if (_chunkRequest == true) {
+    return (parseChunkRequest());
+  }
+  if (buffer.size() > static_cast<long unsigned int>(_bodyToRead)) {
+    _statusCode = 413;
+  }
   _bodyToRead -= buffer.size();
   _time = getTime();
   if (_bodyToRead <= 0 || _statusCode != 0)

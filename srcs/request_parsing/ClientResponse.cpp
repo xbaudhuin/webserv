@@ -194,7 +194,6 @@ void Client::readFile(void) {
     std::cout << BLUE << "still have to read: " << _leftToRead << RESET
               << std::endl;
   }
-  _nbRead++;
 }
 
 void Client::readFile(std::vector<char> &vec) {
@@ -234,7 +233,6 @@ void Client::readFile(std::vector<char> &vec) {
     std::cout << BLUE << "still have to read: " << _leftToRead << RESET
               << std::endl;
   }
-  _nbRead++;
 }
 
 void Client::createResponseBody(void) {

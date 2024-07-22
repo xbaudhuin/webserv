@@ -7,6 +7,15 @@
 
 extern char **environ;
 
+bool Client::isTimedOutCgi(void) const {
+  time_t current;
+  time(&current);
+  double timeOut = std::difftime(current, _time);
+  if (timeOut >= _timeOutCgi)
+    return (true);
+  return (false);
+}
+
 void Client::cgiPOSTMethod(void) {
   int fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
@@ -43,17 +52,18 @@ void Client::cgiOutfile(void) {
 }
 
 void Client::addHeaderToEnv(std::vector<const char *> &vEnv,
-                            std::string &envVariable, std::string &headerKey) {
+                            const std::string &envVariable,
+                            const std::string &headerKey) {
   std::map<std::string, std::string>::iterator it;
   it = _headers.find(headerKey);
   if (it != _headers.end()) {
-    envVariable += (*it).second;
-    vEnv.push_back(envVariable.c_str());
+    std::string tmp = envVariable + (*it).second;
+    vEnv.push_back(tmp.c_str());
   }
 }
 
 void Client::addVariableToEnv(std::vector<const char *> &vEnv,
-                              std::string &envVariable) {
+                              const std::string &envVariable) {
   vEnv.push_back(envVariable.c_str());
 }
 
@@ -88,19 +98,27 @@ void Client::buildEnv(std::vector<const char *> &vEnv) {
   std::stringstream ss;
   ss << _server->getPort();
   addVariableToEnv(vEnv, "SERVER_PORT=" + ss.str());
-  addVariableToEnv(vEnv, "SCRIPT_NAME=" + _location->getcgiName(_sUri).c_str);
-  if (_pathInfo.empty == false) {
-    addVariableToEnv(vEnv, "PATH_INFO=" + _pathInfo);
+  addVariableToEnv(vEnv, "SCRIPT_NAME=" + _location->getCgiFile(_sUri));
+  if (_sPathInfo.empty() == false) {
+    addVariableToEnv(vEnv, "PATH_INFO=" + _sPathInfo);
     addVariableToEnv(vEnv,
-                     "PATH_TRANSLATED=" + _location->getRoot() + _pathInfo);
+                     "PATH_TRANSLATED=" + _location->getRoot() + _sPathInfo);
   }
-  addVariableToEnv(vEnv, "SCRIPT_FILENAME=" + _location->getRoot() +
-                             _location->getCgi());
+  char buf[4096];
+  if (getcwd(buf, 4096) == NULL)
+    throw std::runtime_error("500");
+  std::string scriptFilename = "SCRIPT_FILENAME=";
+  scriptFilename += buf;
+  addVariableToEnv(vEnv, scriptFilename + _location->getCgiFile(_sUri));
+  for (size_t i = 0; i < vEnv.size(); i++) {
+    std::cout << YELLOW << "vEnv[i=" << i << "]: " << vEnv[0] << RESET
+              << std::endl;
+  }
   return;
 }
 
 void Client::setupChild(std::string &cgiPathScript) {
-  std::vector<char *> vEnv;
+  std::vector<const char *> vEnv;
   if (chdir(cgiPathScript.c_str()) == -1) {
     throw std::runtime_error("500");
   }

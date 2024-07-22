@@ -10,9 +10,12 @@
 #include <exception>
 #include <fstream>
 #include <map>
+#include <signal.h>
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 class ServerConf;
@@ -21,24 +24,27 @@ class Client {
 public:
   // Constructor
   Client(int fd, mapConfs &map, ServerConf *defaultServer);
+  Client(Client const &copy);
 
   // Destructor
   ~Client(void);
 
   // operator
-
-  Client(Client const &copy);
   Client &operator=(Client const &rhs);
-  // method
+
+  // method to debug
   void print();
+  int getBodyToRead(void) const;
+
+  // method
   bool addBuffer(std::vector<char> buffer);
   const std::vector<char> &getBuffer(void) const;
-  int getBodyToRead(void) const;
   bool sendResponse(std::vector<char> &response);
+  void setStatusCode(size_t code);
   bool isTimedOut(void) const;
   void add400Response(void);
   bool keepConnectionOpen(void) const;
-  void addCgiToMap(std::map<int, pid_t> &mapCgi) const;
+  void addCgiToMap(std::map<int, pid_t> &mapCgi);
 
 protected:
 private:
@@ -46,31 +52,40 @@ private:
   mapConfs &_mapConf;
   ServerConf *_defaultConf;
   ServerConf *_server;
-  Response _response;
   Location *_location;
   time_t _time;
+
+  // requestLine attribute
   size_t _statusCode;
   std::string _sMethod;
   std::string _sUri;
+  std::string _sPath;
   std::string _sQueryUri;
   size_t _version;
+  // request attribute
   std::string _sHost;
   std::map<std::string, std::string> _headers;
   size_t _requestSize;
   std::vector<char> _vBody;
-  int _bodyToRead;
   std::vector<char> _vBuffer;
-  bool _keepConnectionAlive;
+  int _bodyToRead;
   bool _chunkRequest;
+  // Response attribute
+  Response _response;
+  bool _keepConnectionAlive;
   bool _epollIn;
-  std::string _sPath;
   int _filefd;
   size_t _leftToRead;
-  size_t _nbRead;
+
+  // cgi attributes
   std::string _infileCgi;
   std::string _outfileCgi;
   pid_t _cgiPid;
+  std::string _sPathInfo;
 
+  // static const attribut
+  static const double _timeOutClient;
+  static const double _timeOutCgi;
   static const char *_validMethods[];
   static const size_t _methodSize;
   static const char *_whiteSpaces;
@@ -80,17 +95,28 @@ private:
   static const size_t _headersMaxBuffer;
   static const std::map<std::string, char> _uriEncoding;
 
-  // Constructor
-  std::string getDate(void);
+  // Parsing Method
+  bool checkMethod(void);
+  bool checkIfValid(void);
+  void removeReturnCarriage(std::vector<char> &vec);
+  size_t hasNewLine(void) const;
+  bool earlyParsing(int newLine);
   void parseRequest(std::string &request);
-  size_t insertInMap(std::string &line);
   size_t parseRequestLine(const std::string &requestLine);
-  int parseUri(const std::string &uri);
+  bool parseChunkRequest(void);
+  void parseBody(void);
   void uriDecoder(std::string &uri);
+  int parseUri(const std::string &uri);
+  void vectorToHeadersMap(std::vector<std::string> &request);
+  size_t insertInMap(std::string &line);
+  int getSizeChunkFromBuffer(void);
+  bool getTrailingHeader(void);
   ServerConf *getServerConf(void);
+
+  // Response Method
+  bool getResponse(std::string &response);
   void findPages(const std::string &url);
   bool findIndex(std::string &url);
-  bool getResponse(std::string &response);
   void buildListingDirectory(std::string &url);
   void buildResponse(void);
   void addConnectionHeader(void);
@@ -98,20 +124,28 @@ private:
   void handleError(void);
   void handleRedirection(void);
   void createResponseBody(void);
-  bool earlyParsing(int newLine);
-  bool checkMethod(void);
-  bool checkIfValid(void);
-
   void readFile(std::vector<char> &vec);
   void readFile(void);
-
-  void resetClient(void);
-  time_t getTime(void);
-  std::string getDateOfFile(time_t rawtime) const;
-
   bool checkBodyToRead(std::vector<char> buffer);
-  size_t hasNewLine(void) const;
-  void removeReturnCarriage(std::vector<char> &vec);
+
+  // cgi Method
+  bool isTimedOutCgi(void) const;
+  void cgiPOSTMethod(void);
+  void cgiOutfile(void);
+  void addHeaderToEnv(std::vector<const char *> &vEnv,
+                      const std::string &envVariable,
+                      const std::string &headerKey);
+  void addVariableToEnv(std::vector<const char *> &vEnv,
+                        const std::string &envVariable);
+  void buildEnv(std::vector<const char *> &vEnv);
+  void setupChild(std::string &cgiPathScript);
+  void setupCgi();
+  // utils Method
+  bool isHexadecimal(char c);
+  std::string getDateOfFile(time_t rawtime) const;
+  std::string getDate(void);
+  time_t getTime(void);
+  void resetClient(void);
 };
 
 #endif //! CLIENT_HPP
