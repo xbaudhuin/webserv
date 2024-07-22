@@ -101,7 +101,8 @@ AR						=	ar rcs
 
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
-					main/handleSignal.cpp \
+					signals/handleSignal.cpp \
+					signals/getExitStatus.cpp \
 					exec/Port.cpp \
 					parser/Split.cpp \
 					parser/Parser.cpp \

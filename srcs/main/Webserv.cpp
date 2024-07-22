@@ -177,7 +177,6 @@ void Webserv::parse(vec_string split)
     this->createMaps();
 }
 
-
 void Webserv::parseConfig(const std::string &conf)
 {
     std::ifstream	config;
@@ -208,6 +207,23 @@ int	Webserv::removeFdFromIdMap(int fd)
 	else
 	{
 		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd " << fd << std::endl;
+		return (FAILURE);
+	}
+}
+
+int	Webserv::removeFromMapPID(int fd)
+{
+	int	result;
+
+	result = this->_PID.erase(fd);
+	if (result == 1)
+	{
+		std::cout << "webserv: successfully erased socket fd " << fd << " from PID Map" << std::endl;
+		return (SUCCESS);
+	}
+	else
+	{
+		std::cerr << "webserv: Webserv::removeFdFromMapPID: trying to remove unexisting fd " << fd << std::endl;
 		return (FAILURE);
 	}
 }
@@ -260,13 +276,15 @@ int	Webserv::closeClientConnection(int clientSocket)
 		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
 		status = 1;
 	}
-	else if ((*iter).second->removeClientSocket(clientSocket) != 0)
+	else if ((*iter).second->removeClientSocket(clientSocket) != SUCCESS)
 	{
 		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from Port" << std::endl;
 		status = 1;
 	}
+	if (this->_PID.find(clientSocket) != this->_PID.end())
+		this->removeFromMapPID(clientSocket);
 	this->removeFdFromIdMap(clientSocket);
-	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != 0)
+	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != SUCCESS)
 	{
 		std::cerr << "webserv: Webserv::closeClientConnection: epoll_ctl: " << strerror(errno) << std::endl;
 		status = 1;
@@ -279,45 +297,86 @@ int	Webserv::closeClientConnection(int clientSocket)
 	return (status);
 }
 
-int	Webserv::getEpollFd(void) const
+
+int Webserv::getSocketFromPID(pid_t pid) const
 {
-	return (this->_epollFd);
+	mapPID::const_iterator	iter;
+
+	iter = this->_PID.begin();
+	while (iter != this->_PID.end())
+	{
+		if ((*iter).second == pid)
+		{
+			return ((*iter).first);
+		}
+		iter++;
+	}
+	std::cerr << "webserv: Webserv::getSocketFromPID " << pid << " pid is not present in the map (maybe kill by destructor)" << std::endl;
+	return (BAD_FD);
 }
+
 
 int	Webserv::isClientSocket(int fd) const
 {
-	try
+	mapID::const_iterator	iter;
+
+	iter = this->_idMap.find(fd);
+	if (iter == this->_idMap.end())
 	{
-		return (this->_idMap.at(fd)->isClientSocket(fd));
-	}
-	catch(const std::exception& e)
-	{
+		std::cerr << "webserv: Webserv::isClientSocket: fd " << fd << " is not in ID map" << std::endl; 
 		return (false);
+	}
+	else
+	{
+		return ((*iter).second->isClientSocket(fd));
 	}
 }
 
 int	Webserv::isServerSocket(int fd) const
 {
-	try
+	mapID::const_iterator	iter;
+
+	iter = this->_idMap.find(fd);
+	if (iter == this->_idMap.end())
 	{
-		return (this->_idMap.at(fd)->isServerSocket(fd));
-	}
-	catch(const std::exception& e)
-	{
+		std::cerr << "webserv: Webserv::isClientSocket: fd " << fd << " is not in ID map" << std::endl; 
 		return (false);
 	}
-	
+	else
+	{
+		return ((*iter).second->isServerSocket(fd));
+	}
 }
 
-int	Webserv::isOldClient(int fd) const
+bool	Webserv::isOldClient(int fd) const
 {
-	try
+	mapID::const_iterator	iter;
+
+	iter = this->_idMap.find(fd);
+	if (iter == this->_idMap.end())
 	{
-		return (this->_idMap.at(fd)->isOldClient(fd));
-	}
-	catch(const std::exception& e)
-	{
+		std::cerr << "webserv: Webserv::isOldClient: fd " << fd << " is not in ID map" << std::endl; 
 		return (false);
+	}
+	else
+	{
+		return ((*iter).second->isOldClient(fd));
+	}
+}
+
+bool	Webserv::isOldChild(int fd) const
+{
+	mapID::const_iterator	iter;
+
+	iter = this->_idMap.find(fd);
+	if (iter == this->_idMap.end())
+	{
+		std::cerr << "webserv: Webserv::isOldChild: fd " << fd << " is not in ID map" << std::endl; 
+		return (false);
+	}
+	else
+	{
+		return ((*iter).second->isOldChild(fd));
 	}
 }
 
@@ -342,6 +401,93 @@ int	Webserv::bounceOldClients(void)
 			this->closeClientConnection(socket);
 		}
 		current = next;
+	}
+	return (SUCCESS);
+}
+
+int	Webserv::killOldChilds(void)
+{
+	mapPID::iterator	current;
+	mapPID::iterator	next;
+	int					fd;
+	pid_t				pid;
+	int					status;
+	
+	current = this->_PID.begin();
+	while (true)
+	{
+		if (current == this->_PID.end())
+		{
+			break ;
+		}
+		fd = (*current).first;
+		pid = (*current).second;
+		next = ++current;
+		current--;
+		if (this->isClientSocket(fd) == true && this->isOldChild(fd) == true)
+		{
+			if (kill(pid, SIGKILL) != SUCCESS)
+			{
+				std::cerr << "webserv: Webserv::killOldChilds: kill: " << strerror(errno) << std::endl;
+			}
+			else
+			{
+				if (waitpid(pid, &status, 0) != pid)
+					std::cerr << "webserv: Webserv::killOldChilds: waitpid: " << strerror(errno) << std::endl;
+				else
+					this->handleChildExit(pid, status);
+				std::cout << "webserv: successfully killed process with PID " << pid << " attached to socket client fd " << fd << std::endl;
+			}
+		}
+		current = next;
+	}
+	return (SUCCESS);
+}
+
+int	Webserv::handleChildExit(pid_t pid, int codeExit)
+{
+	int	fd;
+
+	fd = this->getSocketFromPID(pid);
+	if (fd == BAD_FD)
+	{
+		return (FAILURE);
+	}
+	this->removeFromMapPID(fd);
+	 if (changeEpollEvents(this->_epollFd, fd, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
+	 {
+		return (this->closeClientConnection(fd));
+	 }
+	getExitStatus(codeExit);
+	/* Notify exit status to the client request instance */
+	return (SUCCESS);
+}
+
+int	Webserv::checkChildsEnd(void)
+{
+	pid_t	pid;
+	int		status;
+
+	if (this->_PID.size() == 0)
+	{
+		return (SUCCESS);
+	}
+	while (true)
+	{
+		pid = waitpid((pid_t)-1, &status, WNOHANG);
+		if (pid == 0)
+		{
+			break ;
+		}
+		else if (pid == (pid_t)-1)
+		{
+			std::cerr << "wevserv: Webserv::checkChildsEnd: waitpid: " << std::endl;
+			return (FAILURE);
+		}
+		else
+		{
+			this->handleChildExit(pid, status);
+		}
 	}
 	return (SUCCESS);
 }
@@ -413,6 +559,7 @@ int	Webserv::receive(int clientSocket)
 				}
 				std::cout << "webserv: changing epoll event to EPOLLIN | EPOLLRDHUP | EPOLLOUT for fd " << clientSocket << std::endl;
 			}
+			/* Need to pass PID map to client's request instance */
 		}
 	}
 	catch(const std::exception& e)
@@ -522,7 +669,7 @@ void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
 		}
 		else
 		{
-			std::cerr << "webserv: Webserv::handleEvents: file descriptor is neither a server socket nor a client socket" << std::endl;
+			std::cerr << "webserv: Webserv::handleEvents: fd " << fd << " is neither a server socket nor a client socket. It may be bounced for time out before traiting event" << std::endl;
 		}
 		this->doCheckRoutine();
 	}
@@ -552,32 +699,9 @@ void	Webserv::doCheckRoutine(void)
 {
 	this->checkSigint();
 	this->bounceOldClients();
+	this->killOldChilds();
+	this->checkChildsEnd();
 }
-
-// int	test(void)
-// {
-// 	std::vector<int> vec;
-
-// 	for (size_t i = 0; i < 5; i++)
-// 	{
-// 		try
-// 		{
-			
-// 				vec.push_back(i);
-// 			if (i == 2)
-// 				throw std::logic_error("test");
-// 		}
-// 		catch(const std::exception& e)
-// 		{
-// 			std::cerr << e.what() << '\n';
-// 		}
-// 	}
-// 	for (size_t i = 0; i < vec.size(); i++)
-// 	{
-// 		std::cout << "[" << i << "] = " << vec[i] << std::endl;
-// 	}
-// 	return (SUCCESS);
-// }
 
 int	Webserv::start(void)
 {

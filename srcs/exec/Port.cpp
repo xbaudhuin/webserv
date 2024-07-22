@@ -85,10 +85,10 @@ int	Port::removeSocketFromRequestMap(int socket)
 	status = this->_clientRequests.erase(socket);
 	if (status == 0)
 	{
-		std::cerr << "webserv: Port::removeSocketFromRequestMap: could not remove socket fd " << socket << " from request map" << std::endl;
+		std::cerr << "webserv: Port::removeSocketFromRequestMap: trying to remove non existing client socket from request map of port " << this->_address << ":" << this->_port << std::endl;
 		return (FAILURE);
 	}
-	std::cout << "webserv: successfully remove client socket " << socket << " in Porter map listening on port " << this->_port << std::endl;
+	std::cout << "webserv: successfully remove client socket " << socket << " in Port request map listening on port " << this->_address << ":" << this->_port << std::endl;
 	return (SUCCESS);
 }
 
@@ -100,12 +100,12 @@ int	Port::removeSocketFromClientVector(int socket)
 	if (iter != this->_clientSockets.end())
 	{
 		this->_clientSockets.erase(iter);
-		std::cout << "webserv: successfully remove client socket " << socket << " in Porter vector listening on port " << this->_address << ":" << this->_port << std::endl;
+		std::cout << "webserv: successfully remove client socket " << socket << " in Port vector listening on port " << this->_address << ":" << this->_port << std::endl;
 		return (SUCCESS);
 	}
 	else
 	{
-		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of Port port " << this->_address << ":" << this->_port << std::endl;
+		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of port " << this->_address << ":" << this->_port << std::endl;
 		return (FAILURE);
 	}
 }
@@ -157,28 +157,48 @@ int	Port::getPort(void) const
 
 bool	Port::isOldClient(int fd) const
 {
-	try
+	mapClients::const_iterator	iter;
+
+	iter = this->_clientRequests.find(fd);
+	if (iter == this->_clientRequests.end())
 	{
-		return (this->_clientRequests.at(fd).isTimedOut());
-	}
-	catch(const std::exception& e)
-	{
+		std::cerr << "webserv: Port::isOldClient: fd " << fd  << " is not in map of requests" << std::endl;
 		return (false);
+	}
+	else
+	{
+		return ((*iter).second.isTimedOut());
+	}
+}
+
+bool	Port::isOldChild(int fd) const
+{
+	mapClients::const_iterator	iter;
+
+	iter = this->_clientRequests.find(fd);
+	if (iter == this->_clientRequests.end())
+	{
+		std::cerr << "webserv: Port::isOldChid: fd " << fd  << " is not in map of requests" << std::endl;
+		return (false);
+	}
+	else
+	{
+		return (false); /* Change with correct PID time function */
 	}
 }
 
 Client	*Port::getClient(int clientSocket)
 {
-	Client	*clientToReturn;
+	mapClients::iterator	iter;
 
-	try
-	{
-		clientToReturn = &this->_clientRequests.at(clientSocket);
-		return (clientToReturn);
-	}
-	catch(const std::exception& e)
+	iter = this->_clientRequests.find(clientSocket);
+	if (iter == this->_clientRequests.end())
 	{
 		return (NULL);
+	}
+	else
+	{
+		return (&(*iter).second);
 	}
 }
 

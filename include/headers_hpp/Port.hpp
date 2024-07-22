@@ -26,6 +26,7 @@ class	Port
 		void					printPortConfs(void);
 		void					addToConf(const std::string &name, ServerConf *newConf);
 		const std::vector<int>	getClientsVector(void) const;
+		bool					isOldChild(int fd) const;
 
 	protected:
 

@@ -10,13 +10,6 @@
 
 const int MAX_EVENTS = 500;
 
-enum	signal_handler
-{
-	IGNORE = 0,
-	DEFAULT = 1,
-	STOP = 2,
-};
-
 class Webserv
 {
     private:
@@ -25,6 +18,7 @@ class Webserv
         vec_string	_env;
         char		**_env_char;
         vec_confs	_confs;
+		mapPID		_PID;
         			Webserv();
         void		parseConfig(const std::string &conf);
         void		parse(vec_string split); 
@@ -47,7 +41,13 @@ class Webserv
 		void		checkSigint(void) const;
 		void		doCheckRoutine(void);
 		int			handleEndResponse(int clientSocket, const Client* clientRequest);
-		int			isOldClient(int fd) const;
+		bool		isOldClient(int fd) const;
+		int			killOldChilds(void);
+		bool		isOldChild(int fd) const;
+		int			checkChildsEnd(void);
+		int			removeFromMapPID(int fd);
+		int			handleChildExit(pid_t pid, int codeExit);
+		int			getSocketFromPID(pid_t pid) const;
 
     public:
       		 	 Webserv(const char *s);
@@ -56,7 +56,7 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void) const;
-		int		getEpollFd(void) const;
+
 		int		start(void);
 
 		class	StopServer : public std::exception
