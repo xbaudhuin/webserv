@@ -22,11 +22,11 @@ int checkListen(const vec_string &split, size_t &i, const size_t &size, ServerCo
         if(split[i].find_first_of("{}", 0) != std::string::npos)
         {
             goToNextIndex(split, i);
-            throw std::logic_error("Error inside the listen directive");
+            throw std::logic_error("Webserv: Error:\nSyntax error the listen directive");
         }
         if(i + 1 < size && split[i + 1] != ";")
         {
-            throw std::logic_error("Error inside the listen directive , ';' not found");
+            throw std::logic_error("Webserv: Error:\nSyntax error the listen directive , ';' not found");
         }
         cf.addPortOrHost(split[i]);
         i+=2;
@@ -44,7 +44,7 @@ int checkServerName(const vec_string &split, size_t &i, const size_t &size, Serv
         {
             if(split[i].find_first_of("{}", 0) != std::string::npos)
             {
-                throw std::logic_error ("Error inside the server_name directive");
+                throw std::logic_error("Webserv: Error:\nSyntax error inside the server_name directive");
             }
             if(split[i] == ";")
                 break;
@@ -77,11 +77,11 @@ int checkMaxBodySize(const vec_string &split, size_t &i, const size_t &size, Ser
         i++;
         if(split[i].find_first_of("{};", 0) != std::string::npos)
         {
-            throw std::logic_error("Error inside the client_max_body_size directive");
+            throw std::logic_error("Webserv: Error:\nSyntax error inside the client_max_body_size directive");
         }
         if(i + 1 < size && split[i + 1] != ";")
         {
-            throw std::logic_error("Error inside the client_max_body_size directive, ';' not found");
+            throw std::logic_error("Webserv: Error:\nSyntax error inside the client_max_body_size directive, ';' not found");
         }
         cf.addLimitBodySize(split[i]);
         i+=2;
@@ -97,11 +97,11 @@ int checkRoot(const vec_string &split, size_t &i, const size_t &size, ServerConf
         i++;
         if(split[i].find_first_of("{};", 0) != std::string::npos)
         {
-            throw std::logic_error("Error inside the root directive");
+            throw std::logic_error("Webserv: Error:\nSyntax error inside the root directive");
         }
         if(i + 1 < size && split[i + 1] != ";")
         {
-            throw std::logic_error("Error inside the root directive, ';' not found");
+            throw std::logic_error("Webserv: Error:\nSyntax error inside the root directive, ';' not found");
         }
         cf.addRoot(split[i]);
         i+=2;
@@ -120,12 +120,12 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     size_t index = i;
 
     if (split[i] != "{" )
-        throw std::logic_error("Error:\nMissing '{' of the server block");
+        throw std::logic_error("Webserv: Error:\nMissing '{' of the server block");
     else if (( pos = split[i].find("}")) != std::string::npos)
-        throw std::logic_error("Error:\nMisconfigured server block, issue comes from '}'");
+        throw std::logic_error("Webserv: Error:\nMisconfigured server block, issue comes from '}'");
     i++;
     if(split[i].find_first_of("{};") != std::string::npos)
-        throw std::logic_error("Error:\nMisconfigured server block, found \"{\" again");
+        throw std::logic_error("Webserv: Error:\nMisconfigured server block, found \"{\" again");
     try
     {    
         while(i < size)
@@ -158,7 +158,7 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
             }
             if(split[i] == "}")
                 break;
-            std::string s = "Error:\nUnknown directive found in the server block: ";
+            std::string s = "Webserv: Error:\nUnknown directive found in the server block: ";
             s += split[i];
             throw std::logic_error(s);
         }

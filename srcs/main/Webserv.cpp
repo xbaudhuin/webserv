@@ -19,7 +19,7 @@ Webserv::Webserv(const char* file)
     this->parseConfig(config);
 #if PRINT == 2
     vec_string v;
-    v.push_back("/coucou/test/test2");
+    v.push_back("/");
     
     for (size_t i = 0; i < v.size(); i++)
     {
@@ -84,6 +84,11 @@ bool checkNumberBrackets(const vec_string &split)
     size_t size = split.size();
     size_t count = 0;
 
+	// for (size_t i = 0; i < split.size(); i++)
+	// {
+	// 	std::cout << split[i] << " && " << i << " | ";
+	// }
+	
     for (size_t i = 0; i < size; i++)
     {
         if(split[i] == "{")
@@ -92,11 +97,12 @@ bool checkNumberBrackets(const vec_string &split)
         }
         else if(split[i] == "}")
         {
-            if(count == 0 )
-                return 1;
             count--;
         }
+		// std::cout << split[i] << " && " << i << " && " << size << std::endl;
     }
+	if(count != 0)
+		return 1;
     return 0;
 }
 
@@ -135,7 +141,7 @@ void Webserv::parse(vec_string split)
     size_t size = split.size();
 
     if(checkNumberBrackets(split))
-        return(errorParsing("Issue with the file, uneven number of {}"));
+        throw std::invalid_argument("Webserv: Error:\nIssue with the file, uneven number of {}");
     for(size_t i = 0; i < size; i++)
     {
         if(split[i] == "server")
@@ -161,12 +167,13 @@ void Webserv::parse(vec_string split)
 #if PRINT == 3
 	try
 	{
-		if(this->_confs[0].second.getLocations()[0].isCgi("/html/python/cgi/cookies.php"))
-		{
-			std::cout << RED << this->_confs[0].second.getLocations()[0].getExecutePath("/html/python/cgi/cookies.php") << std::endl;
-			std::cout << this->_confs[0].second.getLocations()[0].getCgiFile("/html/python/cgi/cookies.php") << std::endl;
-			std::cout << this->_confs[0].second.getLocations()[0].getCgiPath("/html/python/cgi/cookies.php") << RESET << std::endl;
-		}
+		std::cout << findErrorPage(600, this->_confs[0].second) << std::endl;
+		// if(this->_confs[0].second.getLocations()[0].isCgi("/html/python/cgi/cookies.php"))
+		// {
+		// 	std::cout << RED << this->_confs[0].second.getLocations()[0].getExecutePath("/html/python/cgi/cookies.php") << std::endl;
+		// 	std::cout << this->_confs[0].second.getLocations()[0].getCgiFile("/html/python/cgi/cookies.php") << std::endl;
+		// 	std::cout << this->_confs[0].second.getLocations()[0].getCgiPath("/html/python/cgi/cookies.php") << RESET << std::endl;
+		// }
 	}
 	catch(const std::exception& e)
 	{
