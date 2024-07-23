@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "Colors.hpp"
 #include "Error.hpp"
 #include "Utils.hpp"
 #include <vector>
@@ -121,8 +122,8 @@ size_t Client::insertInMap(std::string &line) {
     return (400);
   }
   trimWhitespace(value, _whiteSpaces);
-  // std::cout << "KEY = " << key << std::endl;
-  // std::cout << "VALUE = " << value << std::endl;
+  std::cout << "KEY = " << key << std::endl;
+  std::cout << "VALUE = " << value << std::endl;
 
   std::map<std::string, std::string>::iterator it;
   if (pos != line.npos) {
@@ -172,6 +173,8 @@ bool Client::isHexadecimal(char c) {
 
 int Client::getSizeChunkFromBuffer(void) {
   size_t i = 0;
+  std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
+            << std::endl;
   for (; i < _vBuffer.size(); i++) {
     if (isHexadecimal(_vBuffer[i]) == false)
       return (-1);
@@ -184,6 +187,10 @@ int Client::getSizeChunkFromBuffer(void) {
       (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
        _server->getLimitBodySize() != 0))
     return (-1);
+  std::cout << "Client::getSizeChunkFromBuffer: " << "\n nb = " << nb
+            << "i = " << i << "\n";
+  std::string out(_vBuffer.begin(), _vBuffer.begin() + i + 1);
+  std::cout << "erase from buffer: " << out << std::endl;
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + 1);
   return (nb);
 }
@@ -205,7 +212,6 @@ bool Client::getTrailingHeader(void) {
     }
   }
   std::vector<std::string> vec;
-  size_t vecIt = 0;
   bool carriage = false;
   for (size_t i = 0; i < _vBuffer.size(); i++) {
     if (_vBuffer[i] == '\n') {
@@ -230,38 +236,37 @@ bool Client::getTrailingHeader(void) {
       return (true);
     }
   }
+  _chunkRequest = false;
   _statusCode = 200;
   return (true);
 }
 
 bool Client::parseChunkRequest(void) {
+  std::cout << YELLOW << "Client::parseChunkRequest: " << RESET << std::endl;
+  std::cout << YELLOW << "bodytoRead = " << _bodyToRead << RESET << std::endl;
+  std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
+  std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
   if (_statusCode != 0)
     return (true);
-  if (_vBuffer.size() < _bodyToRead) {
+  if (static_cast<long long int>(_vBuffer.size()) < _bodyToRead) {
     _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
     _bodyToRead -= _vBuffer.size();
     return (false);
   }
-  if (_bodyToRead <= 0)
-    return (true);
-  _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
-  if (_vBody.size() > _headersMaxBuffer) {
+  if (_location->getLimitBodySize() != 0 &&
+      _vBody.size() > _location->getLimitBodySize()) {
     _statusCode = 413;
     return (true);
   }
-  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
-  if (_vBuffer.size() < 3) {
+  if (_bodyToRead > 0) {
+    _vBody.insert(_vBody.end(), _vBuffer.begin(),
+                  _vBuffer.begin() + _bodyToRead);
+    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+  }
+  if (_vBuffer.size() < 2) {
     _statusCode = 400;
     return (true);
   }
-  size_t i = 0;
-  if (_vBuffer[i] == '\r')
-    i++;
-  if (_vBuffer[i] != '\n') {
-    _statusCode = 400;
-    return (true);
-  }
-  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
   _bodyToRead = getSizeChunkFromBuffer();
   if (_bodyToRead == -1) {
     _statusCode = 413;
@@ -270,7 +275,7 @@ bool Client::parseChunkRequest(void) {
   if (_bodyToRead == 0) {
     return (getTrailingHeader());
   }
-  parseChunkRequest();
+  return (parseChunkRequest());
 }
 
 void Client::parseBody(void) {
@@ -326,7 +331,7 @@ void Client::parseBody(void) {
 }
 
 void Client::vectorToHeadersMap(std::vector<std::string> &request) {
-  for (size_t it = 1; it < request.size(); it++) {
+  for (size_t it = 0; it < request.size(); it++) {
     _requestSize += request[it].size();
     if (_requestSize > _headersMaxBuffer) {
       _statusCode = 413;
@@ -425,6 +430,7 @@ void Client::parseRequest(std::string &buffer) {
   if (checkIfValid() == false)
     return;
   parseBody();
+
   if (_bodyToRead > 0) {
 
     std::cout << PURP << "_vBodysize = " << _bodyToRead
@@ -443,8 +449,9 @@ void Client::parseRequest(std::string &buffer) {
   }
   if (_vBuffer.size() != 0) {
     _statusCode = 400;
-
-    std::cout << RED << "buffer != 0 : " << _vBuffer << RESET << std::endl;
+    std::cout << GREEN << "body = " << _vBody << RESET << std::endl;
+    std::cout << RED << "buffer != 0, buffer.size() = " << _vBuffer.size()
+              << "; buffer : " << _vBuffer << RESET << std::endl;
     std::cout << RED
               << "changin statusCode because if (_vBuffer.size() != 0) to "
               << _statusCode << RESET << std::endl;
