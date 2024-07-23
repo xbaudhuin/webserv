@@ -76,7 +76,8 @@ HEADER_FILES	=	 Webserv.hpp \
 					 sockets.hpp \
 					 Colors.hpp \
 					 security_error.hpp \
-					 cgiException.hpp 
+					 cgiException.hpp \
+					 bad_key_error.hpp \
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -120,6 +121,7 @@ SRCS_MAIN		=	main/main.cpp \
 					error_logs/logs.cpp \
 					error_logs/Security_error.cpp \
 					error_logs/cgiException.cpp \
+					error_logs/bad_key_error.cpp \
 					error_pages/singleton.cpp \
 					request_parsing/Client.cpp \
 					request_parsing/ClientConst.cpp \
