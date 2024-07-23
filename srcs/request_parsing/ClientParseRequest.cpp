@@ -31,6 +31,7 @@ int Client::parseUri(const std::string &uri) {
   size_t pos = uri.find_first_of('?');
   _sUri = uri.substr(0, pos);
   uriDecoder(_sUri);
+  // pathINFO
   if (_sUri.size() > 2048)
     return (414);
   if (pos != uri.npos) {
