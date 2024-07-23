@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <ostream>
+#include <stdexcept>
 #include <stdio.h>
 
 bool Client::findIndex(std::string &url) {
@@ -343,14 +344,16 @@ void Client::buildResponse(void) {
   _response.BuildResponse();
 }
 
-void Client::add400Response(void) {
+void Client::addErrorResponse(size_t errorCode) {
   if (_epollIn == true)
     return;
+  if (errorCode < 100 || errorCode >= 600)
+    throw std::logic_error("Invalid Error Code");
   Response error400;
-  error400.setStatusCode(400);
+  error400.setStatusCode(errorCode);
   error400.setDate();
   error400.setHeader("Content-Type", "text/html");
-  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
+  const std::vector<char> &ref = findErrorPage(errorCode, *_defaultConf);
   _response.setBody(ref, ref.size());
   error400.setHeader("Content-Length", _response.getBodySize());
   error400.setHeader("Connection", "close");
@@ -363,6 +366,7 @@ void Client::add400Response(void) {
 
 bool Client::sendResponse(std::vector<char> &response) {
   resetVector(response);
+  // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
   if (_response.isReady() == false) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();

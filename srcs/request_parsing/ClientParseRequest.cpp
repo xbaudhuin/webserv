@@ -114,6 +114,9 @@ size_t Client::insertInMap(std::string &line) {
     return (431);
   std::transform(line.begin(), line.end(), line.begin(), toLower);
   size_t pos = line.find_first_of(':');
+  if (pos == line.npos) {
+    return (400);
+  }
   std::string key = line.substr(0, pos);
   if (key.find_first_of(":\r\n\x1F") != key.npos)
     return (400);
@@ -175,24 +178,51 @@ int Client::getSizeChunkFromBuffer(void) {
   size_t i = 0;
   std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
             << std::endl;
+
+  std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
+  std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
   for (; i < _vBuffer.size(); i++) {
-    if (isHexadecimal(_vBuffer[i]) == false)
-      return (-1);
     if (_vBuffer[i] == '\n')
       break;
+    if (isHexadecimal(_vBuffer[i]) == false) {
+      std::cout << RED << "is not hexadecimal i(" << i << "): " << _vBuffer[i]
+                << RESET << std::endl;
+      return (-1);
+    }
   }
   std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i);
+  std::cout << YELLOW << "get nb string of size(" << i << ") = " << tmp << RESET
+            << std::endl;
   int nb = std::strtol(tmp.c_str(), NULL, 16);
-  if (errno == ERANGE || _bodyToRead < 0 ||
+  if (errno == ERANGE || nb < 0 ||
       (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
-       _server->getLimitBodySize() != 0))
+       _server->getLimitBodySize() != 0)) {
+    std::cout << RED << "FAIL IN GET NB" << RESET << std::endl;
     return (-1);
+  }
   std::cout << "Client::getSizeChunkFromBuffer: " << "\n nb = " << nb
-            << "i = " << i << "\n";
+            << "; i = " << i << "\n";
   std::string out(_vBuffer.begin(), _vBuffer.begin() + i + 1);
   std::cout << "erase from buffer: " << out << std::endl;
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + 1);
   return (nb);
+}
+
+void Client::removeTrailingLineFromBuffer(void) {
+  size_t i = 0;
+  if (_vBuffer.size() >= 2 && _vBuffer[i] == '\r' && _vBuffer[i + 1] == '\n')
+    i += 2;
+  else if (_vBuffer[i] == '\n')
+    i++;
+  else {
+    std::cout << GREEN << "_vbuffer: " << _vBuffer << RESET << std::endl;
+    std::cout << RED
+              << "Client::parseChunkRequest: failed to remove trailing line"
+              << RESET << std::endl;
+    _statusCode = 400;
+    return;
+  }
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
 }
 
 bool Client::getTrailingHeader(void) {
@@ -220,6 +250,9 @@ bool Client::getTrailingHeader(void) {
       }
       std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i - carriage);
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+      removeTrailingLineFromBuffer();
+      if (_statusCode == 400)
+        return (true);
       vec.push_back(tmp);
       carriage = false;
       if (_vBuffer.empty() == true)
@@ -259,11 +292,16 @@ bool Client::parseChunkRequest(void) {
     return (true);
   }
   if (_bodyToRead > 0) {
+    std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+    std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET << std::endl;
+    std::cout << PURP2 << "add to _vBody and removing from _vbuffer : " << tmp
+              << RESET << std::endl;
     _vBody.insert(_vBody.end(), _vBuffer.begin(),
                   _vBuffer.begin() + _bodyToRead);
     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+    removeTrailingLineFromBuffer();
   }
-  if (_vBuffer.size() < 2) {
+  if (_vBuffer.size() < 2 || _statusCode >= 400) {
     _statusCode = 400;
     return (true);
   }
@@ -349,6 +387,11 @@ void Client::vectorToHeadersMap(std::vector<std::string> &request) {
   }
 }
 
+void Client::checkPathInfo(void) {
+  if (_location->isCgi(_sUri) == false)
+    return;
+}
+
 void Client::parseRequest(std::string &buffer) {
   if (buffer.empty() == true)
     return;
@@ -398,7 +441,7 @@ void Client::parseRequest(std::string &buffer) {
 
   try {
     _location = &(_server->getPreciseLocation(_sUri));
-
+    checkPathInfo();
     std::cout << YELLOW << "location = " << _location->getUrl() << RESET
               << std::endl;
 

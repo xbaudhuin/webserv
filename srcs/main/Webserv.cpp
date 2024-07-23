@@ -457,7 +457,7 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 		}
 		if (checkEvent(events, EPOLLIN) == true)
 		{
-			clientRequest->add400Response();
+			clientRequest->addErrorResponse(400);
 		}
 		remainRequest = clientRequest->sendResponse(response);
 		bytesSend = send(clientSocket, &response[0], response.size(), 0);

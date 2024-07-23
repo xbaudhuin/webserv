@@ -42,7 +42,7 @@ public:
   bool sendResponse(std::vector<char> &response);
   void setStatusCode(size_t code);
   bool isTimedOut(void) const;
-  void add400Response(void);
+  void addErrorResponse(size_t errorCode);
   bool keepConnectionOpen(void) const;
   void addCgiToMap(std::map<int, pid_t> &mapCgi);
 
@@ -98,6 +98,7 @@ private:
   // Parsing Method
   bool checkMethod(void);
   bool checkIfValid(void);
+  void removeTrailingLineFromBuffer(void);
   void removeReturnCarriage(std::vector<char> &vec);
   size_t hasNewLine(void) const;
   bool earlyParsing(int newLine);

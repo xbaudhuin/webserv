@@ -18,14 +18,15 @@ int main() {
     http_request += "host: bonjour2\r\n";
     // http_request += "GET /favicon.ico HTTP/1.0\r\n";
     // http_request += "host: bonjour\r\n";
-    // http_request += "Content-Length: 10\r\n";
+    http_request += "Content-Length 10\r\n";
     http_request += "Transfer-encoding: chunked\r\n";
     http_request += "\r\n";
     http_request += "10\r\n";
-    http_request += "bonjour123\r\n";
+    http_request += "bonjour123456789\r\n";
     http_request += "A\r\n";
-    http_request += "coucou12345\r\n";
+    http_request += "coucou1234\n";
     http_request +="0\r\n";
+    http_request += "bonjour: salut\r\n";
 
     // http_request += "bonjour=2\n";
     // http_request += "bonjour=20";
