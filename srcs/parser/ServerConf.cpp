@@ -277,8 +277,13 @@ void ServerConf::addRoot(const std::string &dir)
     check = save;
     // if(s[0] != ".")
     //     throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
+    // if(check[check.size() - 1] == '/')
+    //     check.erase(check.end() - 1);
+    if(check[0] != '.' && check[1] && check[1] != '/')
+        throw std::logic_error("Webserv: Error:\nRoot directive parameter is missing './' at the beginning");
+    check.erase(0, 1);
     if(check[check.size() - 1] == '/')
-        check.erase(check.end() - 1);
+        check.erase(check.size() - 1);
     this->root = check;
 }
 
@@ -315,31 +320,6 @@ std::ostream& operator<<(std::ostream& out, const ServerConf& cf)
     {
         out << "Loc[" << i << "]:\n\t";
         out << loc[i] << std::endl;
-        // if(loc[i].getUrl().size() >  0)
-        //     out << "Url: " << loc[i].getUrl() << "\n\t";
-        // out << "Exact Match: " << (loc[i].isExactMatch() ? "YES" : "NO") << "\n\t";
-        // if(loc[i].getRoot().size() >  0)
-        //     out << "Root: " << loc[i].getRoot() << "\n\t";
-        // if(loc[i].getIndexFile().size() > 0)
-        //     for (size_t j = 0; j < loc[i].getIndexFile().size(); j++)
-        //     {
-        //         out << "Index File[" << j << "]: " << loc[i].getIndexFile()[j] << "\n\t";
-        //     }
-        
-        // if(loc[i].getCgi().size() > 0)
-        // {
-        //     for (size_t j = 0; j < loc[i].getCgi().size(); j++)
-        //     {
-        //         out << "Cgi File: " << loc[i].getCgi()[j].second << "\n\t";
-        //     }
-        // }                
-        // if(loc[i].getRedirection().size() > 0)
-        //     out << "Redirection URL and CODE: " << loc[i].getRedirection() << " && " << loc[i].getRedirCode() << "\n\t";
-        // out << "Limit body size: " << loc[i].getLimitBodySize() << "\n\t";
-        // out << "Method GET status: " << (loc[i].getGetSatus() ? "on" : "off") << "\n\t";
-        // out << "Method POST status: " << (loc[i].getPostStatus() ? "on" : "off") << "\n\t";
-        // out << "Method DELETE status: " << (loc[i].getDeleteStatus() ? "on" : "off") << "\n\t";
-        // out << "Directory Listing Status: " << loc[i].getAutoIndex() << std::endl;
     }
     out << RESET << "\t\tRank: " << serv.getRank() << "\n"<< std::endl;       
     return(out);

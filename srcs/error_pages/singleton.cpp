@@ -810,6 +810,10 @@ std::vector<char> findErrorPage(int error_code, ServerConf &map) {
   string s = "";
   try {
     map_err_pages m = map.getErrPages();
+    std::cout << "coucou: " << error_code << std::endl;
+    if(m.find(error_code) == m.end())
+        throw bad_key_error("");
+    std::cout << "coucou2: " << error_code << std::endl;
     Location loc = map.getPreciseLocation(
         m[error_code].substr(map.getRoot().size(), m[error_code].size()));
     if (loc.isExactMatch() != 1)
@@ -830,10 +834,19 @@ std::vector<char> findErrorPage(int error_code, ServerConf &map) {
       }
     }
     throw std::logic_error("");
+  }
+  catch (const bad_key_error &e)
+  {
+    std::string file = getErrorPageFromSingleton(500);
+    std::cout << GREEN << "singleton: bad error code" << RESET << std::endl;
+    std::vector<char> ret;
+    ret.insert(ret.begin(), file.begin(), file.end());
+    return (ret);
   } catch (const std::logic_error &e) {
     std::cout << PURP2 << "coucou idiot"<< RESET << std::endl;
     ;
   }
+  
   std::ifstream strm;
   string file;
   std::vector<char> tmp;

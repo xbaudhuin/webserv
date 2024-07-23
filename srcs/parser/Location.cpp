@@ -19,6 +19,7 @@ Location::Location(){
     this->_is_a_dir = 0;
     this->_exec_path[".php"] = "/bin/php";
     this->_exec_path[".py"] = "/bin/python3";
+    this->_path_info = 0;
 }
 
 Location::Location(const Location &rhs){
@@ -46,6 +47,7 @@ Location& Location::operator=(const Location &rhs){
         this->_is_a_dir = rhs._is_a_dir;
         this->_root_server = rhs._root_server;
         this->_exec_path = rhs._exec_path;
+        this->_path_info = rhs._path_info;
     }
     return(*this);
 }
@@ -85,6 +87,11 @@ const bool& Location::getAutoIndex(void) const{
     return(this->_directory_listing);
 }
 
+const bool& Location::hasPathInfo(void) const{
+    return(this->_path_info);
+}
+
+
 const bool& Location::isExactMatch(void) const{
     return(this->_exact_match);
 }
@@ -105,6 +112,9 @@ const std::vector<std::pair<std::string, std::string> >& Location::getCgi(void) 
     return(this->cgi);
 }
 
+const vec_string& Location::availableExtension() const{
+    return(this->available_extension);
+}
 /* setters */
 
 void Location::addLimitBodySize(const std::string &limit)
@@ -187,20 +197,21 @@ void Location::addUrl(const std::string &url, std::string root){
     }
 }
 
-void Location::addRoot(const std::string &root){
-    if(this->_root_check > 0)
-        throw std::logic_error("Error:\nInvalid root directive inside Location block, root was already set once");
-    size_t check = root.size();
-    if(check <= 0)
-        throw std::logic_error("Error:\nCouldnt set root, invalid path passed as parameter");
-    std::string s;
-    check--;
-    if(root[check] == ';')
-        s = root.substr(0, check);
-    else
-        s = root;
-    this->root = s;
-    this->_root_check++;
+void Location::addRoot(const std::string &dir){
+    std::string check = dir;
+    // if(check[0] != '.')
+    //     check.insert(0, ".");
+    std::string save = check;
+    vec_string s = tokenizer(check, " ", "/");
+    check = save;
+    // if(s[0] != ".")
+    //     throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
+    // if(check[check.size() - 1] == '/')
+    //     check.erase(check.end() - 1);
+    if(check[0] != '.' && check[1] && check[1] != '/')
+        throw std::logic_error("Webserv: Error:\nRoot directive parameter is missing './' at the beginning");
+    check.erase(0, 1);
+    this->root = check;
 }
 
 void Location::addRedirection(const std::string &code, const std::string &redirect){
@@ -232,6 +243,17 @@ void Location::setAutoIndex(const std::string &check)
         this->_directory_listing = 0;
     else
         throw std::logic_error("Error:\nCouln't set directory listing, unkown parameter passed as argument");
+}
+
+void Location::setPathInfo(const std::string &check)
+{
+    vec_string v = split(check, ";");
+    if(v[0] == "on")
+        this->_path_info = 1;
+    else if(v[0] == "off")
+        this->_path_info = 0;
+    else
+        throw std::logic_error("Error:\nCouln't set path_info, unkown parameter passed as argument");
 }
 
 void Location::setExactMatch(void){
@@ -268,22 +290,26 @@ void Location::setMethod(const std::string &method, const std::string &status){
 
 void Location::fixUrl(const std::string &url){
     std::string s;
+    std::string uri = url;
     this->_root_server = url;
-    std::cout << this->_root_server << std::endl;
-    // std::cout << this->root << std::endl;
+    // std::cout << this->_root_server << std::endl;
+
+    // std::cout << "HERE: " << this->root << " && " << this->url<< std::endl;
     if(this->root[this->root.size() - 1] == '/')
         s = this->root.substr(0, this->root.size() - 1);
     else
         s = this->root;
     // s = s.substr(s.find_last_of("/", s.size()), s.size() );
-    this->url = url + s + this->url;
+    this->url = uri + s + this->url;
     if(this->upload_location.size() > 0)
-        this->upload_location.insert(0, url);
+        this->upload_location.insert(0, uri);
 }
 
 void Location::fixCgi(void){
     for (size_t i = 0; i < this->cgi.size(); i++)
     {
+        if(this->cgi[i].second[0] == '/')
+            this->cgi[i].second.erase(0, 1);
         this->cgi[i].second = this->url + this->cgi[i].second;
     }
 }
@@ -319,6 +345,7 @@ void Location::setUploadLocation(const std::string &check)
 std::ostream& operator<<(std::ostream& out, const Location& loc){
     if(loc.getUrl().size() >  0)
         out << "Url: " << loc.getUrl() << "\n\t";
+    out << "Server Root: " << loc.getRootServer() << "\n\t";
     out << "Exact Match: " << (loc.isExactMatch() ? "YES" : "NO") << "\n\t";
     if(loc.getRoot().size() >  0)
         out << "Root: " << loc.getRoot() << "\n\t";
@@ -338,6 +365,7 @@ std::ostream& operator<<(std::ostream& out, const Location& loc){
         out << "Cgi Upload Location: " << loc.getUploadLocation() << "\n\t";
     if(loc.getRedirection().size() > 0)
         out << "Redirection URL and CODE: " << loc.getRedirection() << " && " << loc.getRedirCode() << "\n\t";
+    out << "Path info: " << (loc.hasPathInfo() ? "ON" : "OFF") << "\n\t";
     out << "Limit body size: " << loc.getLimitBodySize() << "\n\t";
     out << "Method GET status: " << (loc.getGetStatus() ? "on" : "off") << "\n\t";
     out << "Method POST status: " << (loc.getPostStatus() ? "on" : "off") << "\n\t";

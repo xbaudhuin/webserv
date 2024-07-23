@@ -28,16 +28,17 @@ class Location
         vec_string index_file;
         int code_redirection;
         bool _directory_listing;
+        bool _path_info;
         uint64_t limit_body_size;
         int _root_check;
         std::string upload_location;
         std::map<std::string, std::string> _exec_path;
 
-public:
-  Location();
-  Location(const Location &rhs);
-  Location &operator=(const Location &rhs);
-  ~Location();
+    public:
+        Location();
+        Location(const Location &rhs);
+        Location &operator=(const Location &rhs);
+        ~Location();
 
         /* getters */
         const uint64_t& getLimitBodySize(void) const;
@@ -48,6 +49,7 @@ public:
         const int& getRedirCode(void) const;
         const bool& getAutoIndex(void) const;
         const bool& isExactMatch(void) const;
+        const bool& hasPathInfo(void) const;
         const bool& getPostStatus(void) const;
         const bool& getGetStatus(void) const;
         const bool& getDeleteStatus(void) const;
@@ -61,12 +63,15 @@ public:
         bool isCgi(const std::string& uri) const;
         const std::string& getExecutePath(const std::string& uri);
         std::string getExtension(const std::string& uri) const;
+        const vec_string& availableExtension() const;
+
         /* setters */
         void addLimitBodySize(const std::string &limit);
         void addUrl(const std::string &url, std::string root);
         void addRoot(const std::string &root);
         void addRedirection(const std::string &code, const std::string &redirect);
         void setAutoIndex(const std::string &check);
+        void setPathInfo(const std::string &check);
         void setExactMatch(void);
         void setIndexFile(const std::string &file);
         void setCgi(const std::string &extension, const std::string &executable);
