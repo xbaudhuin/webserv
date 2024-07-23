@@ -14,7 +14,7 @@ const size_t Client::_headerMaxSize = 8192;
 
 const size_t Client::_headersMaxBuffer = 32768;
 
-const size_t Client::_sizeMaxResponse = 8000;
+const size_t Client::_sizeMaxResponse = 100;
 
 std::map<std::string, char> initMap() {
   std::map<std::string, char> m;

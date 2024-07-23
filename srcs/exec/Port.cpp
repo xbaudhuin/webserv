@@ -47,7 +47,7 @@ int	Port::acceptNewConnection(void)
 {
 	int	clientSocket;
 	
-	clientSocket = accept4(this->_serverSocket, NULL, NULL, SOCK_NONBLOCK | SOCK_CLOEXEC);
+	clientSocket = accept4(this->_serverSocket, NULL, NULL, (SOCK_NONBLOCK | SOCK_CLOEXEC));
 	if (clientSocket == BAD_FD)
 	{
 		std::cerr << "webserv: Port::acceptNewConncetion: accept: " << strerror(errno) << std::endl;
