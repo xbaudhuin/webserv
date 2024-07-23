@@ -492,6 +492,43 @@ int	Webserv::checkChildsEnd(void)
 	return (SUCCESS);
 }
 
+int	Webserv::checkTooManyRequests(int clientSocket)
+{
+	Client	*request;
+
+	// return (SUCCESS);
+	request = this->_idMap[clientSocket]->getClient(clientSocket);
+	if (request == NULL)
+	{
+		this->closeClientConnection(clientSocket);
+		return (FAILURE);
+	}
+	if (this->_idMap.size() > MAX_FD)
+	{
+		try
+		{
+			std::cout << request->isTimedOut() << std::endl;
+			//request->add400Response();
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << "webserv: Webserv::checkTooManyRequests: catch error: " << e.what() << std::endl;
+			this->closeClientConnection(clientSocket);
+		}
+		if (changeEpollEvents(this->_epollFd, clientSocket, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
+		{
+			this->closeClientConnection(clientSocket);
+			return (FAILURE);
+		}
+		std::cout << "webserv: can not process request for client on fd " << clientSocket << " due to too many requests" << std::endl;
+		return (SUCCESS);
+	}
+	else
+	{
+		return (SUCCESS);
+	}
+}
+
 int	Webserv::handlePortEvent(int serverSocket)
 {
 	int	newClient;
@@ -520,7 +557,7 @@ int	Webserv::handlePortEvent(int serverSocket)
 		protectedClose(newClient);
 		return (FAILURE);
 	}
-	return (SUCCESS);
+	return (this->checkTooManyRequests(newClient));
 }
 
 int	Webserv::receive(int clientSocket)

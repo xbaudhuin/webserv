@@ -9,6 +9,7 @@
 #include "Client.hpp"
 
 const int MAX_EVENTS = 500;
+const int MAX_FD = 50;
 
 class Webserv
 {
@@ -48,6 +49,7 @@ class Webserv
 		int			removeFromMapPID(int fd);
 		int			handleChildExit(pid_t pid, int codeExit);
 		int			getSocketFromPID(pid_t pid) const;
+		int			checkTooManyRequests(int clientSocket);
 
     public:
       		 	 Webserv(const char *s);
