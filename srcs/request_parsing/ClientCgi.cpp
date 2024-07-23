@@ -1,6 +1,10 @@
 #include "Client.hpp"
+#include "cgiException.hpp"
+#include <complex>
 #include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
+#include <new>
 #include <sstream>
 #include <stdexcept>
 #include <unistd.h>
@@ -67,7 +71,8 @@ void Client::addVariableToEnv(std::vector<const char *> &vEnv,
   vEnv.push_back(envVariable.c_str());
 }
 
-void Client::buildEnv(std::vector<const char *> &vEnv) {
+void Client::buildEnv(std::vector<char *> &vEnvariable) {
+  std::vector<const char *> vEnv;
   for (size_t i = 0; environ[i]; i++) {
     vEnv.push_back(environ[i]);
   }
@@ -110,15 +115,44 @@ void Client::buildEnv(std::vector<const char *> &vEnv) {
   std::string scriptFilename = "SCRIPT_FILENAME=";
   scriptFilename += buf;
   addVariableToEnv(vEnv, scriptFilename + _location->getCgiFile(_sUri));
+  vEnv.push_back(NULL);
+  char *dup;
   for (size_t i = 0; i < vEnv.size(); i++) {
-    std::cout << YELLOW << "vEnv[i=" << i << "]: " << vEnv[0] << RESET
-              << std::endl;
+    dup = strdup(vEnv[i]);
+    if (dup == NULL)
+      throw std::bad_alloc();
+    vEnvariable.push_back(dup);
   }
+  vEnvariable.push_back(NULL);
   return;
 }
 
+void Client::freeVector(std::vector<char *> &vEnv,
+                        std::vector<char *> &argument) {
+  for (size_t i = 0; i < vEnv.size(); i++) {
+    free(vEnv[i]);
+  }
+  for (size_t i = 0; i < argument.size(); i++) {
+    free(argument[i]);
+  }
+}
+
+void Client::buildArguments(std::vector<char *> &arg) {
+  char *dup = strdup(_location->getExecutePath(_sUri).c_str());
+  if (dup == NULL)
+    throw std::bad_alloc();
+  arg.push_back(dup);
+  std::string pathScript = "./" + _location->getCgiPath(_sUri);
+  dup = strdup(pathScript.c_str());
+  if (dup == NULL)
+    throw std::bad_alloc();
+  arg.push_back(dup);
+  arg.push_back(NULL);
+}
+
 void Client::setupChild(std::string &cgiPathScript) {
-  std::vector<const char *> vEnv;
+  std::vector<char *> vEnv;
+  std::vector<char *> argument;
   if (chdir(cgiPathScript.c_str()) == -1) {
     throw std::runtime_error("500");
   }
@@ -126,9 +160,15 @@ void Client::setupChild(std::string &cgiPathScript) {
     cgiPOSTMethod();
   }
   cgiOutfile();
-  buildEnv(vEnv);
-  if (execve() == -1)
-    throw std::runtime_error("500");
+  try {
+    buildEnv(vEnv);
+    buildArguments(argument);
+    if (execve(argument[0], &argument[0], &vEnv[0]) == -1)
+      throw std::runtime_error("500");
+  } catch (std::exception &e) {
+    freeVector(vEnv, argument);
+    throw cgiException("fail cgi");
+  }
 }
 
 void Client::setupCgi() {

@@ -149,9 +149,10 @@ bool Client::checkMethod(void) {
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
+    std::cout << RED << "Client::checkMethod: invalid method" << RESET << std::endl;
     _statusCode = 405;
     return (false);
-  } else if (_sMethod == "POST" && _location->getDeleteStatus() == false) {
+  } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false) {
     _statusCode = 405;
     return (false);
   }
@@ -388,8 +389,26 @@ void Client::vectorToHeadersMap(std::vector<std::string> &request) {
 }
 
 void Client::checkPathInfo(void) {
-  if (_location->isCgi(_sUri) == false)
+  if (_location->hasPathInfo() == false)
     return;
+  std::string locator = _sUri.substr(_location->getUrl().size());
+  std::cout << YELLOW << "_sUri = " << _sUri
+            << "; _location.uri().size() = " << _location->getUrl().size()
+            << RESET << std::endl;
+  vec_string extension = _location->availableExtension();
+  size_t i = 0;
+  size_t pos = locator.npos;
+  for (; i < extension.size(); i++) {
+    pos = locator.find(extension[i]);
+    if (pos != locator.npos)
+      break;
+  }
+  if (i == extension.size())
+    return;
+  _sPathInfo = _sUri.substr(pos);
+  _sUri.erase(pos);
+  std::cout << YELLOW << "_sPathinfo = " << _sPathInfo << "; _sUri = " << _sUri
+            << RESET << std::endl;
 }
 
 void Client::parseRequest(std::string &buffer) {

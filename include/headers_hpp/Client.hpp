@@ -12,6 +12,7 @@
 #include <map>
 #include <signal.h>
 #include <sstream>
+#include <string.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -104,6 +105,7 @@ private:
   bool earlyParsing(int newLine);
   void parseRequest(std::string &request);
   size_t parseRequestLine(const std::string &requestLine);
+  void checkPathInfo(void);
   bool parseChunkRequest(void);
   void parseBody(void);
   void uriDecoder(std::string &uri);
@@ -138,7 +140,9 @@ private:
                       const std::string &headerKey);
   void addVariableToEnv(std::vector<const char *> &vEnv,
                         const std::string &envVariable);
-  void buildEnv(std::vector<const char *> &vEnv);
+  void buildEnv(std::vector<char *> &vEnv);
+  void buildArguments(std::vector<char *> &argument);
+  void freeVector(std::vector<char *> &vEnv, std::vector<char *> &argument);
   void setupChild(std::string &cgiPathScript);
   void setupCgi();
   // utils Method
