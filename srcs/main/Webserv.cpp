@@ -289,7 +289,11 @@ int	Webserv::closeClientConnection(int clientSocket)
 		status = 1;
 	}
 	if (this->_PID.find(clientSocket) != this->_PID.end())
+	{
+		kill(this->_PID[clientSocket], SIGKILL);
+		waitpid(this->_PID[clientSocket], NULL, 0);
 		this->removeFromMapPID(clientSocket);
+	}
 	this->removeFdFromIdMap(clientSocket);
 	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != SUCCESS)
 	{
@@ -321,7 +325,6 @@ int Webserv::getSocketFromPID(pid_t pid) const
 	std::cerr << "webserv: Webserv::getSocketFromPID " << pid << " pid is not present in the map (maybe kill by destructor)" << std::endl;
 	return (BAD_FD);
 }
-
 
 int	Webserv::isClientSocket(int fd) const
 {
@@ -453,7 +456,8 @@ int	Webserv::killOldChilds(void)
 
 int	Webserv::handleChildExit(pid_t pid, int codeExit)
 {
-	int	fd;
+	int		fd;
+	Client	*request;
 
 	fd = this->getSocketFromPID(pid);
 	if (fd == BAD_FD)
@@ -461,12 +465,24 @@ int	Webserv::handleChildExit(pid_t pid, int codeExit)
 		return (FAILURE);
 	}
 	this->removeFromMapPID(fd);
-	 if (changeEpollEvents(this->_epollFd, fd, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
-	 {
-		return (this->closeClientConnection(fd));
-	 }
-	getExitStatus(codeExit);
-	/* Notify exit status to the client request instance */
+	if (changeEpollEvents(this->_epollFd, fd, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
+	{
+		this->closeClientConnection(fd);
+		return (FAILURE);
+	}
+	if (this->_idMap.find(fd) == this->_idMap.end())
+	{
+		std::cerr << "webserv: Webserv::handleChildExit: fd " << fd << "does not exist in map ID" << std::endl;
+		this->closeClientConnection(fd);
+		return (FAILURE);
+	}
+	request = this->_idMap[fd]->getClient(fd);
+	if (request == NULL)
+	{
+		this->closeClientConnection(fd);
+		return (FAILURE);
+	}
+	request->setStatusCode(getExitStatus(codeExit));
 	return (SUCCESS);
 }
 
@@ -503,7 +519,6 @@ int	Webserv::checkTooManyRequests(int clientSocket)
 {
 	Client	*request;
 
-	// return (SUCCESS);
 	request = this->_idMap[clientSocket]->getClient(clientSocket);
 	if (request == NULL)
 	{
@@ -515,7 +530,7 @@ int	Webserv::checkTooManyRequests(int clientSocket)
 		try
 		{
 			std::cout << request->isTimedOut() << std::endl;
-			//request->add400Response();
+			request->addErrorResponse(503);
 		}
 		catch(const std::exception& e)
 		{
