@@ -364,23 +364,58 @@ void Client::addErrorResponse(size_t errorCode) {
   return;
 }
 
+void Client::handleCgi(void) {
+  if (_statusCode >= 400) {
+    buildResponse();
+    return;
+  }
+  _filefd = open(_outfileCgi.c_str(), O_RDONLY);
+  if (_filefd == -1) {
+    _statusCode = 500;
+    buildResponse();
+    return;
+  }
+  readFile();
+  return;
+}
+
+void Client::handleDelete(void) {
+  std::string url = "." + _location->getRootServer() + _sUri;
+  if (unlink(url.c_str()) == -1) {
+    if (errno == EACCES) {
+      _statusCode = 403;
+    } else if (errno == ENOENT)
+      _statusCode = 404;
+    else
+      _statusCode = 500;
+    return (handleError());
+  }
+  _statusCode = 204;
+  defaultHTMLResponse();
+  addConnectionHeader();
+  _response.BuildResponse();
+  return;
+}
+
 bool Client::sendResponse(std::vector<char> &response) {
   resetVector(response);
+  if (_cgiPid > 0) {
+    handleCgi();
+  }
+  if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+    handleDelete();
+  }
   // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
-  if (_response.isReady() == false) {
+  else if (_response.isReady() == false) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
     response = _response.getResponse();
     std::cout << BLUE << "response for _sUri:\n"
               << _sUri << "; of size : " << response.size() << RESET
               << std::endl;
-    bool ret = _leftToRead != 0;
-    std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
-    if (_leftToRead == 0)
-      resetClient();
-    return (_leftToRead != 0);
   }
-  std::cout << PURP << "leftToRead = " << _leftToRead << RESET << std::endl;
+  bool ret = _leftToRead != 0;
+  std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   if (_leftToRead > 0) {
     readFile(response);
     if (_statusCode == 500) {
@@ -390,7 +425,6 @@ bool Client::sendResponse(std::vector<char> &response) {
   // std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
   if (_leftToRead == 0)
     resetClient();
-  bool ret = _leftToRead != 0;
   std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   return (_leftToRead != 0);
 }

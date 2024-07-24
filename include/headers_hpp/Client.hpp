@@ -132,6 +132,8 @@ private:
   bool checkBodyToRead(std::vector<char> buffer);
 
   // cgi Method
+  void handleDelete(void);
+  void handleCgi(void);
   bool isTimedOutCgi(void) const;
   void cgiPOSTMethod(void);
   void cgiOutfile(void);

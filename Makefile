@@ -6,7 +6,7 @@
 #    By: xabaudhu <xabaudhu@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/19 15:55:54 by xabaudhu          #+#    #+#              #
-#    Updated: 2024/07/17 13:34:59 by xabaudhu         ###   ########.fr        #
+#    Updated: 2024/07/24 14:38:04 by xabaudhu         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -133,7 +133,7 @@ REQUEST = requester
 
 
 SRCS_REQUEST 	=	request_parsing/main.cpp \
-					main/Webserv.cpp \
+	main/Webserv.cpp \
 					main/handleSignal.cpp \
 					exec/Port.cpp \
 					parser/Split.cpp \
@@ -151,6 +151,8 @@ SRCS_REQUEST 	=	request_parsing/main.cpp \
 					sockets/checkEvent.cpp \
 					error_logs/logs.cpp \
 					error_logs/Security_error.cpp \
+					error_logs/cgiException.cpp \
+					error_logs/bad_key_error.cpp \
 					error_pages/singleton.cpp \
 					request_parsing/Client.cpp \
 					request_parsing/ClientConst.cpp \
@@ -158,6 +160,7 @@ SRCS_REQUEST 	=	request_parsing/main.cpp \
 					request_parsing/Response.cpp \
 					request_parsing/ClientParseRequest.cpp 
 
+				
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 
