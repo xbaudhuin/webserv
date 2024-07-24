@@ -518,9 +518,9 @@ void Client::parseRequest(std::string &buffer) {
               << "changin statusCode because if (_vBuffer.size() != 0) to "
               << _statusCode << RESET << std::endl;
   }
-  // if (_location && _location->isCgi(_sUri) == true) {
-  //   setupCgi();
-  // }
+  if (_location && _location->isCgi(_sUri) == true) {
+    setupCgi();
+  }
   if (_statusCode == 0)
     _statusCode = 200;
   return;
