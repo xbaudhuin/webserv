@@ -9,6 +9,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <stdio.h>
+#include <sys/stat.h>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -126,7 +127,7 @@ void Client::findPages(const std::string &urlu) {
   std::string url = "." + _location->getRootServer() + _sUri;
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
-    if (_sUri[_sUri.size() - 1] == '/') {
+    if (_sUri.size() == _location->getUrl().size()) {
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
@@ -140,6 +141,21 @@ void Client::findPages(const std::string &urlu) {
     }
   }
   _sPath = url;
+  struct stat st;
+  if (stat(url.c_str(), &st) == -1){
+    if (errno == ENOENT)
+      _statusCode = 404;
+    else if (errno == EACCES)
+      _statusCode = 403;
+    else
+      _statusCode = 500;
+    return;
+  }
+  if ((st.st_mode & S_IFMT) != S_IFREG){
+    std::cout << RED << "Not a regular file" << RESET << std::endl;
+    _statusCode = 403;
+    return;
+  }
   _filefd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
   // _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying to open file: " << url << RESET << std::endl;
@@ -151,8 +167,6 @@ void Client::findPages(const std::string &urlu) {
       _statusCode = 403;
     return;
   }
-  struct stat st;
-  stat(_sPath.c_str(), &st);
   std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
   _leftToRead = st.st_size;
   _response.setHeader("Content-Length", st.st_size);
@@ -398,6 +412,7 @@ void Client::handleDelete(void) {
 }
 
 bool Client::sendResponse(std::vector<char> &response) {
+  errno = 0;
   resetVector(response);
   if (_cgiPid > 0) {
     std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
