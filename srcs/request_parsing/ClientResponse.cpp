@@ -400,9 +400,12 @@ void Client::handleDelete(void) {
 bool Client::sendResponse(std::vector<char> &response) {
   resetVector(response);
   if (_cgiPid > 0) {
+    std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
+              << std::endl;
     handleCgi();
-  }
-  if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+  } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
+              << std::endl;
     handleDelete();
   }
   // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
@@ -413,6 +416,9 @@ bool Client::sendResponse(std::vector<char> &response) {
     std::cout << BLUE << "response for _sUri:\n"
               << _sUri << "; of size : " << response.size() << RESET
               << std::endl;
+    if (_leftToRead == 0)
+      resetClient();
+    return (_leftToRead != 0);
   }
   bool ret = _leftToRead != 0;
   std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
