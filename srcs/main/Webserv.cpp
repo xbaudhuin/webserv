@@ -621,6 +621,10 @@ int	Webserv::receive(int clientSocket)
 			clientRequest->addCgiToMap(this->_PID);
 		}
 	}
+	catch(const cgiException &e)
+	{
+		throw e;
+	}
 	catch(const std::exception& e)
 	{
 		std::cerr << "webserv: Webserv::receive: catch error: " << e.what() << std::endl;
