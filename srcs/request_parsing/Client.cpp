@@ -2,24 +2,47 @@
 #include "Error.hpp"
 #include "Port.hpp"
 #include "ServerConf.hpp"
+#include "Utils.hpp"
+#include <cstddef>
+#include <exception>
 #include <stdexcept>
+#include <sys/wait.h>
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _response(), _location(NULL), _statusCode(0), _sMethod(""), _sUri(""),
-      _version(0), _sHost(""), _requestSize(0), _bodyToRead(-1),
-      _keepConnectionAlive(true), _chunkRequest(false), _epollIn(false),
-      _leftToRead(0), _nbRead(0) {
+      _location(NULL), _statusCode(0), _sMethod(""), _sUri(""), _sPath(""),
+      _sQueryUri(""), _version(0), _sHost(""), _requestSize(0), _bodyToRead(-1),
+      _chunkRequest(false), _response(), _keepConnectionAlive(true),
+      _epollIn(false), _filefd(-1), _leftToRead(0), _infileCgi(""),
+      _outfileCgi(""), _cgiPid(0), _sPathInfo("") {
+
+  _filefd = -1;
   _time = getTime();
   if (defaultConf == NULL)
     throw(std::logic_error("Default server is NULL"));
   return;
 }
 
-Client::~Client(void) { return; }
+Client::~Client(void) {
+  if (_filefd != -1)
+    close(_filefd);
+  if (_infileCgi.empty() == false) {
+    unlink(_infileCgi.c_str());
+  }
+  if (_outfileCgi.empty() == false) {
+    unlink(_outfileCgi.c_str());
+  }
+  if (_cgiPid > 0) {
+    if (kill(_cgiPid, SIGKILL) == -1) {
+      std::cerr << "Client::~Client: Kill failed on " << _cgiPid << std::endl;
+    }
+    waitpid(_cgiPid, NULL, WNOHANG);
+  }
+  return;
+}
 
-Client::Client(Client const &copy)
-    : _socket(copy._socket), _mapConf(copy._mapConf) {
+Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
+  _filefd = -1;
   if (this != &copy)
     *this = copy;
   return;
@@ -27,6 +50,7 @@ Client::Client(Client const &copy)
 
 Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
+    _socket = rhs._socket;
     _defaultConf = rhs._defaultConf;
     _server = rhs._server;
     _location = rhs._location;
@@ -34,35 +58,41 @@ Client &Client::operator=(Client const &rhs) {
     _statusCode = rhs._statusCode;
     _sMethod = rhs._sMethod;
     _sUri = rhs._sUri;
+    _sPath = rhs._sPath;
     _sQueryUri = rhs._sQueryUri;
     _version = rhs._version;
     _sHost = rhs._sHost;
     _headers = rhs._headers;
     _requestSize = rhs._requestSize;
-    _bodyToRead = rhs._bodyToRead;
+    _vBody = rhs._vBody;
     _vBuffer = rhs._vBuffer;
-    _keepConnectionAlive = rhs._keepConnectionAlive;
+    _bodyToRead = rhs._bodyToRead;
     _chunkRequest = rhs._chunkRequest;
     _response = rhs._response;
+    _keepConnectionAlive = rhs._keepConnectionAlive;
     _epollIn = rhs._epollIn;
+    if (_filefd != -1)
+      close(_filefd);
+    if (rhs._filefd != -1)
+      _filefd = open(rhs._sPath.c_str(), O_RDONLY | O_CLOEXEC);
+    else
+      _filefd = -1;
     _leftToRead = rhs._leftToRead;
-    _nbRead = rhs._nbRead;
-    if (_file.is_open())
-      _file.close();
-    if (rhs._file.is_open())
-      _file.open(rhs._sPath.c_str());
-    _sPath = rhs._sPath;
+    _infileCgi = rhs._infileCgi;
+    _outfileCgi = rhs._outfileCgi;
+    _cgiPid = rhs._cgiPid;
+    _sPathInfo = rhs._sPathInfo;
   }
   return (*this);
 }
 
 time_t Client::getTime(void) { return (std::time(0)); }
 
-bool Client::isTimedOut(void)const {
+bool Client::isTimedOut(void) const {
   time_t current;
   time(&current);
   double timeOut = std::difftime(current, _time);
-  if (timeOut >= 10.0)
+  if (timeOut >= _timeOutClient)
     return (true);
   return (false);
 }
@@ -76,24 +106,26 @@ void Client::resetClient(void) {
   _sMethod = "";
   _sUri = "";
   _sQueryUri = "";
-  _version = 0;
+  _version = 1;
   _sHost = "";
   _headers.clear();
   _requestSize = 0;
   _bodyToRead = -1;
-  _vBuffer.clear();
-  std::vector<char> tmp;
-  _vBuffer.swap(tmp);
+  resetVector(_vBuffer);
+  resetVector(_vBody);
   _chunkRequest = false;
+  _keepConnectionAlive = true;
   _response.reset();
   _epollIn = false;
   _leftToRead = 0;
-  _nbRead = 0;
   _sPath = "";
-  if (_file.is_open()) {
-    std::cout << GREEN << "closing _file" << RESET << std::endl;
-    _file.close();
-  }
+  _cgiPid = 0;
+  _outfileCgi = "";
+  _infileCgi = "";
+  _sPathInfo = "";
+  if (_filefd != -1)
+    close(_filefd);
+  _filefd = -1;
 }
 
 ServerConf *Client::getServerConf(void) {
@@ -121,6 +153,40 @@ std::string Client::getDateOfFile(time_t rawtime) const {
   char buffer[80] = {0};
   std::strftime(buffer, 80, "%d-%m-%y %H:%M:%S GMT;", gmtTime);
   return (buffer);
+}
+
+void Client::addCgiToMap(std::map<int, pid_t> &mapCgi) {
+  try {
+    if (_cgiPid > 0) {
+      mapCgi.insert(std::make_pair(_socket, _cgiPid));
+    }
+  } catch (std::exception &e) {
+    if (_cgiPid > 0) {
+      if (kill(_cgiPid, SIGKILL) == -1)
+        std::cerr << "Client::addCgiToMap: Failed to kill pid: " << _cgiPid
+                  << std::endl;
+      _statusCode = 500;
+    }
+    waitpid(_cgiPid, NULL, WNOHANG);
+  }
+}
+
+void Client::setStatusCode(size_t exitStatus) {
+  switch (exitStatus) {
+  case 0: {
+    _statusCode = 200;
+    break;
+  }
+  case 126: {
+    _statusCode = 422;
+  }
+  case 130: {
+    _statusCode = 504;
+  }
+  default: {
+    _statusCode = 500;
+  }
+  }
 }
 
 void Client::print() {
