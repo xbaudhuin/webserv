@@ -5,7 +5,9 @@
 #include <cerrno>
 #include <cstring>
 #include <dirent.h>
+#include <fcntl.h>
 #include <ostream>
+#include <stdexcept>
 #include <stdio.h>
 
 bool Client::findIndex(std::string &url) {
@@ -138,9 +140,10 @@ void Client::findPages(const std::string &urlu) {
     }
   }
   _sPath = url;
-  _file.open(url.c_str(), std::ios::in);
+  _filefd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
+  // _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying to open file: " << url << RESET << std::endl;
-  if (_file.is_open() == false) {
+  if (_filefd == -1) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
       _statusCode = 404;
@@ -164,24 +167,34 @@ void Client::readFile(void) {
 
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
   std::vector<char> buf(toRead);
-  _file.read(&buf[0], toRead);
+  ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
-  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+  std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
             << std::endl;
-  if (_file.gcount() <= 0) {
+  if (readBytes < 0) {
     _statusCode = 500;
     return;
   }
+  // if (readBytes == 0) {
+  //   close(_filefd);
+  //   _filefd = -1;
+  //   return;
+  // }
   // std::stringstream buffer;
   // buffer << file.rdbuf();
-  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  // std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
   _response.setBody(buf);
 
-  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+  if (_leftToRead <= static_cast<size_t>(readBytes)) {
+    std::cout << GREEN << "Finished to read file" << RESET << std::endl;
     _leftToRead = 0;
-  else
+    // close(_filefd);
+    // _filefd = -1;
+  } else {
     _leftToRead = _leftToRead - _sizeMaxResponse;
-  _nbRead++;
+    std::cout << BLUE << "still have to read: " << _leftToRead << RESET
+              << std::endl;
+  }
 }
 
 void Client::readFile(std::vector<char> &vec) {
@@ -189,26 +202,38 @@ void Client::readFile(std::vector<char> &vec) {
   // std::memset(buf, 0, _sizeMaxResponse + 1);
   // std::vector<char> buf(_sizeMaxResponse);
   // char buf[_sizeMaxResponse] = {0};
-
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
   std::vector<char> buf(toRead);
-  _file.read(&buf[0], toRead);
+  ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
-  std::cout << PURP << "read of size " << _file.gcount() << ": " << buf.size()
+  std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
             << std::endl;
-  if (_file.gcount() <= 0) {
+  if (readBytes < 0) {
+    std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
+              << "; _leftToRead = " << _leftToRead << std::endl;
     _statusCode = 500;
     return;
   }
+  // if (readBytes == 0) {
+  //   close(_filefd);
+  //   _filefd = -1;
+  //   return;
+  // }
   // std::stringstream buffer;
   // buffer << file.rdbuf();
-  std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
+  // std::cout << PURP << "READ: buf : " << buf << RESET << std::endl;
   vec.swap(buf);
-  if (_leftToRead <= static_cast<size_t>(_file.gcount()))
+
+  if (_leftToRead <= static_cast<size_t>(readBytes)) {
+    std::cout << GREEN << "Finished to read file" << RESET << std::endl;
     _leftToRead = 0;
-  else
+    // close(_filefd);
+    // _filefd = -1;
+  } else {
     _leftToRead = _leftToRead - _sizeMaxResponse;
-  _nbRead++;
+    std::cout << BLUE << "still have to read: " << _leftToRead << RESET
+              << std::endl;
+  }
 }
 
 void Client::createResponseBody(void) {
@@ -319,14 +344,16 @@ void Client::buildResponse(void) {
   _response.BuildResponse();
 }
 
-void Client::add400Response(void) {
+void Client::addErrorResponse(size_t errorCode) {
   if (_epollIn == true)
     return;
+  if (errorCode < 100 || errorCode >= 600)
+    throw std::logic_error("Invalid Error Code");
   Response error400;
-  error400.setStatusCode(400);
+  error400.setStatusCode(errorCode);
   error400.setDate();
   error400.setHeader("Content-Type", "text/html");
-  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
+  const std::vector<char> &ref = findErrorPage(errorCode, *_defaultConf);
   _response.setBody(ref, ref.size());
   error400.setHeader("Content-Length", _response.getBodySize());
   error400.setHeader("Connection", "close");
@@ -337,29 +364,67 @@ void Client::add400Response(void) {
   return;
 }
 
+void Client::handleCgi(void) {
+  if (_statusCode >= 400) {
+    buildResponse();
+    return;
+  }
+  _filefd = open(_outfileCgi.c_str(), O_RDONLY);
+  if (_filefd == -1) {
+    _statusCode = 500;
+    buildResponse();
+    return;
+  }
+  readFile();
+  return;
+}
+
+void Client::handleDelete(void) {
+  std::string url = "." + _location->getRootServer() + _sUri;
+  if (unlink(url.c_str()) == -1) {
+    if (errno == EACCES) {
+      _statusCode = 403;
+    } else if (errno == ENOENT)
+      _statusCode = 404;
+    else
+      _statusCode = 500;
+    return (handleError());
+  }
+  _statusCode = 204;
+  defaultHTMLResponse();
+  addConnectionHeader();
+  _response.BuildResponse();
+  return;
+}
+
 bool Client::sendResponse(std::vector<char> &response) {
   resetVector(response);
-  if (_response.isReady() == false) {
+  if (_cgiPid > 0) {
+    handleCgi();
+  }
+  if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+    handleDelete();
+  }
+  // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
+  else if (_response.isReady() == false) {
     std::cout << RED << "response.isReady() = false" << RESET << std::endl;
     buildResponse();
     response = _response.getResponse();
     std::cout << BLUE << "response for _sUri:\n"
               << _sUri << "; of size : " << response.size() << RESET
               << std::endl;
-    bool ret = _leftToRead != 0;
-    std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
-    if (_leftToRead == 0)
-      resetClient();
-    return (_leftToRead != 0);
   }
-  std::cout << PURP << "leftToRead = " << _leftToRead << RESET << std::endl;
+  bool ret = _leftToRead != 0;
+  std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   if (_leftToRead > 0) {
     readFile(response);
+    if (_statusCode == 500) {
+      return (false);
+    }
   }
   // std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
   if (_leftToRead == 0)
     resetClient();
-  bool ret = _leftToRead != 0;
   std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   return (_leftToRead != 0);
 }

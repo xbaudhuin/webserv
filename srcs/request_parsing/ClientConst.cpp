@@ -16,6 +16,10 @@ const size_t Client::_headersMaxBuffer = 32768;
 
 const size_t Client::_sizeMaxResponse = 100;
 
+const double Client::_timeOutClient = 60.0;
+
+const double Client::_timeOutCgi = 5.0;
+
 std::map<std::string, char> initMap() {
   std::map<std::string, char> m;
 

@@ -4,6 +4,8 @@
 #include "Colors.hpp"
 #include "Typedef.hpp"
 #include "security_error.hpp"
+#include "cgiException.hpp"
+#include "bad_key_error.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
