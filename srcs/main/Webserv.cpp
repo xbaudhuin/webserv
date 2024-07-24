@@ -618,7 +618,7 @@ int	Webserv::receive(int clientSocket)
 				}
 				std::cout << "webserv: changing epoll event to EPOLLIN | EPOLLRDHUP | EPOLLOUT for fd " << clientSocket << std::endl;
 			}
-			/* Need to pass PID map to client's request instance */
+			clientRequest->addCgiToMap(this->_PID);
 		}
 	}
 	catch(const std::exception& e)
