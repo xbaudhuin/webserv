@@ -137,10 +137,10 @@ private:
   bool isTimedOutCgi(void) const;
   void cgiPOSTMethod(void);
   void cgiOutfile(void);
-  void addHeaderToEnv(std::vector<const char *> &vEnv,
+  void addHeaderToEnv(std::vector<char *> &vEnv,
                       const std::string &envVariable,
                       const std::string &headerKey);
-  void addVariableToEnv(std::vector<const char *> &vEnv,
+  void addVariableToEnv(std::vector<char *> &vEnv,
                         const std::string &envVariable);
   void buildEnv(std::vector<char *> &vEnv);
   void buildArguments(std::vector<char *> &argument);

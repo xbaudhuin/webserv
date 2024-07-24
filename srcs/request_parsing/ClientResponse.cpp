@@ -125,6 +125,8 @@ void Client::buildListingDirectory(std::string &url) {
 void Client::findPages(const std::string &urlu) {
   (void)urlu;
   std::string url = "." + _location->getRootServer() + _sUri;
+  std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
+  std::cout << RED << "url = " << url << RESET << std::endl;
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
     if (_sUri.size() == _location->getUrl().size()) {
@@ -385,6 +387,7 @@ void Client::handleCgi(void) {
   }
   _filefd = open(_outfileCgi.c_str(), O_RDONLY);
   if (_filefd == -1) {
+    std::cout << RED << "fail to open "<<_outfileCgi << RESET << std::endl;
     _statusCode = 500;
     buildResponse();
     return;

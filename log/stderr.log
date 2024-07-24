@@ -1,1 +1,1 @@
-webserv: Webserv::start: epoll_wait: Interrupted system call
+wevserv: Webserv::checkChildsEnd: waitpid: 

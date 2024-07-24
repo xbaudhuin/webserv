@@ -23,24 +23,24 @@ bool Client::isTimedOutCgi(void) const {
 void Client::cgiPOSTMethod(void) {
   int fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
-    throw std::runtime_error("500");
+    throw std::runtime_error("fail to open infileCgi");
   }
   ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
   close(fd);
   fd = -1;
   if (writeBytes == -1)
-    throw std::runtime_error("500");
+    throw std::runtime_error("fail to write to infileCgi");
   if (static_cast<size_t>(writeBytes) < _vBody.size()) {
-    throw std::runtime_error("500");
+    throw std::runtime_error("writeBytes < _body.size()");
   }
   fd = open(_infileCgi.c_str(), O_RDWR);
   if (fd == -1) {
     // unlink?
-    throw std::runtime_error("500");
+    throw std::runtime_error("fail to re-open infileCgi");
   }
   if (dup2(fd, STDIN_FILENO) == -1) {
     close(fd);
-    throw std::runtime_error("500");
+    throw std::runtime_error("fail to dup2 infileCgi, STDIN");
   }
   close(fd);
 }
@@ -48,11 +48,14 @@ void Client::cgiPOSTMethod(void) {
 void Client::cgiOutfile(void) {
   int fd = open(_outfileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
-    throw std::runtime_error("500");
+    perror("");
+    std::string tmp = "fail to create outfileCgi: ";
+    tmp += _outfileCgi;
+    throw std::runtime_error(tmp.c_str());
   }
   if (dup2(fd, STDOUT_FILENO) == -1) {
     close(fd);
-    throw std::runtime_error("500");
+    throw std::runtime_error("fail to dup 2(outfileCgi, STDOUT)");
   }
   close(fd);
 }
@@ -68,7 +71,7 @@ void Client::addHeaderToEnv(std::vector<const char *> &vEnv,
   }
 }
 
-void Client::addVariableToEnv(std::vector<const char *> &vEnv,
+void Client::addVariableToEnv(std::vector<char *> &vEnv,
                               const std::string &envVariable) {
   vEnv.push_back(envVariable.c_str());
 }
@@ -118,14 +121,14 @@ void Client::buildEnv(std::vector<char *> &vEnvariable) {
   scriptFilename += buf;
   addVariableToEnv(vEnv, scriptFilename + _location->getCgiFile(_sUri));
   vEnv.push_back(NULL);
-  char *dup;
-  for (size_t i = 0; i < vEnv.size(); i++) {
-    dup = strdup(vEnv[i]);
-    if (dup == NULL)
-      throw std::bad_alloc();
-    vEnvariable.push_back(dup);
-  }
-  vEnvariable.push_back(NULL);
+  // char *dup;
+  // for (size_t i = 0; i < vEnv.size(); i++) {
+  //   dup = strdup(vEnv[i]);
+  //   if (dup == NULL)
+  //     throw std::bad_alloc();
+  //   vEnvariable.push_back(dup);
+  // }
+  // vEnvariable.push_back(NULL);
   return;
 }
 
@@ -155,33 +158,43 @@ void Client::buildArguments(std::vector<char *> &arg) {
 void Client::setupChild(std::string &cgiPathScript) {
   std::vector<char *> vEnv;
   std::vector<char *> argument;
-  if (chdir(cgiPathScript.c_str()) == -1) {
-    throw std::runtime_error("500");
-  }
-  if (_sMethod == "{POST}") {
-    cgiPOSTMethod();
-  }
-  cgiOutfile();
   try {
+    if (chdir(cgiPathScript.c_str()) == -1) {
+      throw std::runtime_error("fail to chdir");
+    }
+    if (_sMethod == "POST") {
+      cgiPOSTMethod();
+    }
+    cgiOutfile();
     buildEnv(vEnv);
     buildArguments(argument);
+    std::cerr << "starting execve" << std::endl;
     if (execve(argument[0], &argument[0], &vEnv[0]) == -1)
-      throw std::runtime_error("500");
+      throw std::runtime_error("fail to execve");
   } catch (std::exception &e) {
     freeVector(vEnv, argument);
-    throw cgiException("fail cgi");
+    std::string tmp = "Client::setupChild: ";
+    tmp += e.what();
+    throw cgiException(tmp.c_str());
   }
 }
 
 void Client::setupCgi() {
 
   std::string cgiPathExec = _location->getExecutePath(_sUri);
-  std::string cgiPathScript = _location->getCgiFile(_sUri);
-
+  std::string cgiPathScript = _location->getCgiPath(_sUri);
   std::ostringstream ss;
   ss << _socket;
-  _infileCgi = "webservin" + ss.str() + _sUri.substr(0, 230);
-  _outfileCgi = "webservout " + ss.str() + _sUri.substr(0, 230);
+  ss.clear();
+  _infileCgi = "webserv_in" + ss.str();
+  _outfileCgi = "webserv_out" + ss.str();
+  ss << _server->getHost();
+  _infileCgi += "host" + ss.str();
+  _outfileCgi += "host" + ss.str();
+  ss.clear();
+  ss << _server->getPort();
+  _infileCgi += "port" + ss.str();
+  _outfileCgi += "port" + ss.str();
 
   pid_t pid = fork();
   if (pid < 0) {

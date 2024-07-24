@@ -391,22 +391,25 @@ void Client::vectorToHeadersMap(std::vector<std::string> &request) {
 void Client::checkPathInfo(void) {
   if (_location->hasPathInfo() == false)
     return;
-  std::string locator = _sUri.substr(_location->getUrl().size());
+  size_t locator = _location->getUrl().size();
   std::cout << YELLOW << "_sUri = " << _sUri
             << "; _location.uri().size() = " << _location->getUrl().size()
             << RESET << std::endl;
+  std::cout << "THOMAS A TORT: "<< _location->hasPathInfo() << std::endl;
   vec_string extension = _location->availableExtension();
   size_t i = 0;
-  size_t pos = locator.npos;
+  size_t pos = _sUri.npos;
   for (; i < extension.size(); i++) {
-    pos = locator.find(extension[i]);
-    if (pos != locator.npos)
+    pos = _sUri.find(extension[i], locator);
+    if (pos != _sUri.npos){
+      std::cout << GREEN << "found pos: extension[i] = " <<extension[i] <<";" << RESET << std::endl;
       break;
+    }
   }
   if (i == extension.size())
     return;
-  _sPathInfo = _sUri.substr(pos);
-  _sUri.erase(pos);
+  _sPathInfo = _sUri.substr(pos + extension[i].size(), _sUri.npos);
+  _sUri.erase(pos + extension[i].size());
   std::cout << YELLOW << "_sPathinfo = " << _sPathInfo << "; _sUri = " << _sUri
             << RESET << std::endl;
 }
