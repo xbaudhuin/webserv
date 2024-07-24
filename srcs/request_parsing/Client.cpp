@@ -179,9 +179,11 @@ void Client::setStatusCode(size_t exitStatus) {
   }
   case 126: {
     _statusCode = 422;
+    break;
   }
   case 130: {
     _statusCode = 504;
+    break;
   }
   default: {
     _statusCode = 500;

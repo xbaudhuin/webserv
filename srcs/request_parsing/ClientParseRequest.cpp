@@ -149,7 +149,8 @@ bool Client::checkMethod(void) {
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
-    std::cout << RED << "Client::checkMethod: invalid method" << RESET << std::endl;
+    std::cout << RED << "Client::checkMethod: invalid method" << RESET
+              << std::endl;
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false) {
@@ -395,14 +396,14 @@ void Client::checkPathInfo(void) {
   std::cout << YELLOW << "_sUri = " << _sUri
             << "; _location.uri().size() = " << _location->getUrl().size()
             << RESET << std::endl;
-  std::cout << "THOMAS A TORT: "<< _location->hasPathInfo() << std::endl;
   vec_string extension = _location->availableExtension();
   size_t i = 0;
   size_t pos = _sUri.npos;
   for (; i < extension.size(); i++) {
     pos = _sUri.find(extension[i], locator);
-    if (pos != _sUri.npos){
-      std::cout << GREEN << "found pos: extension[i] = " <<extension[i] <<";" << RESET << std::endl;
+    if (pos != _sUri.npos) {
+      std::cout << GREEN << "found pos: extension[i] = " << extension[i] << ";"
+                << RESET << std::endl;
       break;
     }
   }

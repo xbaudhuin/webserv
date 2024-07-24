@@ -60,28 +60,44 @@ void Client::cgiOutfile(void) {
   close(fd);
 }
 
-void Client::addHeaderToEnv(std::vector<const char *> &vEnv,
+void Client::addHeaderToEnv(std::vector<char *> &vEnv,
                             const std::string &envVariable,
                             const std::string &headerKey) {
   std::map<std::string, std::string>::iterator it;
+  char *str = NULL;
   it = _headers.find(headerKey);
   if (it != _headers.end()) {
-    std::string tmp = envVariable + (*it).second;
-    vEnv.push_back(tmp.c_str());
+    std::string tmp = envVariable + "=" + (*it).second;
+    str = strdup(tmp.c_str());
+    if (str == NULL)
+      throw std::bad_alloc();
+    try {
+      vEnv.push_back(str);
+    } catch (std::exception &e) {
+      free(str);
+      throw std::bad_alloc();
+    }
   }
 }
 
 void Client::addVariableToEnv(std::vector<char *> &vEnv,
                               const std::string &envVariable) {
-  vEnv.push_back(envVariable.c_str());
+  char *str = strdup(envVariable.c_str());
+  if (str == NULL)
+    throw std::bad_alloc();
+  try {
+    vEnv.push_back(str);
+  } catch (std::exception &e) {
+    free(str);
+    throw std::bad_alloc();
+  }
 }
 
-void Client::buildEnv(std::vector<char *> &vEnvariable) {
-  std::vector<const char *> vEnv;
+void Client::buildEnv(std::vector<char *> &vEnv) {
   for (size_t i = 0; environ[i]; i++) {
-    vEnv.push_back(environ[i]);
+    addVariableToEnv(vEnv, environ[i]);
   }
-  addVariableToEnv(vEnv, "REQUEST_METHOD" + _sMethod);
+  addVariableToEnv(vEnv, "REQUEST_METHOD=" + _sMethod);
   std::string envType = "CONTENT_TYPE=";
   if (_sMethod == "GET") {
     addVariableToEnv(vEnv, "QUERY_STRING=" + _sQueryUri);
@@ -90,12 +106,10 @@ void Client::buildEnv(std::vector<char *> &vEnvariable) {
     std::map<std::string, std::string>::iterator it =
         _headers.find("content_type");
     if (it == _headers.end())
-      throw std::runtime_error("500");
-    envType += (*it).second;
-    it = _headers.find("content_length");
-    if (it == _headers.end())
-      throw std::runtime_error("500");
-    addVariableToEnv(vEnv, "CONTENT_LENGTH=" + (*it).second);
+      throw std::runtime_error("no content_type header");
+    std::stringstream ss;
+    ss << _vBody.size();
+    addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
   }
   addVariableToEnv(vEnv, envType);
   addHeaderToEnv(vEnv, "HTTP_COOKIE", "cookie");
@@ -116,19 +130,11 @@ void Client::buildEnv(std::vector<char *> &vEnvariable) {
   }
   char buf[4096];
   if (getcwd(buf, 4096) == NULL)
-    throw std::runtime_error("500");
+    throw std::runtime_error("fail to getcwd");
   std::string scriptFilename = "SCRIPT_FILENAME=";
   scriptFilename += buf;
   addVariableToEnv(vEnv, scriptFilename + _location->getCgiFile(_sUri));
   vEnv.push_back(NULL);
-  // char *dup;
-  // for (size_t i = 0; i < vEnv.size(); i++) {
-  //   dup = strdup(vEnv[i]);
-  //   if (dup == NULL)
-  //     throw std::bad_alloc();
-  //   vEnvariable.push_back(dup);
-  // }
-  // vEnvariable.push_back(NULL);
   return;
 }
 
@@ -143,15 +149,8 @@ void Client::freeVector(std::vector<char *> &vEnv,
 }
 
 void Client::buildArguments(std::vector<char *> &arg) {
-  char *dup = strdup(_location->getExecutePath(_sUri).c_str());
-  if (dup == NULL)
-    throw std::bad_alloc();
-  arg.push_back(dup);
-  std::string pathScript = "./" + _location->getCgiPath(_sUri);
-  dup = strdup(pathScript.c_str());
-  if (dup == NULL)
-    throw std::bad_alloc();
-  arg.push_back(dup);
+  addVariableToEnv(arg, _location->getExecutePath(_sUri).c_str());
+  addVariableToEnv(arg, _location->getCgiPath(_sUri));
   arg.push_back(NULL);
 }
 
