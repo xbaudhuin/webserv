@@ -128,7 +128,8 @@ SRCS_MAIN		=	main/main.cpp \
 					request_parsing/ClientConst.cpp \
 					request_parsing/ClientResponse.cpp \
 					request_parsing/Response.cpp \
-					request_parsing/ClientParseRequest.cpp 
+					request_parsing/ClientParseRequest.cpp \
+					request_parsing/ClientCgi.cpp \
 
 REQUEST = requester
 

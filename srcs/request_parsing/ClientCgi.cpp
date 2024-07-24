@@ -28,7 +28,9 @@ void Client::cgiPOSTMethod(void) {
   ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
   close(fd);
   fd = -1;
-  if (writeBytes < _vBody.size()) {
+  if (writeBytes == -1)
+    throw std::runtime_error("500");
+  if (static_cast<size_t>(writeBytes) < _vBody.size()) {
     throw std::runtime_error("500");
   }
   fd = open(_infileCgi.c_str(), O_RDWR);
