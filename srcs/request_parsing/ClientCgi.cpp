@@ -46,6 +46,9 @@ void Client::cgiPOSTMethod(void) {
 }
 
 void Client::cgiOutfile(void) {
+  char buf[1000];
+  getcwd(buf, 1000);
+  std::cerr << "path = " << buf << " && outfile cgi= " << _outfileCgi << std::endl;
   int fd = open(_outfileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
     perror("");
@@ -150,7 +153,9 @@ void Client::freeVector(std::vector<char *> &vEnv,
 
 void Client::buildArguments(std::vector<char *> &arg) {
   addVariableToEnv(arg, _location->getExecutePath(_sUri).c_str());
-  addVariableToEnv(arg, _location->getCgiPath(_sUri));
+  std::cerr << "getexecutepath = " << _location->getExecutePath(_sUri) << std::endl;
+  addVariableToEnv(arg, _location->getCgiFile(_sUri));
+  std::cerr << "getcgifile = " << _location->getCgiFile(_sUri) << std::endl;
   arg.push_back(NULL);
 }
 
@@ -182,6 +187,7 @@ void Client::setupCgi() {
 
   std::string cgiPathExec = _location->getExecutePath(_sUri);
   std::string cgiPathScript = _location->getCgiPath(_sUri);
+  std::cout << "_sUri = " << _sUri << " && cgiPathExec= " << cgiPathExec << " && cgiPathScript= " << cgiPathScript << std::endl;
   std::ostringstream ss;
   ss << _socket;
   ss.clear();

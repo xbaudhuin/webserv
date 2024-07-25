@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Server: webserv
+Date: Thu, 25 Jul 2024 13:09:27 CEST
+Content-Type: Text/html
+Content-Length: 561
+
+<!DOCTYPE html><head><title> Unknown User</title><style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}body { background-color: LightGoldenRodYellow; display: flex; justify-content: center; align-items: center; height: 100vh;margin: 0; flex-direction: column;} h1 { font-size: 3em; color: black;} </style> </head><body><h1>Oops ! You're not connected yet</h1></body></html><br><a href="/python/connectionForm.html"><button> Create a new profile</button></a>

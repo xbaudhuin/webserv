@@ -52,6 +52,7 @@ else:
     body += "</h1></body></html>"
     body += "<br><a href=\"/python/connectionForm.html\"><button> Create a new profile</button></a>"
 
+print("HTTP/1.1 200 OK\r\n",end="")
 if "SERVER_NAME" in os.environ:
     serverName = os.environ.get('SERVER_NAME')
     print(f"Server: {serverName}")

@@ -97,3 +97,41 @@ int main(int argc, char **argv, char**env)
     }
     
 }
+
+void Client::findPages(const std::string &urlu) {
+  (void)urlu;
+  std::string url = "." + _location->getRootServer() + _sUri;
+  if (_location->isADir() == true) {
+    std::cout << RED << "Location is a Dir" << RESET << std::endl;
+    std::cout << PURP2 << "_sUri = " << _sUri << " && location = " << _location->getUrl() <<std::endl;
+    if (_sUri[_sUri.size() - 1] == '/') {
+      if (findIndex(url) == false) {
+        return (buildListingDirectory(url));
+      }
+    }
+  } else if (_location->isExactMatch() == false) {
+    if (findIndex(url) == false) {
+      std::cout << *_location << BLUE << "no exact match, index == false;"
+                << RESET << std::endl;
+      _statusCode = 404;
+      return;
+    }
+  }
+  _sPath = url;
+  _file.open(url.c_str(), std::ios::in);
+  std::cout << RED << "trying to open file: " << url << RESET << std::endl;
+  if (_file.is_open() == false) {
+    std::cout << RED << "failed to open file: " << url << RESET << std::endl;
+    if (access(url.c_str(), F_OK) == -1)
+      _statusCode = 404;
+    else
+      _statusCode = 403;
+    return;
+  }
+  struct stat st;
+  stat(_sPath.c_str(), &st);
+  std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
+  _leftToRead = st.st_size;
+  _response.setHeader("Content-Length", st.st_size);
+  readFile();
+}
