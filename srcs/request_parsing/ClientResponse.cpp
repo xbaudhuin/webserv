@@ -391,13 +391,19 @@ void Client::handleCgi(std::vector<char>&response) {
   std::cerr << "Client::handleCgi: _statusCode = " << _statusCode << std::endl;
   if (_statusCode >= 400) {
     buildResponse();
+    response = _response.getResponse();
     return;
   }
   char buf[1000];
   getcwd(buf, 1000);
   std::cout << "trying to open: " << _outfileCgi << "at path= "<< buf << std::endl;
   struct stat st;
-  if (stat(_outfileCgi.c_str(), &st) == -1)
+  if (stat(_outfileCgi.c_str(), &st) == -1){
+    _statusCode = 500;
+    buildResponse();
+    response = _response.getResponse();
+    return;
+  }
     std::cout << RED << "Client::HandleCGI: stat() == -1" << RESET << std::endl;
   std::stringstream ss;
   ss << st.st_size;
@@ -408,6 +414,7 @@ void Client::handleCgi(std::vector<char>&response) {
     std::cout << RED << "fail to open "<<_outfileCgi << RESET << std::endl;
     _statusCode = 500;
     buildResponse();
+    response = _response.getResponse();
     return;
   }
   readFile(response);
