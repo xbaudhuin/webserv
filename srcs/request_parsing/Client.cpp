@@ -121,11 +121,11 @@ void Client::resetClient(void) {
   _leftToRead = 0;
   _sPath = "";
   _cgiPid = 0;
-  // if (_outfileCgi.size() > 0)
-    // unlink(_outfileCgi.c_str());
+  if (_outfileCgi.size() > 0)
+    unlink(_outfileCgi.c_str());
   _outfileCgi = "";
-  // if (_infileCgi.size() > 0)
-    // unlink(_infileCgi.c_str());
+  if (_infileCgi.size() > 0)
+    unlink(_infileCgi.c_str());
   _infileCgi = "";
   _sPathInfo = "";
   if (_filefd != -1)
@@ -177,6 +177,7 @@ void Client::addCgiToMap(std::map<int, pid_t> &mapCgi) {
 }
 
 void Client::setStatusCode(size_t exitStatus) {
+  std::cerr << "Client::setStatusCode : begin:  exitStatus = " << exitStatus << "; _statusCode = " << _statusCode << std::endl;
   switch (exitStatus) {
   case 0: {
     _statusCode = 200;
@@ -194,6 +195,7 @@ void Client::setStatusCode(size_t exitStatus) {
     _statusCode = 500;
   }
   }
+  std::cerr << "Client::setStatusCode : end:  exitStatus = " << exitStatus << "; _statusCode = " << _statusCode << std::endl;
 }
 
 void Client::print() {

@@ -503,7 +503,7 @@ void Client::parseRequest(std::string &buffer) {
 
     _vBody.insert(_vBody.end(), _vBuffer.begin(),
                   _vBuffer.begin() + _bodyToRead);
-    if (static_cast<int>(_vBuffer.size()) > _bodyToRead)
+    if (static_cast<int>(_vBuffer.size()) >= _bodyToRead)
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
     _bodyToRead -= _vBody.size();
     if (_bodyToRead <= 0)
@@ -705,7 +705,10 @@ bool Client::addBuffer(std::vector<char> buffer) {
       _statusCode = 400;
   }
   _time = getTime();
-  if (_statusCode != 0 && _cgiPid == 0)
+  if (_statusCode != 0 && _cgiPid == 0) {
     return (true);
+  }
+  std::cerr << "Client::addBuffer: end: _statusCode = " << _statusCode
+            << std::endl;
   return (false);
 }

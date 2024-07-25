@@ -56,6 +56,11 @@ void Client::cgiOutfile(void) {
     tmp += _outfileCgi;
     throw std::runtime_error(tmp.c_str());
   }
+  ssize_t ret = write(fd, "HTTP/1.1 200 OK\r\n", 17);
+  if (ret < 17){
+    close(fd);
+    throw std::runtime_error("fail to write to outfile");
+  }
   if (dup2(fd, STDOUT_FILENO) == -1) {
     close(fd);
     throw std::runtime_error("fail to dup 2(outfileCgi, STDOUT)");

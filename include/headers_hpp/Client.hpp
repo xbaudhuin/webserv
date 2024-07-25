@@ -133,7 +133,7 @@ private:
 
   // cgi Method
   void handleDelete(void);
-  void handleCgi(void);
+  void handleCgi(std::vector<char> &response);
   bool isTimedOutCgi(void) const;
   void cgiPOSTMethod(void);
   void cgiOutfile(void);
