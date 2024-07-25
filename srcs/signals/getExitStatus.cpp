@@ -4,13 +4,13 @@ int	getExitStatus(int codeExit)
 {
 	int	exitStatus;
 
-	if (WIFSIGNALED(codeExit))
+	if (WIFEXITED(codeExit))
 	{
-		exitStatus = WEXITSTATUS(codeExit) + 128;
+		exitStatus = WEXITSTATUS(codeExit);
 	}
-	else if (WIFEXITED(codeExit))
+	else if (WIFSIGNALED(codeExit))
 	{
-		exitStatus = WTERMSIG(codeExit);
+		exitStatus = WTERMSIG(codeExit) + 128;
 	}
 	else if (WIFSTOPPED(codeExit))
 	{
