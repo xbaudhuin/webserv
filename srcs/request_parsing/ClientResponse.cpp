@@ -182,6 +182,7 @@ void Client::readFile(void) {
   // char buf[_sizeMaxResponse] = {0};
 
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
+  std::cout << "Bytes to read=" << toRead << std::endl;
   std::vector<char> buf(toRead);
   ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
