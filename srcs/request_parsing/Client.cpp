@@ -7,6 +7,7 @@
 #include <exception>
 #include <stdexcept>
 #include <sys/wait.h>
+#include <unistd.h>
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
@@ -120,7 +121,11 @@ void Client::resetClient(void) {
   _leftToRead = 0;
   _sPath = "";
   _cgiPid = 0;
+  // if (_outfileCgi.size() > 0)
+    // unlink(_outfileCgi.c_str());
   _outfileCgi = "";
+  // if (_infileCgi.size() > 0)
+    // unlink(_infileCgi.c_str());
   _infileCgi = "";
   _sPathInfo = "";
   if (_filefd != -1)

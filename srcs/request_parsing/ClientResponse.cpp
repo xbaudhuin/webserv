@@ -388,6 +388,14 @@ void Client::handleCgi(void) {
   char buf[1000];
   getcwd(buf, 1000);
   std::cout << "trying to open: " << _outfileCgi << "at path= "<< buf << std::endl;
+  struct stat st;
+  if (stat(_outfileCgi.c_str(), &st) == -1)
+    std::cout << RED << "Client::HandleCGI: stat() == -1" << RESET << std::endl;
+  std::stringstream ss;
+  ss << st.st_size;
+  std::cout << "stat->size = " << ss.str() << std::endl;
+  _filefd = open(_outfileCgi.c_str(), O_RDONLY);
+  close(_filefd);
   _filefd = open(_outfileCgi.c_str(), O_RDONLY);
   if (_filefd == -1) {
     std::cout << RED << "fail to open "<<_outfileCgi << RESET << std::endl;
