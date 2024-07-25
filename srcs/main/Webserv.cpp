@@ -423,6 +423,11 @@ int	Webserv::killOldChilds(void)
 	pid_t				pid;
 	int					status;
 	
+
+	if (this->_PID.size() == 0)
+	{
+		return (SUCCESS);
+	}
 	current = this->_PID.begin();
 	while (true)
 	{
@@ -484,7 +489,7 @@ int	Webserv::handleChildExit(pid_t pid, int codeExit)
 		return (FAILURE);
 	}
 	request->setStatusCode(getExitStatus(codeExit));
-	std::cout << "webserv: send exit status " << codeExit << " to Client class for fd " << fd << std::endl;
+	std::cout << "webserv: send exit status " << getExitStatus(codeExit) << " to Client class for fd " << fd << std::endl;
 	return (SUCCESS);
 }
 
