@@ -470,6 +470,7 @@ int	Webserv::handleChildExit(pid_t pid, int codeExit)
 		this->closeClientConnection(fd);
 		return (FAILURE);
 	}
+	std::cout << "webserv: changing epoll event (in handleChildExit) to EPOLLIN | EPOLLOUT | EPOLLRDHUP for fd " << fd << std::endl;
 	if (this->_idMap.find(fd) == this->_idMap.end())
 	{
 		std::cerr << "webserv: Webserv::handleChildExit: fd " << fd << "does not exist in map ID" << std::endl;
@@ -483,6 +484,7 @@ int	Webserv::handleChildExit(pid_t pid, int codeExit)
 		return (FAILURE);
 	}
 	request->setStatusCode(getExitStatus(codeExit));
+	std::cout << "webserv: send exit status " << codeExit << " to Client class for fd " << fd << std::endl;
 	return (SUCCESS);
 }
 
@@ -511,6 +513,7 @@ int	Webserv::checkChildsEnd(void)
 		{
 			this->handleChildExit(pid, status);
 		}
+		std::cout << "PID = " << pid << std::endl;
 	}
 	return (SUCCESS);
 }
@@ -667,9 +670,11 @@ int	Webserv::respond(int clientSocket, uint32_t events)
 		}
 		if (checkEvent(events, EPOLLIN) == true)
 		{
+			std::cout << "webserv: EPOLLIN event detected inside EPOLLOUT event, we will send error 400 to client on fd " << clientSocket << std::endl;
 			clientRequest->addErrorResponse(400);
 		}
 		remainRequest = clientRequest->sendResponse(response);
+		std::cout << "webserv: size of response = " << response.size() << std::endl;
 		bytesSend = send(clientSocket, &response[0], response.size(), 0);
 		std::cout << "Bytes send to fd " << clientSocket << " = " << bytesSend << std::endl;
 		if (bytesSend < 0)
