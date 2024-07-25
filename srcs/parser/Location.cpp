@@ -473,7 +473,7 @@ std::string Location::getExtension(const std::string& uri) const
         if(s2.find(this->available_extension[i], 0) != std::string::npos)
             return(this->available_extension[i]);
     }
-    throw std::logic_error("not a file");
+    throw bad_key_error("not a file");
     return(s2);
 }
 
@@ -482,17 +482,19 @@ bool Location::isCgi(const std::string& uri) const{
     {
         std::string ex = this->getExtension(uri);
         std::string uri_file = getFile(uri);
+        std::cout << BLUE << "Extensions: " << ex << RESET << std::endl;
         if(this->cgi.size() > 0)
-            return(1);
-        // for (size_t i = 0; i < this->cgi.size(); i++)
-        // {
-        //     if(ex == this->cgi[i].first)
-        //     {
-        //         std::string cgi_file = getFile(cgi[i].second);
-        //         if(cgi_file == uri_file)
-        //             return(1);
-        //     }
-        // }
+        {
+            for (size_t i = 0; i < this->available_extension.size(); i++)
+            {
+                if(ex == this->available_extension[i])
+                    return(1);
+            }        
+        }
+    }
+    catch(const bad_key_error& e)
+    {
+        return(0);
     }
     catch(const std::exception& e)
     {
