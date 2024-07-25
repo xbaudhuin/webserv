@@ -2,28 +2,28 @@ path = /home/xabaudhu/project_42/webserv/html/cgi/python && outfile cgi= webserv
 getexecutepath = /bin/python3
 getcgifile = welcome.py
 starting execve
-==231557== Memcheck, a memory error detector
-==231557== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==231557== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==231557== Command: /bin/python3 welcome.py
-==231557== 
-==231557== 
-==231557== FILE DESCRIPTORS: 3 open (3 std) at exit.
-==231557== 
-==231557== HEAP SUMMARY:
-==231557==     in use at exit: 115,753 bytes in 112 blocks
-==231557==   total heap usage: 3,640 allocs, 3,528 frees, 7,298,536 bytes allocated
-==231557== 
-==231557== LEAK SUMMARY:
-==231557==    definitely lost: 0 bytes in 0 blocks
-==231557==    indirectly lost: 0 bytes in 0 blocks
-==231557==      possibly lost: 0 bytes in 0 blocks
-==231557==    still reachable: 115,753 bytes in 112 blocks
-==231557==         suppressed: 0 bytes in 0 blocks
-==231557== Reachable blocks (those to which a pointer was found) are not shown.
-==231557== To see them, rerun with: --leak-check=full --show-leak-kinds=all
-==231557== 
-==231557== For lists of detected and suppressed errors, rerun with: -s
-==231557== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==235449== Memcheck, a memory error detector
+==235449== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==235449== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==235449== Command: /bin/python3 welcome.py
+==235449== 
+==235449== 
+==235449== FILE DESCRIPTORS: 3 open (3 std) at exit.
+==235449== 
+==235449== HEAP SUMMARY:
+==235449==     in use at exit: 115,753 bytes in 112 blocks
+==235449==   total heap usage: 3,640 allocs, 3,528 frees, 7,297,964 bytes allocated
+==235449== 
+==235449== LEAK SUMMARY:
+==235449==    definitely lost: 0 bytes in 0 blocks
+==235449==    indirectly lost: 0 bytes in 0 blocks
+==235449==      possibly lost: 0 bytes in 0 blocks
+==235449==    still reachable: 115,753 bytes in 112 blocks
+==235449==         suppressed: 0 bytes in 0 blocks
+==235449== Reachable blocks (those to which a pointer was found) are not shown.
+==235449== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==235449== 
+==235449== For lists of detected and suppressed errors, rerun with: -s
+==235449== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 wevserv: Webserv::checkChildsEnd: waitpid: 
 webserv: Webserv::start: epoll_wait: Interrupted system call

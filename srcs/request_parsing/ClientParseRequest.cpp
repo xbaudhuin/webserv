@@ -272,7 +272,6 @@ bool Client::getTrailingHeader(void) {
     }
   }
   _chunkRequest = false;
-  _statusCode = 200;
   return (true);
 }
 
@@ -706,7 +705,7 @@ bool Client::addBuffer(std::vector<char> buffer) {
       _statusCode = 400;
   }
   _time = getTime();
-  if (_statusCode != 0)
+  if (_statusCode != 0 && _cgiPid == 0)
     return (true);
   return (false);
 }
