@@ -1,5 +1,7 @@
 <?php
 // Check if cookies are set
+error_reporting(E_ALL);
+
 if (isset($_COOKIE['bgcolor']) && isset($_COOKIE['user'])) {
     $name = htmlspecialchars($_COOKIE['user']);
     $bgcolor = htmlspecialchars($_COOKIE['bgcolor']);
@@ -40,6 +42,7 @@ $body .= "</body></html>";
 // Print the HTTP headers
 header("Content-Type: text/html");
 header("Content-Length: " . strlen($body));
+header("HTTP/1.1 200 OK");
 
 // Print the HTML body
 echo $body;

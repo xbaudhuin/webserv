@@ -414,32 +414,48 @@ std::string getDirectory(const std::string &uri)
 }
 
 std::string Location::getCgiPath(const std::string &uri) const{
-    std::string uri_file = getFile(uri);
-    std::string ext = getExtension(uri);
-    for (size_t i = 0; i < this->cgi.size(); i++)
+    try
     {
-        if(this->cgi[i].first == ext)
+        std::string uri_file = getFile(uri);
+        std::string ext = getExtension(uri);
+        for (size_t i = 0; i < this->cgi.size(); i++)
         {
-            std::string file = getFile(this->cgi[i].second);
-            if(uri_file == file)
-                return(getDirectory(this->cgi[i].second));
+            if(this->cgi[i].first == ext)
+            {
+                std::string file = getFile(this->cgi[i].second);
+                if(uri_file == file)
+                    return(getDirectory(this->cgi[i].second));
+            }
         }
     }
+    catch(const std::exception& e)
+    {
+        return(getDirectory(this->cgi[0].second));
+    }
+    
     return("");
 }
 
 std::string Location::getCgiFile(const std::string& uri) const{
-    std::string uri_file = getFile(uri);
-    std::string ext = getExtension(uri);
-    for (size_t i = 0; i < this->cgi.size(); i++)
+    try
     {
-        if(this->cgi[i].first == ext)
+        std::string uri_file = getFile(uri);
+        std::string ext = getExtension(uri);
+        for (size_t i = 0; i < this->cgi.size(); i++)
         {
-            std::string file = getFile(this->cgi[i].second);
-            if(uri_file == file)
-                return(file);
+            if(this->cgi[i].first == ext)
+            {
+                std::string file = getFile(this->cgi[i].second);
+                if(uri_file == file)
+                    return(file);
+            }
         }
     }
+    catch(const std::exception& e)
+    {
+        return(getFile(this->cgi[0].second));
+    }
+    
     return("");
 }
 
@@ -466,19 +482,22 @@ bool Location::isCgi(const std::string& uri) const{
     {
         std::string ex = this->getExtension(uri);
         std::string uri_file = getFile(uri);
-        for (size_t i = 0; i < this->cgi.size(); i++)
-        {
-            if(ex == this->cgi[i].first)
-            {
-                std::string cgi_file = getFile(cgi[i].second);
-                if(cgi_file == uri_file)
-                    return(1);
-            }
-        }
+        if(this->cgi.size() > 0)
+            return(1);
+        // for (size_t i = 0; i < this->cgi.size(); i++)
+        // {
+        //     if(ex == this->cgi[i].first)
+        //     {
+        //         std::string cgi_file = getFile(cgi[i].second);
+        //         if(cgi_file == uri_file)
+        //             return(1);
+        //     }
+        // }
     }
     catch(const std::exception& e)
     {
-        return(0);
+        if(this->cgi.size() > 0)
+            return(1);
     }
     return(0);
 }
@@ -491,7 +510,8 @@ const std::string& Location::getExecutePath(const std::string& uri){
     }
     catch(const std::exception& e)
     {
-        throw std::logic_error("wtf");
+        std::string ex = this->cgi[0].first;
+        return(this->_exec_path[ex]);
     }
     return(uri);
 }

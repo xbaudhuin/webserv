@@ -25,13 +25,15 @@ $body = "<!DOCTYPE html>
 </html>";
 
 // Print the HTTP headers
-header("Content-Type: text/html");
 
 // Set the background color cookie if it's in the form data
 if (isset($form['BackGroundColor'])) {
     $bgcolor = htmlspecialchars($form['BackGroundColor']);
     setcookie('bgcolor', $bgcolor,  time() + (86400 * 30), '/'); // 1 hour expiration
 }
+
+header("Content-Type: text/html");
+header("Content-Length: " . strlen($body));
 
 // Print the server name and current date if available
 if (!empty($serverName)) {
@@ -42,6 +44,5 @@ $date = gmdate("D, d M Y H:i:s T");
 echo "Date: $date<br>";
 
 // Print the HTML body
-header("Content-Length: " . strlen($body));
 echo $body;
 ?>
