@@ -3,17 +3,22 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Process form data
-$username = isset($_POST['username']) ? htmlspecialchars($_POST['username']) : null;
-$bgcolor = isset($_POST['BackGroundColor']) ? htmlspecialchars($_POST['BackGroundColor']) : null;
-
 // Set cookies if form data is present
-if ($username) {
-    setcookie('user', $username, time() + (86400 * 30), '/'); // Set cookie for 30 days
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = isset($_POST['username']) ? htmlspecialchars($_POST['username']) : null;
+    $bgcolor = isset($_POST['BackGroundColor']) ? htmlspecialchars($_POST['BackGroundColor']) : null;
+
+    if ($username) {
+        setcookie('user', $username, time() + (86400 * 30), '/'); // Set cookie for 30 days
+    }
+    if ($bgcolor) {
+        setcookie('bgcolor', $bgcolor, time() + (86400 * 30), '/'); // Set cookie for 30 days
+    }
 }
-if ($bgcolor) {
-    setcookie('bgcolor', $bgcolor, time() + (86400 * 30), '/'); // Set cookie for 30 days
-}
+
+// Retrieve cookie values
+$username = isset($_COOKIE['user']) ? htmlspecialchars($_COOKIE['user']) : null;
+$bgcolor = isset($_COOKIE['bgcolor']) ? htmlspecialchars($_COOKIE['bgcolor']) : null;
 
 // Build the HTML body
 $body = "<!DOCTYPE html>
@@ -36,11 +41,13 @@ $body = "<!DOCTYPE html>
 header("Content-Type: text/html");
 header("Content-Length: " . strlen($body));
 
+// Output the body content
+echo $body;
 
 // Print server name and date if available
 if (isset($_SERVER['SERVER_NAME'])) {
     $serverName = $_SERVER['SERVER_NAME'];
-    echo "Server: $serverName";
+    echo "Server: $serverName<br>";
 }
 
 $timezone = new DateTimeZone('Europe/Berlin'); // CEST timezone
@@ -50,9 +57,5 @@ $datenow = new DateTime('now', $timezone);
 
 // Format the date to the desired format
 $date = $datenow->format('D, d M Y H:i:s T');
-// $date = gmdate("D, d M Y H:i:s T");
 echo "Date: $date<br>";
-
-// Print the HTML body
-echo $body;
 ?>

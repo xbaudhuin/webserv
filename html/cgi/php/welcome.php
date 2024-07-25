@@ -40,19 +40,20 @@ if (isset($_COOKIE['bgcolor']) && isset($_COOKIE['user'])) {
 $body .= "</body></html>";
 
 // Print the HTTP headers
-header("Content-Type: text/html");
-header("Content-Length: " . strlen($body));
-header("HTTP/1.1 200 OK");
+echo "HTTP/1.1 200 OK\r\n";
+echo "Content-Type: text/html\r\n";
+echo "Content-Length: " . strlen($body);
+echo "\r\n";
 
 // Print the HTML body
-echo $body;
+echo "\r\n$body\r\n";
 
 // Print server name and date
 if (isset($_SERVER['SERVER_NAME'])) {
     $serverName = $_SERVER['SERVER_NAME'];
-    echo "Server: $serverName";
+    echo "Server: $serverName \r\n";
 }
 
 $date = gmdate("D, d M Y H:i:s T");
-echo "Date: $date";
+echo "Date: $date\r\n";
 ?>

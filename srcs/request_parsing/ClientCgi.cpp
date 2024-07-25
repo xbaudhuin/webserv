@@ -76,6 +76,8 @@ void Client::addHeaderToEnv(std::vector<char *> &vEnv,
   it = _headers.find(headerKey);
   if (it != _headers.end()) {
     std::string tmp = envVariable + "=" + (*it).second;
+    if (headerKey == "cookie")
+        std::cerr << "cookie= "<< tmp.c_str() << std::endl;
     str = strdup(tmp.c_str());
     if (str == NULL)
       throw std::bad_alloc();
