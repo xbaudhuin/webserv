@@ -418,6 +418,7 @@ std::string Location::getCgiPath(const std::string &uri) const{
     {
         std::string uri_file = getFile(uri);
         std::string ext = getExtension(uri);
+        std::cerr << BLUE << "UriFile: " << uri_file << " && extension: " << ext << RESET << std::endl;
         for (size_t i = 0; i < this->cgi.size(); i++)
         {
             if(this->cgi[i].first == ext)
@@ -427,6 +428,14 @@ std::string Location::getCgiPath(const std::string &uri) const{
                     return(getDirectory(this->cgi[i].second));
             }
         }
+        std::string s = getDirectory(uri);
+        std::cerr << this->_root_server << " && " << s << std::endl;
+        s = s.erase(0, 1);
+        return("." + this->_root_server + s);
+    }
+    catch(const bad_key_error& e)
+    {
+        return(getDirectory(uri));
     }
     catch(const std::exception& e)
     {
@@ -441,6 +450,7 @@ std::string Location::getCgiFile(const std::string& uri) const{
     {
         std::string uri_file = getFile(uri);
         std::string ext = getExtension(uri);
+        std::cerr << BLUE << "UriFile: " << uri_file << " && extension: " << ext << RESET << std::endl;
         for (size_t i = 0; i < this->cgi.size(); i++)
         {
             if(this->cgi[i].first == ext)
@@ -450,6 +460,7 @@ std::string Location::getCgiFile(const std::string& uri) const{
                     return(file);
             }
         }
+        return(uri_file);
     }
     catch(const std::exception& e)
     {
@@ -482,7 +493,7 @@ bool Location::isCgi(const std::string& uri) const{
     {
         std::string ex = this->getExtension(uri);
         std::string uri_file = getFile(uri);
-        std::cout << BLUE << "Extensions: " << ex << RESET << std::endl;
+        std::cerr << BLUE << "Extensions: " << ex << RESET << std::endl;
         if(this->cgi.size() > 0)
         {
             for (size_t i = 0; i < this->available_extension.size(); i++)

@@ -112,9 +112,9 @@ void Client::buildEnv(std::vector<char *> &vEnv) {
     envType += "application/x-www-form-urlencoded";
   } else {
     std::map<std::string, std::string>::iterator it =
-        _headers.find("content_type");
+        _headers.find("content-type");
     if (it == _headers.end())
-      throw std::runtime_error("no content_type header");
+      throw std::runtime_error("no content-type header");
     std::stringstream ss;
     ss << _vBody.size();
     addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
@@ -169,7 +169,8 @@ void Client::setupChild(std::string &cgiPathScript) {
   std::vector<char *> argument;
   try {
     if (chdir(cgiPathScript.c_str()) == -1) {
-      throw std::runtime_error("fail to chdir");
+      std::string s = "fail to chdir to: " + cgiPathScript;
+      throw std::runtime_error(s);
     }
     if (_sMethod == "POST") {
       cgiPOSTMethod();

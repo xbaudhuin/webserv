@@ -1,4 +1,4 @@
-import cgi, os, datetime
+import cgi, os, cgitb, datetime
 
 form = cgi.FieldStorage()
 
@@ -21,7 +21,7 @@ if "SERVER_NAME" in os.environ:
     print(f"Server: {serverName}")
 date = datetime.datetime.now().astimezone().strftime("%a, %d %b %G %T %Z")
 print(f"Date : {date}")
-print("Content-type:text/html")
+print("Content-type: Text/html")
 if "username" in form:
     user = form["username"]
     print(f"Set-Cookie: user={user.value}")
