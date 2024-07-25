@@ -71,21 +71,24 @@ void child(char **argv, char **env, int i)
 int main(int argc, char **argv, char**env)
 {
     (void)argc;
-
+  (void) argv;
     try
     {
-        pid_t f = fork();
-        if(f == -1)
-            return(1);
-        else if(f == 0)
-            child(argv, env, 1);
-        wait(NULL);
-        pid_t f1 = fork();
-        if(f1 == -1)
-            return(1);
-        else if(f1 == 0)
-            child(argv, env, 2);
-        wait(NULL);
+        std::vector<char> s ;
+        std::string str = "coucou je suis un chat";
+        for (size_t i = 0; i < str.size(); i++)
+        {
+          s.push_back(s[i]);
+          /* code */
+        }
+        
+        std::cout << s << std::endl;
+        size_t to_read = 10000;
+        if(to_read > s.size())
+          s.erase(s.begin(), s.end());
+        else
+          s.erase(s.begin(), s.begin() + to_read);
+        std::cout << s << std::endl;
     }
     catch(const cgiException& e)
     {
@@ -96,42 +99,4 @@ int main(int argc, char **argv, char**env)
         std::cerr << "coucou " << e.what() << '\n';
     }
     
-}
-
-void Client::findPages(const std::string &urlu) {
-  (void)urlu;
-  std::string url = "." + _location->getRootServer() + _sUri;
-  if (_location->isADir() == true) {
-    std::cout << RED << "Location is a Dir" << RESET << std::endl;
-    std::cout << PURP2 << "_sUri = " << _sUri << " && location = " << _location->getUrl() <<std::endl;
-    if (_sUri[_sUri.size() - 1] == '/') {
-      if (findIndex(url) == false) {
-        return (buildListingDirectory(url));
-      }
-    }
-  } else if (_location->isExactMatch() == false) {
-    if (findIndex(url) == false) {
-      std::cout << *_location << BLUE << "no exact match, index == false;"
-                << RESET << std::endl;
-      _statusCode = 404;
-      return;
-    }
-  }
-  _sPath = url;
-  _file.open(url.c_str(), std::ios::in);
-  std::cout << RED << "trying to open file: " << url << RESET << std::endl;
-  if (_file.is_open() == false) {
-    std::cout << RED << "failed to open file: " << url << RESET << std::endl;
-    if (access(url.c_str(), F_OK) == -1)
-      _statusCode = 404;
-    else
-      _statusCode = 403;
-    return;
-  }
-  struct stat st;
-  stat(_sPath.c_str(), &st);
-  std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
-  _leftToRead = st.st_size;
-  _response.setHeader("Content-Length", st.st_size);
-  readFile();
 }

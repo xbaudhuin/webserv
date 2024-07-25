@@ -1,4 +1,4 @@
-import cgi, os, cgitb, datetime
+import cgi, os, datetime
 
 form = cgi.FieldStorage()
 

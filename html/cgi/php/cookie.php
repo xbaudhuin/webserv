@@ -36,8 +36,6 @@ $body = "<!DOCTYPE html>
 header("Content-Type: text/html");
 header("Content-Length: " . strlen($body));
 
-// Print the HTML body
-echo $body;
 
 // Print server name and date if available
 if (isset($_SERVER['SERVER_NAME'])) {
@@ -45,6 +43,16 @@ if (isset($_SERVER['SERVER_NAME'])) {
     echo "Server: $serverName";
 }
 
-$date = gmdate("D, d M Y H:i:s T");
-echo "Date: $date";
+$timezone = new DateTimeZone('Europe/Berlin'); // CEST timezone
+
+// Create a DateTime object with the current date and time
+$datenow = new DateTime('now', $timezone);
+
+// Format the date to the desired format
+$date = $datenow->format('D, d M Y H:i:s T');
+// $date = gmdate("D, d M Y H:i:s T");
+echo "Date: $date<br>";
+
+// Print the HTML body
+echo $body;
 ?>

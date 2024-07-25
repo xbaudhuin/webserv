@@ -482,15 +482,17 @@ bool Location::isCgi(const std::string& uri) const{
     {
         std::string ex = this->getExtension(uri);
         std::string uri_file = getFile(uri);
-        for (size_t i = 0; i < this->cgi.size(); i++)
-        {
-            if(ex == this->cgi[i].first)
-            {
-                std::string cgi_file = getFile(cgi[i].second);
-                if(cgi_file == uri_file)
-                    return(1);
-            }
-        }
+        if(this->cgi.size() > 0)
+            return(1);
+        // for (size_t i = 0; i < this->cgi.size(); i++)
+        // {
+        //     if(ex == this->cgi[i].first)
+        //     {
+        //         std::string cgi_file = getFile(cgi[i].second);
+        //         if(cgi_file == uri_file)
+        //             return(1);
+        //     }
+        // }
     }
     catch(const std::exception& e)
     {
