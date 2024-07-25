@@ -129,7 +129,11 @@ void Client::findPages(const std::string &urlu) {
   std::cout << RED << "url = " << url << RESET << std::endl;
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
-    if (_sUri.size() == _location->getUrl().size() - _location->getRootServer().size()) {
+    if (url[url.size() - 1] == '/') {
+    struct stat st;
+    char buf[2600];
+    if (stat(buf, &st) == -1)
+        _statusCode = 404;
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
