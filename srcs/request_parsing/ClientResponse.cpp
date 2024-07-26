@@ -130,10 +130,13 @@ void Client::findPages(const std::string &urlu) {
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
     if (url[url.size() - 1] == '/') {
-    struct stat st;
-    char buf[2600];
-    if (stat(buf, &st) == -1)
+      struct stat st;
+      if (stat(url.c_str(), &st) == -1) {
+        std::cout << RED << "Client::FindPages: stat(" << url << ") = -1"
+                  << RESET << std::endl;
         _statusCode = 404;
+        return;
+      }
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
@@ -148,9 +151,12 @@ void Client::findPages(const std::string &urlu) {
   }
   _sPath = url;
   struct stat st;
-  std::cout << GREEN << "Client::findPages: AFTER searching location: _statusCode = " << _statusCode << std::endl;
-  if (stat(url.c_str(), &st) == -1){
-    std::cout << RED << "Clent::findPages: stat(" << url << ") = -1" << RESET <<std::endl;
+  std::cout << GREEN
+            << "Client::findPages: AFTER searching location: _statusCode = "
+            << _statusCode << std::endl;
+  if (stat(url.c_str(), &st) == -1) {
+    std::cout << RED << "Clent::findPages: stat(" << url << ") = -1" << RESET
+              << std::endl;
     if (errno == ENOENT)
       _statusCode = 404;
     else if (errno == EACCES)
@@ -159,7 +165,7 @@ void Client::findPages(const std::string &urlu) {
       _statusCode = 500;
     return;
   }
-  if ((st.st_mode & S_IFMT) != S_IFREG){
+  if ((st.st_mode & S_IFMT) != S_IFREG) {
     std::cout << RED << "Not a regular file" << RESET << std::endl;
     _statusCode = 403;
     return;
@@ -192,8 +198,8 @@ void Client::readFile(void) {
   std::vector<char> buf(toRead);
   ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
-  std::cout << PURP << "read of size " << readBytes << ": " << buf.size() << "; tried " << _leftToRead
-            << std::endl;
+  std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
+            << "; tried " << _leftToRead << std::endl;
   if (readBytes < 0) {
     _statusCode = 500;
     return;
@@ -387,7 +393,7 @@ void Client::addErrorResponse(size_t errorCode) {
   return;
 }
 
-void Client::handleCgi(std::vector<char>&response) {
+void Client::handleCgi(std::vector<char> &response) {
   std::cerr << "Client::handleCgi: _statusCode = " << _statusCode << std::endl;
   if (_statusCode >= 400) {
     buildResponse();
@@ -396,22 +402,23 @@ void Client::handleCgi(std::vector<char>&response) {
   }
   char buf[1000];
   getcwd(buf, 1000);
-  std::cout << "trying to open: " << _outfileCgi << "at path= "<< buf << std::endl;
+  std::cout << "trying to open: " << _outfileCgi << "at path= " << buf
+            << std::endl;
   struct stat st;
-  if (stat(_outfileCgi.c_str(), &st) == -1){
+  if (stat(_outfileCgi.c_str(), &st) == -1) {
     _statusCode = 500;
     buildResponse();
     response = _response.getResponse();
     return;
   }
-    std::cout << RED << "Client::HandleCGI: stat() == -1" << RESET << std::endl;
+  std::cout << RED << "Client::HandleCGI: stat() == -1" << RESET << std::endl;
   std::stringstream ss;
   ss << st.st_size;
   std::cout << "stat->size = " << ss.str() << std::endl;
   _leftToRead = st.st_size;
   _filefd = open(_outfileCgi.c_str(), O_RDONLY);
   if (_filefd == -1) {
-    std::cout << RED << "fail to open "<<_outfileCgi << RESET << std::endl;
+    std::cout << RED << "fail to open " << _outfileCgi << RESET << std::endl;
     _statusCode = 500;
     buildResponse();
     response = _response.getResponse();
