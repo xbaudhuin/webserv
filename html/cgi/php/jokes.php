@@ -1,8 +1,9 @@
 <?php
-// Set the content type to HTML
-echo "Content-Type: text/html; charset=utf-8";
-
 // Define a list of 20 jokes
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', '/tmp/php_errors.log');
 $jokes = [
     "Why don't scientists trust atoms? Because they make up everything!",
     "What do you get if you cross a snowman and a vampire? Frostbite.",
@@ -61,10 +62,13 @@ $body = <<<HTML
 <body>
     <h1>Here's a Random Joke for You!</h1>
     <p class="joke">{$random_joke}</p>
-    <p><a href="/php/random_joke.php">Get Another Joke</a></p>
+    <p><a href="/php/jokes.php">Get Another Joke</a></p>
 </body>
 </html>
 HTML;
+
+echo "Content-Type: text/html;";
+echo "\r\n";
 echo "Cache-Control: no-cache";
 echo "\r\n";
 echo "Content-Length: " . strlen($body);
