@@ -82,7 +82,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         if (count < 0)
             break;
     }
-    if(count <= 0)
+    if(count < 0)
         throw security_error("BIG ISSUE");
 
     if(is_file)

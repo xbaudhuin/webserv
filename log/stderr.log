@@ -1,185 +1,34 @@
+Client::addBuffer: end: _statusCode = path = 200
+/home/thole/42/webserv/html/cgi/php && outfile cgi= webserv_out8host816777343port8167773434250
+getexecutepath = /bin/php
+getcgifile = jokes.php
+starting execve
+Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
+Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
+wevserv: Webserv::checkChildsEnd: waitpid: 
+Client::handleCgi: _statusCode = 200
+[1;94mExtensions: .php[0m
+[1;94mUriFile: jokes.php && extension: .php[0m
 Client::addBuffer: end: _statusCode = 200
-path = /home/xbaudhuin/project_42/webserv/html/cgi/python && outfile cgi= webserv_out5host516777343port5167773434250
+path = /home/thole/42/webserv/html/cgi/php && outfile cgi= webserv_out8host816777343port8167773434250
+[1;94mUriFile: jokes.php && extension: .php[0m
+[1;94mUriFile: jokes.php && extension: .php[0m
+getexecutepath = /bin/php
+[1;94mUriFile: jokes.php && extension: .php[0m
+getcgifile = [1;94mUriFile: jokes.php && extension: .php[0m
+jokes.php
+starting execve
+Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
+Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
+wevserv: Webserv::checkChildsEnd: waitpid: 
+Client::handleCgi: _statusCode = 200
+Client::addBuffer: end: _statusCode = 200
+path = /home/thole/42/webserv/html/cgi/python && outfile cgi= webserv_out8host816777343port8167773434250
 getexecutepath = /bin/python3
 getcgifile = welcome.py
 starting execve
-==8766== Memcheck, a memory error detector
-==8766== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==8766== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==8766== Command: /bin/python3 welcome.py
-==8766== 
-==8766== 
-==8766== FILE DESCRIPTORS: 3 open (3 std) at exit.
-==8766== 
-==8766== HEAP SUMMARY:
-==8766==     in use at exit: 487,522 bytes in 92 blocks
-==8766==   total heap usage: 2,086 allocs, 1,994 frees, 3,812,331 bytes allocated
-==8766== 
-==8766== LEAK SUMMARY:
-==8766==    definitely lost: 0 bytes in 0 blocks
-==8766==    indirectly lost: 0 bytes in 0 blocks
-==8766==      possibly lost: 0 bytes in 0 blocks
-==8766==    still reachable: 487,522 bytes in 92 blocks
-==8766==         suppressed: 0 bytes in 0 blocks
-==8766== Rerun with --leak-check=full to see details of leaked memory
-==8766== 
-==8766== For lists of detected and suppressed errors, rerun with: -s
-==8766== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
 Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
 wevserv: Webserv::checkChildsEnd: waitpid: 
 Client::handleCgi: _statusCode = 200
-[1;94mExtensions: .py[0m
-[1;94mUriFile: cookie.py && extension: .py[0m
-/html/cgi && ./python/
-Client::addBuffer: end: _statusCode = 200
-path = /home/xbaudhuin/project_42/webserv/html/cgi/python && outfile cgi= webserv_out5host516777343port5167773434250
-[1;94mUriFile: cookie.py && extension: .py[0m
-[1;94mUriFile: cookie.py && extension: .py[0m
-getexecutepath = /bin/python3
-[1;94mUriFile: cookie.py && extension: .py[0m
-getcgifile = [1;94mUriFile: cookie.py && extension: .py[0m
-cookie.py
-starting execve
-==8776== Memcheck, a memory error detector
-==8776== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==8776== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==8776== Command: /bin/python3 cookie.py
-==8776== 
-found cookie username
-found cookie bgcolor
-==8776== 
-==8776== FILE DESCRIPTORS: 3 open (3 std) at exit.
-==8776== 
-==8776== HEAP SUMMARY:
-==8776==     in use at exit: 487,522 bytes in 92 blocks
-==8776==   total heap usage: 2,051 allocs, 1,959 frees, 3,873,863 bytes allocated
-==8776== 
-==8776== LEAK SUMMARY:
-==8776==    definitely lost: 0 bytes in 0 blocks
-==8776==    indirectly lost: 0 bytes in 0 blocks
-==8776==      possibly lost: 0 bytes in 0 blocks
-==8776==    still reachable: 487,522 bytes in 92 blocks
-==8776==         suppressed: 0 bytes in 0 blocks
-==8776== Rerun with --leak-check=full to see details of leaked memory
-==8776== 
-==8776== For lists of detected and suppressed errors, rerun with: -s
-==8776== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
-[1;94mExtensions: .py[0m
-[1;94mUriFile: welcome.py && extension: .py[0m
-Client::addBuffer: end: _statusCode = 200
-path = /home/xbaudhuin/project_42/webserv/html/cgi/python && outfile cgi= webserv_out5host516777343port5167773434250
-cookie= HTTP_COOKIE=user=sa; bgcolor=orange
-[1;94mUriFile: welcome.py && extension: .py[0m
-[1;94mUriFile: welcome.py && extension: .py[0m
-getexecutepath = /bin/python3
-[1;94mUriFile: welcome.py && extension: .py[0m
-getcgifile = [1;94mUriFile: welcome.py && extension: .py[0m
-welcome.py
-starting execve
-==8777== Memcheck, a memory error detector
-==8777== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==8777== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==8777== Command: /bin/python3 welcome.py
-==8777== 
-==8777== 
-==8777== FILE DESCRIPTORS: 3 open (3 std) at exit.
-==8777== 
-==8777== HEAP SUMMARY:
-==8777==     in use at exit: 487,522 bytes in 92 blocks
-==8777==   total heap usage: 2,093 allocs, 2,001 frees, 3,817,503 bytes allocated
-==8777== 
-==8777== LEAK SUMMARY:
-==8777==    definitely lost: 0 bytes in 0 blocks
-==8777==    indirectly lost: 0 bytes in 0 blocks
-==8777==      possibly lost: 0 bytes in 0 blocks
-==8777==    still reachable: 487,522 bytes in 92 blocks
-==8777==         suppressed: 0 bytes in 0 blocks
-==8777== Rerun with --leak-check=full to see details of leaked memory
-==8777== 
-==8777== For lists of detected and suppressed errors, rerun with: -s
-==8777== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
-[1;94mExtensions: .py[0m
-[1;94mUriFile: LogOut.py && extension: .py[0m
-/html/cgi && ./python/
-Client::addBuffer: end: _statusCode = 200
-path = /home/xbaudhuin/project_42/webserv/html/cgi/python && outfile cgi= webserv_out5host516777343port5167773434250
-cookie= HTTP_COOKIE=user=sa; bgcolor=orange
-[1;94mUriFile: LogOut.py && extension: .py[0m
-[1;94mUriFile: LogOut.py && extension: .py[0m
-getexecutepath = /bin/python3
-[1;94mUriFile: LogOut.py && extension: .py[0m
-getcgifile = [1;94mUriFile: LogOut.py && extension: .py[0m
-LogOut.py
-starting execve
-==8779== Memcheck, a memory error detector
-==8779== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==8779== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==8779== Command: /bin/python3 LogOut.py
-==8779== 
-==8779== 
-==8779== FILE DESCRIPTORS: 3 open (3 std) at exit.
-==8779== 
-==8779== HEAP SUMMARY:
-==8779==     in use at exit: 477,718 bytes in 88 blocks
-==8779==   total heap usage: 1,513 allocs, 1,425 frees, 2,720,393 bytes allocated
-==8779== 
-==8779== LEAK SUMMARY:
-==8779==    definitely lost: 0 bytes in 0 blocks
-==8779==    indirectly lost: 0 bytes in 0 blocks
-==8779==      possibly lost: 0 bytes in 0 blocks
-==8779==    still reachable: 477,718 bytes in 88 blocks
-==8779==         suppressed: 0 bytes in 0 blocks
-==8779== Rerun with --leak-check=full to see details of leaked memory
-==8779== 
-==8779== For lists of detected and suppressed errors, rerun with: -s
-==8779== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
-[1;94mExtensions: .py[0m
-[1;94mUriFile: welcome.py && extension: .py[0m
-Client::addBuffer: end: _statusCode = 200
-path = /home/xbaudhuin/project_42/webserv/html/cgi/python && outfile cgi= webserv_out5host516777343port5167773434250
-[1;94mUriFile: welcome.py && extension: .py[0m
-[1;94mUriFile: welcome.py && extension: .py[0m
-getexecutepath = /bin/python3
-[1;94mUriFile: welcome.py && extension: .py[0m
-getcgifile = [1;94mUriFile: welcome.py && extension: .py[0m
-welcome.py
-starting execve
-==8780== Memcheck, a memory error detector
-==8780== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==8780== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==8780== Command: /bin/python3 welcome.py
-==8780== 
-==8780== 
-==8780== FILE DESCRIPTORS: 3 open (3 std) at exit.
-==8780== 
-==8780== HEAP SUMMARY:
-==8780==     in use at exit: 487,522 bytes in 92 blocks
-==8780==   total heap usage: 2,086 allocs, 1,994 frees, 3,812,331 bytes allocated
-==8780== 
-==8780== LEAK SUMMARY:
-==8780==    definitely lost: 0 bytes in 0 blocks
-==8780==    indirectly lost: 0 bytes in 0 blocks
-==8780==      possibly lost: 0 bytes in 0 blocks
-==8780==    still reachable: 487,522 bytes in 92 blocks
-==8780==         suppressed: 0 bytes in 0 blocks
-==8780== Rerun with --leak-check=full to see details of leaked memory
-==8780== 
-==8780== For lists of detected and suppressed errors, rerun with: -s
-==8780== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
+webserv: Webserv::start: epoll_wait: Interrupted system call
