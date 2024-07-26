@@ -133,14 +133,13 @@ private:
 
   // cgi Method
   void handleDelete(void);
-  void handleCgi(void);
+  void handleCgi(std::vector<char> &response);
   bool isTimedOutCgi(void) const;
   void cgiPOSTMethod(void);
   void cgiOutfile(void);
-  void addHeaderToEnv(std::vector<const char *> &vEnv,
-                      const std::string &envVariable,
+  void addHeaderToEnv(std::vector<char *> &vEnv, const std::string &envVariable,
                       const std::string &headerKey);
-  void addVariableToEnv(std::vector<const char *> &vEnv,
+  void addVariableToEnv(std::vector<char *> &vEnv,
                         const std::string &envVariable);
   void buildEnv(std::vector<char *> &vEnv);
   void buildArguments(std::vector<char *> &argument);

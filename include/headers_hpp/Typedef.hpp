@@ -25,5 +25,6 @@ typedef	std::map<int, Port*> mapID;
 typedef std::vector<Location> vec_location;
 typedef std::map<int, Client> mapClients;
 typedef std::vector<std::pair<vec_string, ServerConf> > vec_confs;
+typedef	std::map<int, pid_t> mapPID;
 
 #endif

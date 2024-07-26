@@ -9,6 +9,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <stdio.h>
+#include <sys/stat.h>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -124,9 +125,15 @@ void Client::buildListingDirectory(std::string &url) {
 void Client::findPages(const std::string &urlu) {
   (void)urlu;
   std::string url = "." + _location->getRootServer() + _sUri;
+  std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
+  std::cout << RED << "url = " << url << RESET << std::endl;
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
-    if (_sUri[_sUri.size() - 1] == '/') {
+    if (url[url.size() - 1] == '/') {
+    struct stat st;
+    char buf[2600];
+    if (stat(buf, &st) == -1)
+        _statusCode = 404;
       if (findIndex(url) == false) {
         return (buildListingDirectory(url));
       }
@@ -140,6 +147,23 @@ void Client::findPages(const std::string &urlu) {
     }
   }
   _sPath = url;
+  struct stat st;
+  std::cout << GREEN << "Client::findPages: AFTER searching location: _statusCode = " << _statusCode << std::endl;
+  if (stat(url.c_str(), &st) == -1){
+    std::cout << RED << "Clent::findPages: stat(" << url << ") = -1" << RESET <<std::endl;
+    if (errno == ENOENT)
+      _statusCode = 404;
+    else if (errno == EACCES)
+      _statusCode = 403;
+    else
+      _statusCode = 500;
+    return;
+  }
+  if ((st.st_mode & S_IFMT) != S_IFREG){
+    std::cout << RED << "Not a regular file" << RESET << std::endl;
+    _statusCode = 403;
+    return;
+  }
   _filefd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
   // _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying to open file: " << url << RESET << std::endl;
@@ -151,8 +175,6 @@ void Client::findPages(const std::string &urlu) {
       _statusCode = 403;
     return;
   }
-  struct stat st;
-  stat(_sPath.c_str(), &st);
   std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
   _leftToRead = st.st_size;
   _response.setHeader("Content-Length", st.st_size);
@@ -166,10 +188,11 @@ void Client::readFile(void) {
   // char buf[_sizeMaxResponse] = {0};
 
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
+  std::cout << "Bytes to read=" << toRead << std::endl;
   std::vector<char> buf(toRead);
   ssize_t readBytes = read(_filefd, &buf[0], toRead);
 
-  std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
+  std::cout << PURP << "read of size " << readBytes << ": " << buf.size() << "; tried " << _leftToRead
             << std::endl;
   if (readBytes < 0) {
     _statusCode = 500;
@@ -364,18 +387,31 @@ void Client::addErrorResponse(size_t errorCode) {
   return;
 }
 
-void Client::handleCgi(void) {
+void Client::handleCgi(std::vector<char>&response) {
+  std::cerr << "Client::handleCgi: _statusCode = " << _statusCode << std::endl;
   if (_statusCode >= 400) {
     buildResponse();
     return;
   }
+  char buf[1000];
+  getcwd(buf, 1000);
+  std::cout << "trying to open: " << _outfileCgi << "at path= "<< buf << std::endl;
+  struct stat st;
+  if (stat(_outfileCgi.c_str(), &st) == -1)
+    std::cout << RED << "Client::HandleCGI: stat() == -1" << RESET << std::endl;
+  std::stringstream ss;
+  ss << st.st_size;
+  std::cout << "stat->size = " << ss.str() << std::endl;
+  _leftToRead = st.st_size;
   _filefd = open(_outfileCgi.c_str(), O_RDONLY);
   if (_filefd == -1) {
+    std::cout << RED << "fail to open "<<_outfileCgi << RESET << std::endl;
     _statusCode = 500;
     buildResponse();
     return;
   }
-  readFile();
+  readFile(response);
+  _cgiPid = 0;
   return;
 }
 
@@ -398,11 +434,18 @@ void Client::handleDelete(void) {
 }
 
 bool Client::sendResponse(std::vector<char> &response) {
+  errno = 0;
   resetVector(response);
   if (_cgiPid > 0) {
-    handleCgi();
-  }
-  if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
+              << std::endl;
+    handleCgi(response);
+    if (_leftToRead == 0)
+      resetClient();
+    return (_leftToRead != 0);
+  } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
+              << std::endl;
     handleDelete();
   }
   // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
@@ -413,12 +456,16 @@ bool Client::sendResponse(std::vector<char> &response) {
     std::cout << BLUE << "response for _sUri:\n"
               << _sUri << "; of size : " << response.size() << RESET
               << std::endl;
+    if (_leftToRead == 0)
+      resetClient();
+    return (_leftToRead != 0);
   }
   bool ret = _leftToRead != 0;
   std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   if (_leftToRead > 0) {
     readFile(response);
     if (_statusCode == 500) {
+      std::cerr << "Client::sendResponse: error in readFile()" << std::endl;
       return (false);
     }
   }

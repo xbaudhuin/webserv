@@ -218,7 +218,7 @@ void Response::add400(const Response &error) {
 }
 
 std::vector<char> &Response::getResponse(void) {
-  // std::cout << BLUE << "inside response: " << _response << RESET <<
-  // std::endl;
+  std::cout << BLUE << "inside response: " << _response << RESET <<
+  std::endl;
   return (_response);
 }

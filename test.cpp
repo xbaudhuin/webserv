@@ -71,21 +71,24 @@ void child(char **argv, char **env, int i)
 int main(int argc, char **argv, char**env)
 {
     (void)argc;
-
+  (void) argv;
     try
     {
-        pid_t f = fork();
-        if(f == -1)
-            return(1);
-        else if(f == 0)
-            child(argv, env, 1);
-        wait(NULL);
-        pid_t f1 = fork();
-        if(f1 == -1)
-            return(1);
-        else if(f1 == 0)
-            child(argv, env, 2);
-        wait(NULL);
+        std::vector<char> s ;
+        std::string str = "coucou je suis un chat";
+        for (size_t i = 0; i < str.size(); i++)
+        {
+          s.push_back(s[i]);
+          /* code */
+        }
+        
+        std::cout << s << std::endl;
+        size_t to_read = 10000;
+        if(to_read > s.size())
+          s.erase(s.begin(), s.end());
+        else
+          s.erase(s.begin(), s.begin() + to_read);
+        std::cout << s << std::endl;
     }
     catch(const cgiException& e)
     {

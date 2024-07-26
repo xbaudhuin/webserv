@@ -3,73 +3,74 @@ import datetime
 from http.cookies import SimpleCookie
 
 
-def get_cookie_value(cookie_name):
-    """Retrieve the value of a specified cookie
- from the HTTP_COOKIE environment variable."""
-    cookie_string = os.environ.get('HTTP_COOKIE')
-    if cookie_string:
-        cookie = SimpleCookie()
-        cookie.load(cookie_string)
-        if cookie_name in cookie:
-            return cookie[cookie_name].value
-    return None
+def define_html(cookie, body):
+    name = cookie['user'].value
+    bgcolor = cookie['bgcolor'].value
+    body.append("<head><title>")
+    body.append(name)
+    body.append("</title><style>* {font-family: system-ui,")
+    body.append(" -apple-system, BlinkMac")
+    body.append("SystemFont,'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, ")
+    body.append("'Open Sans', 'Helvetica Neue', sans-serif;}")
+    body.append("body { background-color: ")
+    body.append(bgcolor)
+    body.append("; display: flex; justify-content: center; ")
+    body.append("align-items: center; height: 100vh;")
+    body.append("margin: 0; flex-direction: column;} h1 ")
+    body.append("{ font-size: 3em; color: white;} </style> </head>")
+    body.append("<body><h1>")
+    body.append(name)
+    body.append("</h1><h2>Welcome to your panel !</h2></body></html>")
+    body.append("<br><a href=\"/python/ColorModifier.html\">")
+    body.append("<button> Change Your Profile Color</button></a><br>")
+    body.append("<a href=\"/python/LogOut.py\"><button> Log Out </button></a>")
+    return
 
 
-def generate_html_body(name=None, bgcolor=None):
-    """Generate the HTML body based on the user’s name and background color."""
-    body = "<!DOCTYPE html>"
-    body += "<html><head><title>"
-    body += name if name else "Unknown User"
-    body += "</title><style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
-    body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
-    body += "body { background-color: "
-    body += bgcolor if bgcolor else "LightGoldenRodYellow"
-    body += "; display: flex; justify-content: center; align-items: center; height: 100vh;"
-    body += "margin: 0; flex-direction: column;} h1 { font-size: 3em; color: "
-    body += "white" if bgcolor else "black"
-    body += "; } </style></head>"
-    body += "<body><h1>"
-    body += name if name else "Oops ! You're not connected yet"
-    body += "</h1><h2>Welcome to your panel!</h2></body></html>"
-    if name:
-        body += "<br><a href=\"/python/ColorModifier.html\"><button>Change Your Profile Color</button></a>"
-        body += "<br><a href=\"/python/LogOut.py\"><button>Log Out</button></a>"
-    else:
-        body += "<br><a href=\"/python/connectionForm.html\"><button>Create a new profile</button></a>"
-    return body
-
-
-def print_server_info():
-    """Print server information if available."""
-    if "SERVER_NAME" in os.environ:
-        server_name = os.environ.get('SERVER_NAME')
-        print(f"Server: {server_name}")
-
-
-def print_date():
-    """Print the current date and time."""
-    datetimenow = datetime.datetime.now()
-    now = datetimenow.astimezone().strftime("%a, %d %b %Y %H:%M:%S %Z")
-    print(f"Date: {now}")
+def define_not_found(body):
+    body.append("<head><title> Unknown User")
+    body.append("</title><style>* {font-family: system-ui,")
+    body.append(" -apple-system, BlinkMacSystemFont,")
+    body.append("'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, ")
+    body.append("'Open Sans', 'Helvetica Neue', sans-serif;}")
+    body.append("body { background-color: ")
+    body.append("LightGoldenRodYellow")
+    body.append("; display: flex; justify-content: center; ")
+    body.append("align-items: center; height: 100vh;")
+    body.append("margin: 0; flex-direction: column;} ")
+    body.append("h1 { font-size: 3em; color: black;")
+    body.append("} </style> </head>")
+    body.append("<body><h1>")
+    body.append("Oops ! You're not connected yet")
+    body.append("</h1></body></html>")
+    body.append("<br><a href=\"/python/connectionForm.html\">")
+    body.append("<button> Create a new profile</button></a>")
+    return
 
 
 def main():
-    """Main function to handle CGI request and response."""
-    # Get cookie values
-    name = get_cookie_value('user')
-    bgcolor = get_cookie_value('bgcolor')
-
-    # Generate HTML body
-    body = generate_html_body(name, bgcolor)
-
-    # Print headers and content
-    print("Content-Type: text/html")
-    print(f"Content-Length: {len(body)}\r\n")
-    print(body)
-
-    # Print additional information
-    print_server_info()
-    print_date()
+    cookieString = os.environ.get('HTTP_COOKIE')
+    body = ["<!DOCTYPE html>"]
+    if cookieString:
+        cookie = SimpleCookie()
+        cookie.load(cookieString)
+        if 'bgcolor' in cookie and 'user' in cookie:
+            define_html(cookie, body)
+        else:
+            define_not_found(body)
+    else:
+        define_not_found(body)
+    print("HTTP/1.1 200 OK\r",)
+    if "SERVER_NAME" in os.environ:
+        serverName = os.environ.get('SERVER_NAME')
+        print(f"Server: {serverName}")
+    date = datetime.datetime.now().astimezone().strftime("%a, %d %b %G %T %Z")
+    body_str = "".join(body)
+    print(f"Date: {date}")
+    print("Content-Type: Text/html")
+    print(f"Content-Length: {len(body_str)}\r\n")
+    print(f"{body_str}")
+    return
 
 
 if __name__ == "__main__":

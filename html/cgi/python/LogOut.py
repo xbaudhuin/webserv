@@ -23,8 +23,8 @@ def logOut():
     date = datetimenow.astimezone().strftime("%a, %d %b %Y %H:%M:%S %Z")
     print(f"Date: {date}")
     time = "Thu, 01-Jan-1970 00:00:10 GMT"
-    print(f"Set-Cookie: user=blbkvvv;Expires={time}; Path=/")
-    print(f"Set-Cookie: bgcolor=spspspsp;Expires={time}; Path=/")
+    print(f"Set-Cookie: user=blbkvvv;Expires={time};")
+    print(f"Set-Cookie: bgcolor=spspspsp;Expires={time};")
     print(f"Content-Length: {len(body)}\r\n")
     print(f"{body}")
 

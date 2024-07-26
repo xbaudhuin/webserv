@@ -14,7 +14,7 @@ const size_t Client::_headerMaxSize = 8192;
 
 const size_t Client::_headersMaxBuffer = 32768;
 
-const size_t Client::_sizeMaxResponse = 8000;
+const size_t Client::_sizeMaxResponse = 10000;
 
 const double Client::_timeOutClient = 60.0;
 

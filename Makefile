@@ -103,7 +103,8 @@ AR						=	ar rcs
 
 SRCS_MAIN		=	main/main.cpp \
 					main/Webserv.cpp \
-					main/handleSignal.cpp \
+					signals/handleSignal.cpp \
+					signals/getExitStatus.cpp \
 					exec/Port.cpp \
 					parser/Split.cpp \
 					parser/Parser.cpp \
@@ -127,7 +128,8 @@ SRCS_MAIN		=	main/main.cpp \
 					request_parsing/ClientConst.cpp \
 					request_parsing/ClientResponse.cpp \
 					request_parsing/Response.cpp \
-					request_parsing/ClientParseRequest.cpp 
+					request_parsing/ClientParseRequest.cpp \
+					request_parsing/ClientCgi.cpp \
 
 REQUEST = requester
 

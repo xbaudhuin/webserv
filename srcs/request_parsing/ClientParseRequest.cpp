@@ -149,7 +149,8 @@ bool Client::checkMethod(void) {
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
-    std::cout << RED << "Client::checkMethod: invalid method" << RESET << std::endl;
+    std::cout << RED << "Client::checkMethod: invalid method" << RESET
+              << std::endl;
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false) {
@@ -271,7 +272,6 @@ bool Client::getTrailingHeader(void) {
     }
   }
   _chunkRequest = false;
-  _statusCode = 200;
   return (true);
 }
 
@@ -391,22 +391,25 @@ void Client::vectorToHeadersMap(std::vector<std::string> &request) {
 void Client::checkPathInfo(void) {
   if (_location->hasPathInfo() == false)
     return;
-  std::string locator = _sUri.substr(_location->getUrl().size());
+  size_t locator = _location->getUrl().size();
   std::cout << YELLOW << "_sUri = " << _sUri
             << "; _location.uri().size() = " << _location->getUrl().size()
             << RESET << std::endl;
   vec_string extension = _location->availableExtension();
   size_t i = 0;
-  size_t pos = locator.npos;
+  size_t pos = _sUri.npos;
   for (; i < extension.size(); i++) {
-    pos = locator.find(extension[i]);
-    if (pos != locator.npos)
+    pos = _sUri.find(extension[i], locator);
+    if (pos != _sUri.npos) {
+      std::cout << GREEN << "found pos: extension[i] = " << extension[i] << ";"
+                << RESET << std::endl;
       break;
+    }
   }
   if (i == extension.size())
     return;
-  _sPathInfo = _sUri.substr(pos);
-  _sUri.erase(pos);
+  _sPathInfo = _sUri.substr(pos + extension[i].size(), _sUri.npos);
+  _sUri.erase(pos + extension[i].size());
   std::cout << YELLOW << "_sPathinfo = " << _sPathInfo << "; _sUri = " << _sUri
             << RESET << std::endl;
 }
@@ -500,7 +503,7 @@ void Client::parseRequest(std::string &buffer) {
 
     _vBody.insert(_vBody.end(), _vBuffer.begin(),
                   _vBuffer.begin() + _bodyToRead);
-    if (static_cast<int>(_vBuffer.size()) > _bodyToRead)
+    if (static_cast<int>(_vBuffer.size()) >= _bodyToRead)
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
     _bodyToRead -= _vBody.size();
     if (_bodyToRead <= 0)
@@ -518,9 +521,9 @@ void Client::parseRequest(std::string &buffer) {
               << "changin statusCode because if (_vBuffer.size() != 0) to "
               << _statusCode << RESET << std::endl;
   }
-  // if (_location && _location->isCgi(_sUri) == true) {
-  //   setupCgi();
-  // }
+  if (_location && _location->isCgi(_sUri) == true) {
+    setupCgi();
+  }
   if (_statusCode == 0)
     _statusCode = 200;
   return;
@@ -702,7 +705,10 @@ bool Client::addBuffer(std::vector<char> buffer) {
       _statusCode = 400;
   }
   _time = getTime();
-  if (_statusCode != 0)
+  if (_statusCode != 0 && _cgiPid == 0) {
     return (true);
+  }
+  std::cerr << "Client::addBuffer: end: _statusCode = " << _statusCode
+            << std::endl;
   return (false);
 }

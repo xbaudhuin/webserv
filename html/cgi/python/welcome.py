@@ -1,4 +1,4 @@
-import cgi, os, datetime
+import os, datetime
 from http.cookies import SimpleCookie
 
 cookieString = os.environ.get('HTTP_COOKIE')
