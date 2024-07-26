@@ -2,8 +2,6 @@
 <html>
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>ConnectionForm</title>
 	<style>
 		* {
@@ -11,7 +9,7 @@
 		}
 
 		body {
-			background-color: seagreen;
+			background-color: bisque;
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -28,12 +26,9 @@
 </head>
 
 <body>
-	<h1>Create Your UserBoard !</h1>
-	<form action="../php/cookie.php" method="post">
-		Username: <input type="text" name="username" />
-
+	<h1> Change Your BackGround Color !</h1>
+	<form action="/ruby/ColorSetter.rb" method="get">
 		<br />
-
 		<label for="colors">BackGround Color:</label>
 		<select name="BackGroundColor" id="Colors">
 			<option value="PaleGreen">PaleGreen</option>

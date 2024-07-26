@@ -11,6 +11,7 @@ Location::Location(){
     this->_exact_match = 0;
     this->available_extension.push_back(".py");
     this->available_extension.push_back(".php");
+    this->available_extension.push_back(".rb");
     this->_get = 1;
     this->_post = 0;
     this->_delete = 1;
@@ -19,6 +20,7 @@ Location::Location(){
     this->_is_a_dir = 0;
     this->_exec_path[".php"] = "/bin/php";
     this->_exec_path[".py"] = "/bin/python3";
+    this->_exec_path[".rb"] = "/bin/ruby";
     this->_path_info = 0;
 }
 
