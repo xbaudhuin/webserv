@@ -8,6 +8,7 @@ sub logOut {
     # Initialize HTML body
     my $body = "<!DOCTYPE html>";
     $body .= "<html><head><title>Bye Bye!</title>";
+    $body .= "<link rel=\"icon\" type=\"image/x-icon\" href=\"perl.jpg\">";
     $body .= "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,";
     $body .= "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}";
     $body .= "body { background-color: CornflowerBlue; display: flex; justify-content: center;";
@@ -28,7 +29,7 @@ sub logOut {
     my $expires_time = "Thu, 01 Jan 1970 00:00:10 GMT";
     print "Set-Cookie: user=blbkvvv; Expires=$expires_time;\n";
     print "Set-Cookie: bgcolor=spspspsp; Expires=$expires_time;\n";
-    print "Set-Cookie: perls=0; Expires=$expires_time;\n";
+    print "Set-Cookie: pearls=vdknad; Expires=$expires_time;\n";
     # Print the HTTP headers and body content
     print "Content-Type: text/html\n";
     print "Content-Length: " . length($body) . "\r\n\r\n";

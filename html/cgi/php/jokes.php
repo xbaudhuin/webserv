@@ -38,9 +38,20 @@ $body = <<<HTML
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random Joke Generator</title>
+	<link rel="icon" type="image/x-icon" href="php.png">
     <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: Arial, sans-serif;
+            background-image: url('nice.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
             text-align: center;
             margin-top: 50px;
             background-color: #f0f8ff;
@@ -50,18 +61,24 @@ $body = <<<HTML
             color: #333;
         }
         a {
-            text-decoration: none;
-            color: #007bff;
-            font-weight: bold;
+                color: black;
+                text-decoration: none;
+                padding: 20px;
+                margin: 20px auto;
+                width: 10%;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         a:hover {
-            text-decoration: underline;
+                text-decoration: underline;
+                color: blue;
         }
     </style>
 </head>
 <body>
     <h1>Here's a Random Joke for You!</h1>
     <p class="joke">{$random_joke}</p>
+    <br>
     <p><a href="/php/jokes.php">Get Another Joke</a></p>
 </body>
 </html>
