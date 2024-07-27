@@ -650,10 +650,12 @@ bool Client::addBuffer(std::vector<char> buffer) {
     if (earlyParsing(newLine) == false) {
       _statusCode = 400;
       _server = _defaultConf;
+      _time = getTime();
       return (true);
     }
   }
   if (newLine == 0) {
+    _time = getTime();
     return (false);
   }
   int pos = -1;

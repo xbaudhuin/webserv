@@ -431,6 +431,7 @@ void Client::handleCgi(std::vector<char> &response) {
 
 void Client::handleDelete(void) {
   std::string url = "." + _location->getRootServer() + _sUri;
+  std::cout << YELLOW << "trying to unlink: " << url << RESET << std::endl;
   if (unlink(url.c_str()) == -1) {
     if (errno == EACCES) {
       _statusCode = 403;
@@ -447,6 +448,8 @@ void Client::handleDelete(void) {
   return;
 }
 
+void Client::handlePost(void) {}
+
 bool Client::sendResponse(std::vector<char> &response) {
   errno = 0;
   resetVector(response);
@@ -456,11 +459,20 @@ bool Client::sendResponse(std::vector<char> &response) {
     handleCgi(response);
     if (_leftToRead == 0)
       resetClient();
+    _time = getTime();
     return (_leftToRead != 0);
   } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
               << std::endl;
     handleDelete();
+    resetClient();
+    return (false);
+  } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
+              << std::endl;
+    handlePOST();
+    resetClient();
+    return (false);
   }
   // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
   else if (_response.isReady() == false) {
@@ -472,6 +484,7 @@ bool Client::sendResponse(std::vector<char> &response) {
               << std::endl;
     if (_leftToRead == 0)
       resetClient();
+    _time = getTime();
     return (_leftToRead != 0);
   }
   bool ret = _leftToRead != 0;
@@ -480,6 +493,7 @@ bool Client::sendResponse(std::vector<char> &response) {
     readFile(response);
     if (_statusCode == 500) {
       std::cerr << "Client::sendResponse: error in readFile()" << std::endl;
+      _time = getTime();
       return (false);
     }
   }

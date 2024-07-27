@@ -23,24 +23,28 @@ bool Client::isTimedOutCgi(void) const {
 void Client::cgiPOSTMethod(void) {
   int fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
-    throw std::runtime_error("fail to open infileCgi");
+    throw std::runtime_error("Client::cgiPOSTMethod: fail to open infileCgi");
   }
   ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
   close(fd);
   fd = -1;
   if (writeBytes == -1)
-    throw std::runtime_error("fail to write to infileCgi");
+    throw std::runtime_error(
+        "Client::cgiPOSTMethod: fail to write to infileCgi");
   if (static_cast<size_t>(writeBytes) < _vBody.size()) {
-    throw std::runtime_error("writeBytes < _body.size()");
+    throw std::runtime_error(
+        "Client::cgiPOSTMethod: writeBytes < _body.size()");
   }
   fd = open(_infileCgi.c_str(), O_RDWR);
   if (fd == -1) {
     // unlink?
-    throw std::runtime_error("fail to re-open infileCgi");
+    throw std::runtime_error(
+        "Client::cgiPOSTMethod: fail to re-open infileCgi");
   }
   if (dup2(fd, STDIN_FILENO) == -1) {
     close(fd);
-    throw std::runtime_error("fail to dup2 infileCgi, STDIN");
+    throw std::runtime_error(
+        "Client::cgiPOSTMethod: fail to dup2 infileCgi, STDIN");
   }
   close(fd);
 }
@@ -48,22 +52,24 @@ void Client::cgiPOSTMethod(void) {
 void Client::cgiOutfile(void) {
   char buf[1000];
   getcwd(buf, 1000);
-  std::cerr << "path = " << buf << " && outfile cgi= " << _outfileCgi << std::endl;
+  std::cerr << "path = " << buf << " && outfile cgi= " << _outfileCgi
+            << std::endl;
   int fd = open(_outfileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
     perror("");
-    std::string tmp = "fail to create outfileCgi: ";
+    std::string tmp = "Client::cgiOutfile: fail to create outfileCgi: ";
     tmp += _outfileCgi;
     throw std::runtime_error(tmp.c_str());
   }
   ssize_t ret = write(fd, "HTTP/1.1 200 OK\r\n", 17);
-  if (ret < 17){
+  if (ret < 17) {
     close(fd);
-    throw std::runtime_error("fail to write to outfile");
+    throw std::runtime_error("Client::cgiOutfile: fail to write to outfile");
   }
   if (dup2(fd, STDOUT_FILENO) == -1) {
     close(fd);
-    throw std::runtime_error("fail to dup 2(outfileCgi, STDOUT)");
+    throw std::runtime_error(
+        "Client::cgiOutfile: fail to dup 2(outfileCgi, STDOUT)");
   }
   close(fd);
 }
@@ -77,7 +83,7 @@ void Client::addHeaderToEnv(std::vector<char *> &vEnv,
   if (it != _headers.end()) {
     std::string tmp = envVariable + "=" + (*it).second;
     if (headerKey == "cookie")
-        std::cerr << "cookie= "<< tmp.c_str() << std::endl;
+      std::cerr << "cookie= " << tmp.c_str() << std::endl;
     str = strdup(tmp.c_str());
     if (str == NULL)
       throw std::bad_alloc();
@@ -116,7 +122,7 @@ void Client::buildEnv(std::vector<char *> &vEnv) {
     std::map<std::string, std::string>::iterator it =
         _headers.find("content-type");
     if (it == _headers.end())
-      throw std::runtime_error("no content-type header");
+      throw std::runtime_error("Client::buildEnv: no content-type header");
     std::stringstream ss;
     ss << _vBody.size();
     addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
@@ -140,7 +146,7 @@ void Client::buildEnv(std::vector<char *> &vEnv) {
   }
   char buf[4096];
   if (getcwd(buf, 4096) == NULL)
-    throw std::runtime_error("fail to getcwd");
+    throw std::runtime_error("Client::buildEnv: fail to getcwd");
   std::string scriptFilename = "SCRIPT_FILENAME=";
   scriptFilename += buf;
   addVariableToEnv(vEnv, scriptFilename + _location->getCgiFile(_sUri));
@@ -160,7 +166,8 @@ void Client::freeVector(std::vector<char *> &vEnv,
 
 void Client::buildArguments(std::vector<char *> &arg) {
   addVariableToEnv(arg, _location->getExecutePath(_sUri).c_str());
-  std::cerr << "getexecutepath = " << _location->getExecutePath(_sUri) << std::endl;
+  std::cerr << "getexecutepath = " << _location->getExecutePath(_sUri)
+            << std::endl;
   addVariableToEnv(arg, _location->getCgiFile(_sUri));
   std::cerr << "getcgifile = " << _location->getCgiFile(_sUri) << std::endl;
   arg.push_back(NULL);
@@ -181,8 +188,14 @@ void Client::setupChild(std::string &cgiPathScript) {
     buildEnv(vEnv);
     buildArguments(argument);
     std::cerr << "starting execve" << std::endl;
-    if (execve(argument[0], &argument[0], &vEnv[0]) == -1)
-      throw std::runtime_error("fail to execve");
+    if (execve(argument[0], &argument[0], &vEnv[0]) == -1) {
+      std::string info = "fail to excve: ";
+      info += "arg[0] = ";
+      info += argument[0];
+      info += "; arg[1] = ";
+      info += argument[1];
+      throw std::runtime_error(info);
+    }
   } catch (std::exception &e) {
     freeVector(vEnv, argument);
     std::string tmp = "Client::setupChild: ";
@@ -195,7 +208,8 @@ void Client::setupCgi() {
 
   std::string cgiPathExec = _location->getExecutePath(_sUri);
   std::string cgiPathScript = _location->getCgiPath(_sUri);
-  std::cout << "_sUri = " << _sUri << " && cgiPathExec= " << cgiPathExec << " && cgiPathScript= " << cgiPathScript << std::endl;
+  std::cout << "_sUri = " << _sUri << " && cgiPathExec= " << cgiPathExec
+            << " && cgiPathScript= " << cgiPathScript << std::endl;
   std::ostringstream ss;
   ss << _socket;
   ss.clear();
