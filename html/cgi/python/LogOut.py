@@ -6,6 +6,7 @@ def logOut():
     print("Content-type: text/html")
     body = "<!DOCTYPE html>"
     body += "<html><head><title>Bye Bye!</title>"
+    body += "</title><link rel=\"icon\" type=\"image/x-icon\" href=\"py.jpg\">"
     body += "<style>* "
     body += "{font-family: system-ui, -apple-system, BlinkMacSystemFont,"
     body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', "
@@ -25,6 +26,7 @@ def logOut():
     time = "Thu, 01-Jan-1970 00:00:10 GMT"
     print(f"Set-Cookie: user=blbkvvv;Expires={time};")
     print(f"Set-Cookie: bgcolor=spspspsp;Expires={time};")
+    print(f"Set-Cookie: python_img=sasvcb;Expires={time};")
     print(f"Content-Length: {len(body)}\r\n")
     print(f"{body}")
 

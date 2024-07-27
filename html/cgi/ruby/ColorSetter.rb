@@ -10,6 +10,7 @@ form = cgi.params
 # Prepare the HTML body
 body = <<~HTML
   <head><title>BackGround Color Is Modified</title>
+  <link rel="icon" type="image/x-icon" href="ruby.jpg">
   <style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,
   'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}
   body { background-color: Azure; display: flex; justify-content: center; align-items: center; height: 100vh;

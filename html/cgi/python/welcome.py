@@ -13,7 +13,8 @@ if cookieString:
         bgcolor = cookie['bgcolor'].value
         body += "<head><title>"
         body += name
-        body += "</title><style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
+        body += "</title><link rel=\"icon\" type=\"image/x-icon\" href=\"py.jpg\">"
+        body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
         body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
         body += "body { background-color: "
         body += bgcolor
@@ -24,10 +25,12 @@ if cookieString:
         body += name
         body += "</h1><h2>Welcome to your panel !</h2></body></html>"
         body += "<br><a href=\"/python/ColorModifier.html\"><button> Change Your Profile Color</button></a>"
+        body += "<br><a href=\"/python/pythons.py\"><button> Go check what your python looks like! </button><a>"
         body += "<br><a href=\"/python/LogOut.py\"><button> Log Out </button></a>"
     else :
         body += "<head><title> Unknown User"
-        body += "</title><style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
+        body += "</title><link rel=\"icon\" type=\"image/x-icon\" href=\"py.jpg\">"
+        body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
         body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
         body += "body { background-color: "
         body += "LightGoldenRodYellow"
@@ -40,7 +43,8 @@ if cookieString:
         body += "<br><a href=\"/python/connectionForm.html\"><button> Create a new profile</button></a>"
 else:
     body += "<head><title> Unknown User"
-    body += "</title><style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
+    body += "</title><link rel=\"icon\" type=\"image/x-icon\" href=\"py.jpg\">"
+    body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
     body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
     body += "body { background-color: "
     body += "LightGoldenRodYellow"

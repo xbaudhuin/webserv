@@ -14,6 +14,7 @@ const int MAX_FD = 50;
 class Webserv
 {
     private:
+		bool 		_has_config;
 		int			_epollFd;
 		mapPorts	_Ports;
         vec_string	_env;

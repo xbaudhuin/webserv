@@ -11,10 +11,13 @@ Webserv::Webserv(const char* file)
     std::string config;
 
     if(file)
+	{
         config = file;
+		_has_config = 1;
+	}
     else
 	{
-        config = "./config/good_config/test.conf";
+		_has_config = 0;
 	}
     this->parseConfig(config);
 #if PRINT == 2
@@ -186,19 +189,28 @@ void Webserv::parse(vec_string split)
 
 void Webserv::parseConfig(const std::string &conf)
 {
-    std::ifstream	config;
-    size_t 			check = conf.find(".conf", 0);
+	if (_has_config)
+	{
+		std::ifstream	config;
+    	size_t 			check = conf.find(".conf", 0);
 
-    if(check == std::string::npos)
-        throw std::invalid_argument("Error\nFile extension isn't a .conf");
-    config.open(conf.c_str());
-    if(!config.is_open())
-        throw std::logic_error("Error\nCouldn't open config file");
-    std::stringstream strm;
-    strm << config.rdbuf();
-    std::string str = strm.str();
-    config.close();
-    this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
+    	if(check == std::string::npos)
+    	    throw std::invalid_argument("Error\nFile extension isn't a .conf");
+    	config.open(conf.c_str());
+    	if(!config.is_open())
+    	    throw std::logic_error("Error\nCouldn't open config file");
+    	std::stringstream strm;
+    	strm << config.rdbuf();
+    	std::string str = strm.str();
+    	config.close();
+    	this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
+	}
+	else
+	{
+		std::string config = getConfig();
+    	this->parse(tokenizer(config, " \n\t\r\b\v\f", "{};"));
+	}
+    
 }
 
 int	Webserv::removeFdFromIdMap(int fd)
