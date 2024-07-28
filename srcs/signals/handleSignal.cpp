@@ -2,14 +2,12 @@
 
 extern int gSignal;
 
-void	setGlobalSignal(int signal)
-{
+void	setGlobalSignal(int signal) {
 	gSignal = signal;
 	std::cout << "webserv: sigint received" << std::endl;
 }
 
-int	handleSignal(int signal, int option)
-{
+int	handleSignal(int signal, int option) {
 	struct sigaction	sig;
 
 	std::memset(&sig, 0, sizeof (sig));

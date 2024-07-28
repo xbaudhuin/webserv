@@ -1,7 +1,6 @@
 #include "sockets.hpp"
 
-int	protectedClose(int fd)
-{
+int	protectedClose(int fd) {
 	int	status = close(fd);
 
 	if (status == BAD_FD) {

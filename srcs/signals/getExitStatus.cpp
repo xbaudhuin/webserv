@@ -1,7 +1,6 @@
 #include "sockets.hpp"
 
-int	getExitStatus(int codeExit)
-{
+int	getExitStatus(int codeExit) {
 	if (WIFEXITED(codeExit)) {
 		return WEXITSTATUS(codeExit);
 	}

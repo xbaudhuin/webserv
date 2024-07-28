@@ -10,8 +10,7 @@ static struct sockaddr_in	getSocketAddress(in_addr_t	address, int rawPort) {
 	return newSocketAddress;	
 }
 
-int	createServerSocket(int port, uint32_t address)
-{
+int	createServerSocket(int port, uint32_t address) {
 	struct sockaddr_in	socketAddress = getSocketAddress(address, port);
 	int					serverSocket = socket(socketAddress.sin_family, (SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC), 0);
 

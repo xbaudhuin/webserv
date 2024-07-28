@@ -1,36 +1,28 @@
 #include "Port.hpp"
 
-Port::Port() : _address(INADDR_LOOPBACK), _port(4243)
-{
+Port::Port() : _address(INADDR_LOOPBACK), _port(4243) {
 	return ;
 }
 
-Port::Port(ServerConf &serv) : _main(&serv), _address(serv.getHost()), _port(serv.getPort())
-{
-	for (size_t i = 0; i < serv.getServerNames().size(); i++)
-	{
+Port::Port(ServerConf &serv) : _main(&serv), _address(serv.getHost()), _port(serv.getPort()) {
+	for (size_t i = 0; i < serv.getServerNames().size(); i++) {
     	this->_portConfs[serv.getServerNames()[i]] = &serv;
 	}
 }
 
-Port::~Port(void)
-{
+Port::~Port(void) {
 	return ;
 }
 
-Port::Port(const Port &otherPort)
-{
-	if (this != &otherPort)
-	{
+Port::Port(const Port &otherPort) {
+	if (this != &otherPort) {
 		*this = otherPort;
 	}
-	return;
+	return ;
 }
 
-Port &Port::operator=(const Port &otherPort)
-{
-	if (this != &otherPort)
-	{
+Port &Port::operator=(const Port &otherPort) {
+	if (this != &otherPort) {
 		this->_port = otherPort._port;
 		this->_serverSocket = otherPort._serverSocket;
 		this->_clientSockets = otherPort._clientSockets;
@@ -38,193 +30,148 @@ Port &Port::operator=(const Port &otherPort)
 		this->_portConfs = otherPort._portConfs;
 		this->_main = otherPort._main;
 		this->_address = otherPort._address;
-
 	}		
-	return(*this);
+	return *this;
 }
 
-int	Port::acceptNewConnection(void)
-{
-	int	clientSocket;
-	
-	clientSocket = accept4(this->_serverSocket, NULL, NULL, (SOCK_NONBLOCK | SOCK_CLOEXEC));
-	if (clientSocket == BAD_FD)
-	{
-		std::cerr << "webserv: Port::acceptNewConncetion: accept: " << strerror(errno) << std::endl;
-		return (BAD_FD);
+int	Port::acceptNewConnection(void) {
+	int clientSocket = accept4(this->_serverSocket, NULL, NULL, (SOCK_NONBLOCK | SOCK_CLOEXEC));
+
+	if (clientSocket == BAD_FD) {
+		std::cerr << "webserv: Port::acceptNewConncetion: accept4: " << strerror(errno) << std::endl;
+		return BAD_FD;
 	}
-	try
-	{
+	try {
 		this->_clientSockets.push_back(clientSocket);
 	}
-	catch(const std::exception& e)
-	{
+	catch(const std::exception& e) {
 		protectedClose(clientSocket);
 		std::cerr << "webserv: Port::acceptNewConnection: " << e.what() << std::endl;
-		return (BAD_FD);
+		return BAD_FD;
 	}
-	try
-	{
+	try {
 		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
 	}
-	catch(const std::exception& e)
-	{
+	catch(const std::exception& e) {
 		protectedClose(clientSocket);
 		std::cerr << "webserv: Port::acceptNewConnection: " << e.what() << std::endl;
 		this->removeSocketFromClientVector(clientSocket);
-		return (BAD_FD);
+		return BAD_FD;
 	}
-	std::cout << "wevserv: new client connection accepted on port " << this->_port << " to socket fd " << clientSocket << std::endl;
-	return (clientSocket);
+	std::cout << "wevserv: new client connection accepted on " << this->_address << ":" << this->_port
+		<< " to socket fd " << clientSocket << std::endl;
+	return clientSocket;
 }
 
-int	Port::removeSocketFromRequestMap(int socket)
-{
-	int	status;
+int	Port::removeSocketFromRequestMap(int socket) {
+	int status = this->_clientRequests.erase(socket);
 
-	status = this->_clientRequests.erase(socket);
-	if (status == 0)
-	{
-		std::cerr << "webserv: Port::removeSocketFromRequestMap: trying to remove non existing client socket from request map of port " << this->_address << ":" << this->_port << std::endl;
-		return (FAILURE);
+	if (status == 0) {
+		std::cerr << "webserv: Port::removeSocketFromRequestMap: trying to remove non existing client socket "
+			<< socket << " from request map of " << this->_address << ":" << this->_port << std::endl;
+		return FAILURE;
 	}
-	std::cout << "webserv: successfully remove client socket " << socket << " in Port request map listening on port " << this->_address << ":" << this->_port << std::endl;
-	return (SUCCESS);
+	std::cout << "webserv: successfully remove client socket " << socket << " in Port request map listening on "
+		<< this->_address << ":" << this->_port << std::endl;
+	return SUCCESS;
 }
 
-int	Port::removeSocketFromClientVector(int socket)
-{
-	std::vector<int>::iterator	iter;
+int	Port::removeSocketFromClientVector(int socket) {
+	std::vector<int>::iterator	iter = std::find(this->_clientSockets.begin(), this->_clientSockets.end(), socket);
 
-	iter = std::find(this->_clientSockets.begin(), this->_clientSockets.end(), socket);
-	if (iter != this->_clientSockets.end())
-	{
+	if (iter != this->_clientSockets.end()) {
 		this->_clientSockets.erase(iter);
-		std::cout << "webserv: successfully remove client socket " << socket << " in Port vector listening on port " << this->_address << ":" << this->_port << std::endl;
-		return (SUCCESS);
+		std::cout << "webserv: successfully remove client socket " << socket
+			<< " in Port vector listening on port " << this->_address << ":" << this->_port << std::endl;
+		return SUCCESS;
 	}
-	else
-	{
-		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of port " << this->_address << ":" << this->_port << std::endl;
-		return (FAILURE);
+	else {
+		std::cerr << "webserv: Port::removeClientSocket: trying to remove non existing client socket from vector of port "
+			<< this->_address << ":" << this->_port << std::endl;
+		return FAILURE;
 	}
 }
 
-int	Port::removeClientSocket(int clientSocket)
-{
-	int status;
+int	Port::removeClientSocket(int clientSocket) {
+	int status = SUCCESS;
 
-	status = 0;
 	status += this->removeSocketFromClientVector(clientSocket);
 	status += this->removeSocketFromRequestMap(clientSocket);
-	return (status);
+	return status;
 }
 
-bool	Port::isClientSocket(int fd) const
-{
-	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end())
-	{
-		return (true);
+bool	Port::isClientSocket(int fd) const {
+	if (std::find(this->_clientSockets.begin(), this->_clientSockets.end(), fd) != this->_clientSockets.end()) {
+		return true;
 	}
-	else
-	{
-		return (false);
+	else {
+		return false;
 	}
 }
 
-bool	Port::isServerSocket(int fd) const
-{
-	if (fd == this->_serverSocket)
-	{
-		return (true);
+bool	Port::isServerSocket(int fd) const {
+	if (fd == this->_serverSocket) {
+		return true;
 	}
-	else
-	{
-		return (false);
+	else {
+		return false;
 	}
 }
 
-int	Port::initPortSocket(void)
-{
+int	Port::initPortSocket(void) {
 	this->_serverSocket = createServerSocket(this->_port, this->_address);
-	return (this->_serverSocket);
+	return this->_serverSocket;
 }
 
-int	Port::getPort(void) const
-{
-	return (this->_port);
+int	Port::getPort(void) const {
+	return this->_port;
 }
 
-bool	Port::isOldClient(int fd) const
-{
-	mapClients::const_iterator	iter;
+bool	Port::isOldClient(int fd) const {
+	mapClients::const_iterator	iter = this->_clientRequests.find(fd);
 
-	iter = this->_clientRequests.find(fd);
-	if (iter == this->_clientRequests.end())
-	{
+	if (iter == this->_clientRequests.end()) {
 		std::cerr << "webserv: Port::isOldClient: fd " << fd  << " is not in map of requests" << std::endl;
-		return (false);
+		return false;
 	}
-	else
-	{
-		return ((*iter).second.isTimedOut());
+	else {
+		return (*iter).second.isTimedOut();
 	}
 }
 
-bool	Port::isOldChild(int fd) const
-{
-	mapClients::const_iterator	iter;
+bool	Port::isOldChild(int fd) const {
+	mapClients::const_iterator	iter = this->_clientRequests.find(fd);
 
-	iter = this->_clientRequests.find(fd);
-	if (iter == this->_clientRequests.end())
-	{
+	if (iter == this->_clientRequests.end()) {
 		std::cerr << "webserv: Port::isOldChid: fd " << fd  << " is not in map of requests" << std::endl;
-		return (false);
+		return false;
 	}
-	else
-	{
-		return (false); /* Change with correct PID time function */
-	}
-}
-
-Client	*Port::getClient(int clientSocket)
-{
-	mapClients::iterator	iter;
-
-	iter = this->_clientRequests.find(clientSocket);
-	if (iter == this->_clientRequests.end())
-	{
-		return (NULL);
-	}
-	else
-	{
-		return (&(*iter).second);
+	else {
+		return (*iter).second.isTimedOutCgi();
 	}
 }
 
-void	Port::printPortConfs(void)
-{
+Client	*Port::getClient(int clientSocket) {
+	mapClients::iterator	iter = this->_clientRequests.find(clientSocket);
+
+	if (iter == this->_clientRequests.end()) {
+		return NULL;
+	}
+	else {
+		return &(*iter).second;
+	}
+}
+
+void	Port::printPortConfs(void) {
 	std::cout << "Main = "<< *(this->_main) << std::endl;
-	mapConfs::iterator	iter2 = this->_portConfs.begin();
-	while (iter2 != this->_portConfs.end())
-	{
-		std::cout << "---SERVER NAME : " <<(*iter2).first << "---" << std::endl << std::endl;
-		std::cout << *(*iter2).second << std::endl;
-		iter2++;
+	mapConfs::iterator	iter = this->_portConfs.begin();
+	while (iter != this->_portConfs.end()) {
+		std::cout << "---SERVER NAME : " <<(*iter).first << "---" << std::endl << std::endl;
+		std::cout << *(*iter).second << std::endl;
+		iter++;
 	}
 }
 
-void	Port::addToConf(const std::string &name, ServerConf *newConf)
-{
+void	Port::addToConf(const std::string &name, ServerConf *newConf) {
 	this->_portConfs[name] = newConf;
-}
-
-const std::vector<int>	Port::getClientsVector(void) const
-{
-	return (this->_clientSockets);
-}
-
-uint32_t	Port::getAddress(void) const
-{
-	return (this->_address);
 }
