@@ -2,8 +2,7 @@
 
 int	gSignal = 0;
 
-static int	initMain(int argc)
-{
+static int	initMain(int argc) {
     if (argc > 2) {
 		std::cout << "webserv: takes at maximum one argument" << std::endl;
 		return FAILURE;
@@ -21,8 +20,7 @@ static int	initMain(int argc)
 	return SUCCESS;
 }
 
-int main(int argc, char **argv, char **env)
-{
+int main(int argc, char **argv, char **env) {
 	if (initMain(argc) != SUCCESS) {
 		return FAILURE;
 	}

@@ -1,3 +1,1 @@
-webserv: dup2: Success
-webserv: Webserv::start: epoll_wait: Interrupted system call
 webserv: Webserv::start: epoll_wait: Interrupted system call

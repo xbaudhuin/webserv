@@ -2,21 +2,17 @@
 
 extern int	gSignal;
 
-Webserv::Webserv()
-{
+Webserv::Webserv() {
 }
 
-Webserv::Webserv(const char* file)
-{
+Webserv::Webserv(const char* file) {
     std::string config;
 
-    if(file)
-	{
+    if(file) {
         config = file;
 		_has_config = 1;
 	}
-    else
-	{
+    else {
 		_has_config = 0;
 	}
     this->parseConfig(config);
@@ -37,8 +33,7 @@ Webserv::Webserv(const char* file)
     }
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
-	if (this->_epollFd == -1)
-	{
+	if (this->_epollFd == -1) {
 		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
@@ -47,139 +42,100 @@ Webserv::Webserv(const char* file)
 }
 
 
-Webserv::Webserv(const Webserv& rhs)
-{
+Webserv::Webserv(const Webserv& rhs) {
     this->operator=(rhs);
 }
 
-Webserv& Webserv::operator=(const Webserv &rhs)
-{
-    if(this != &rhs)
-    {
+Webserv& Webserv::operator=(const Webserv &rhs) {
+    if(this != &rhs) {
         this->_env = rhs._env;
         this->_confs = rhs._confs;
     }
-    return(*this);
+    return *this;
 }
 
-Webserv::~Webserv()
-{
+Webserv::~Webserv() {
 	this->closeFds();
 }
 
-void Webserv::addEnv(char **env)
-{
+void Webserv::addEnv(char **env) {
     this->_env_char = env;
-    for(size_t i = 0; env[i]; i++)
-    {
+	for(size_t i = 0; env[i]; i++) {
         std::string str = env[i];
         this->_env.push_back(str);
     }
 }
 
-char** Webserv::getEnv() const
-{
-    return(this->_env_char);
+char** Webserv::getEnv() const {
+    return this->_env_char;
 }
 
-bool checkNumberBrackets(const vec_string &split)
-{
+bool checkNumberBrackets(const vec_string &split) {
     size_t size = split.size();
     size_t count = 0;
-
-	// for (size_t i = 0; i < split.size(); i++)
-	// {
-	// 	std::cout << split[i] << " && " << i << " | ";
-	// }
 	
-    for (size_t i = 0; i < size; i++)
-    {
-        if(split[i] == "{")
-        {
+    for (size_t i = 0; i < size; i++) {
+        if(split[i] == "{") {
             count++;
         }
-        else if(split[i] == "}")
-        {
+        else if(split[i] == "}") {
             count--;
         }
-		// std::cout << split[i] << " && " << i << " && " << size << std::endl;
     }
-	if(count != 0)
-		return 1;
-    return 0;
+	if(count != 0) {
+		return FAILURE;
+	}
+    return SUCCESS;
 }
 
-void Webserv::createMaps(void)
-{
+void Webserv::createMaps(void) {
     size_t size = this->_confs.size();
 
-    for (size_t i = 0; i < size; i++)
-    {
+	for (size_t i = 0; i < size; i++) {
 		std::pair<uint32_t, int> IpPortPair(this->_confs[i].second.getHost(), this->_confs[i].second.getPort());
-        //mapPorts::iterator it = this->_Ports.find(this->_confs[i].second.getPort());
 		mapPorts::iterator it = this->_Ports.find(IpPortPair);
 
-        if(it == this->_Ports.end())
-        {
-            //this->_Ports.insert(std::make_pair(this->_confs[i].second.getPort(), Port(this->_confs[i].second)));
+        if (it == this->_Ports.end()) {
 			this->_Ports.insert(std::make_pair(IpPortPair, Port(this->_confs[i].second)));
         }
-        else
-        {
-			for (size_t j = 0; j < this->_confs[i].second.getServerNames().size(); j++)
-			{
+        else {
+			for (size_t j = 0; j < this->_confs[i].second.getServerNames().size(); j++) {
             	std::string name = this->_confs[i].second.getServerNames()[j];
-				// std::pair<uint32_t, int>(this->_confs[i].second.getHost(), this->_confs[i].second.getPort());
 				this->_Ports[IpPortPair].addToConf(name, &(this->_confs[i].second));
-				//this->_Ports[this->_confs[i].second.getPort()].addToConf(name, &(this->_confs[i].second));
 			}
         }
     }
 }
 
-void Webserv::parse(vec_string split)
-{
-
+void Webserv::parse(vec_string split) {
     int check = 0;
     size_t size = split.size();
 
-    if(checkNumberBrackets(split))
-        throw std::invalid_argument("Webserv: Error:\nIssue with the file, uneven number of {}");
-    for(size_t i = 0; i < size; i++)
-    {
-        if(split[i] == "server")
-        {
+    if (checkNumberBrackets(split)) {
+		throw std::invalid_argument("Webserv: Error:\nIssue with the file, uneven number of {}");
+	}
+    for (size_t i = 0; i < size; i++) {
+        if (split[i] == "server") {
             i++;
-            try
-            {
+            try {
                 ServerConf newConf = parser(split, i, size);
                 vec_string name = newConf.getServerNames();
                 this->_confs.push_back(std::make_pair(name, newConf));
                 check++;
             }
-            catch(const std::exception& e)
-            {
+            catch(const std::exception& e) {
                 writeInsideLog(e, errorParsing);
             }
         }
     }
-    if(!check)
-    {
+    if (!check) {
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
 	}
 #if PRINT == 3
-	try
-	{
+	try {
 		std::cout << findErrorPage(600, this->_confs[0].second) << std::endl;
-		// if(this->_confs[0].second.getLocations()[0].isCgi("/html/python/cgi/cookies.php"))
-		// {
-		// 	std::cout << RED << this->_confs[0].second.getLocations()[0].getExecutePath("/html/python/cgi/cookies.php") << std::endl;
-		// 	std::cout << this->_confs[0].second.getLocations()[0].getCgiFile("/html/python/cgi/cookies.php") << std::endl;
-		// 	std::cout << this->_confs[0].second.getLocations()[0].getCgiPath("/html/python/cgi/cookies.php") << RESET << std::endl;
-		// }
 	}
-	catch(const std::exception& e)
-	{
+	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
 	}
 #endif
@@ -187,17 +143,15 @@ void Webserv::parse(vec_string split)
     this->createMaps();
 }
 
-void Webserv::parseConfig(const std::string &conf)
-{
-	if (_has_config)
-	{
+void Webserv::parseConfig(const std::string &conf) {
+	if (_has_config) {
 		std::ifstream	config;
     	size_t 			check = conf.find(".conf", 0);
 
-    	if(check == std::string::npos)
+    	if (check == std::string::npos)
     	    throw std::invalid_argument("Error\nFile extension isn't a .conf");
     	config.open(conf.c_str());
-    	if(!config.is_open())
+    	if (!config.is_open())
     	    throw std::logic_error("Error\nCouldn't open config file");
     	std::stringstream strm;
     	strm << config.rdbuf();
@@ -205,77 +159,57 @@ void Webserv::parseConfig(const std::string &conf)
     	config.close();
     	this->parse(tokenizer(str, " \n\t\r\b\v\f", "{};"));
 	}
-	else
-	{
+	else {
 		std::string config = getConfig();
     	this->parse(tokenizer(config, " \n\t\r\b\v\f", "{};"));
 	}
-    
 }
 
-int	Webserv::removeFdFromIdMap(int fd)
-{
-	int	result;
+int	Webserv::removeFdFromIdMap(int fd) {
+	size_t	n = this->_idMap.erase(fd);
 
-	result = this->_idMap.erase(fd);
-	if (result == 1)
-	{
+	if (n == 1) {
 		std::cout << "webserv: successfully erased socket fd " << fd << " from ID Map" << std::endl;
-		return (SUCCESS);
+		return SUCCESS;
 	}
-	else
-	{
+	else {
 		std::cerr << "webserv: Webserv::removeFdFromIdMap: trying to remove unexisting fd " << fd << std::endl;
-		return (FAILURE);
+		return FAILURE;
 	}
 }
 
-int	Webserv::removeFromMapPID(int fd)
-{
-	int	result;
+int	Webserv::removeFromMapPID(int fd) {
+	size_t	n = this->_PID.erase(fd);
 
-	result = this->_PID.erase(fd);
-	if (result == 1)
-	{
+	if (n == 1) {
 		std::cout << "webserv: successfully erased socket fd " << fd << " from PID Map" << std::endl;
-		return (SUCCESS);
+		return SUCCESS;
 	}
-	else
-	{
+	else {
 		std::cerr << "webserv: Webserv::removeFdFromMapPID: trying to remove unexisting fd " << fd << std::endl;
-		return (FAILURE);
+		return FAILURE;
 	}
 }
 
-void	Webserv::closeFds(void)
-{
-	std::map<int, Port*>::iterator	iter;
-
-	iter = this->_idMap.begin();
-	while (iter != this->_idMap.end())
-	{
+void	Webserv::closeFds(void) {
+	std::map<int, Port*>::iterator	iter = this->_idMap.begin();
+	while (iter != this->_idMap.end()) {
 		protectedClose((*iter).first);
 		iter++;
 	}
 	protectedClose(this->_epollFd);
 }
 
-void	Webserv::setServerSockets(void)
-{
-	mapPorts::iterator	iter;
-	int					serverSocket;
+void	Webserv::setServerSockets(void) {
+	mapPorts::iterator	iter = this->_Ports.begin();
 
-	iter = this->_Ports.begin();
-	while (iter != this->_Ports.end())
-	{
-		serverSocket = (*iter).second.initPortSocket();
-		if (serverSocket == BAD_FD)
-		{
+	while (iter != this->_Ports.end()) {
+		int serverSocket = (*iter).second.initPortSocket();
+		if (serverSocket == BAD_FD) {
 			this->closeFds();
 			throw std::logic_error("Can not create server socket");
 		}
-		if (addSocketToEpoll(this->_epollFd, serverSocket, EPOLLIN) != SUCCESS)
-		{
+		if (addSocketToEpoll(this->_epollFd, serverSocket, EPOLLIN) != SUCCESS) {
 			this->closeFds();
 			throw std::logic_error("Can not add socket to epoll");
 		}
@@ -284,121 +218,94 @@ void	Webserv::setServerSockets(void)
 	}
 }
 
-int	Webserv::closeClientConnection(int clientSocket)
-{
-	mapID::iterator	iter;
+int	Webserv::closeClientConnection(int clientSocket) {
+	mapID::iterator	iter = this->_idMap.find(clientSocket);
 	int				status = 0;
 
-	iter = this->_idMap.find(clientSocket);
-	if (iter == this->_idMap.end())
-	{
+	if (iter == this->_idMap.end()) {
 		std::cerr << "webserv: Webserv::closeClientConnection: client socket " << clientSocket << " is not in the ID Map" << std::endl;
 		status = 1;
 	}
-	else if ((*iter).second->removeClientSocket(clientSocket) != SUCCESS)
-	{
+	else if ((*iter).second->removeClientSocket(clientSocket) != SUCCESS) {
 		std::cerr << "webserv: Webserv::closeClientConnection: failed remove client socket from Port" << std::endl;
 		status = 1;
 	}
-	if (this->_PID.find(clientSocket) != this->_PID.end())
-	{
+	if (this->_PID.find(clientSocket) != this->_PID.end()) {
 		kill(this->_PID[clientSocket], SIGKILL);
 		waitpid(this->_PID[clientSocket], NULL, 0);
 		this->removeFromMapPID(clientSocket);
 	}
 	this->removeFdFromIdMap(clientSocket);
-	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != SUCCESS)
-	{
+	if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientSocket, NULL) != SUCCESS) {
 		std::cerr << "webserv: Webserv::closeClientConnection: epoll_ctl: " << strerror(errno) << std::endl;
 		status = 1;
 	}
 	status += protectedClose(clientSocket);
-	if (status == 0)
-	{
+	if (status == 0) {
 		std::cout << "webserv: successfully closed connection with client on socket fd " << clientSocket << std::endl;
 	}
-	return (status);
+	return status;
 }
 
+int Webserv::getSocketFromPID(pid_t pid) const {
+	mapPID::const_iterator	iter = this->_PID.begin();
 
-int Webserv::getSocketFromPID(pid_t pid) const
-{
-	mapPID::const_iterator	iter;
-
-	iter = this->_PID.begin();
-	while (iter != this->_PID.end())
-	{
-		if ((*iter).second == pid)
-		{
-			return ((*iter).first);
+	while (iter != this->_PID.end()) {
+		if ((*iter).second == pid) {
+			return (*iter).first;
 		}
 		iter++;
 	}
-	std::cerr << "webserv: Webserv::getSocketFromPID " << pid << " pid is not present in the map (maybe kill by destructor)" << std::endl;
-	return (BAD_FD);
+	std::cerr << "webserv: Webserv::getSocketFromPID " << pid
+		<< " pid is not present in the map (maybe kill by destructor)" << std::endl;
+	return BAD_FD;
 }
 
-int	Webserv::isClientSocket(int fd) const
-{
-	mapID::const_iterator	iter;
+int	Webserv::isClientSocket(int fd) const {
+	mapID::const_iterator	iter = this->_idMap.find(fd);
 
-	iter = this->_idMap.find(fd);
-	if (iter == this->_idMap.end())
-	{
+	if (iter == this->_idMap.end()) {
 		std::cerr << "webserv: Webserv::isClientSocket: fd " << fd << " is not in ID map" << std::endl; 
-		return (false);
+		return false;
 	}
-	else
-	{
-		return ((*iter).second->isClientSocket(fd));
+	else {
+		return (*iter).second->isClientSocket(fd);
 	}
 }
 
-int	Webserv::isServerSocket(int fd) const
-{
-	mapID::const_iterator	iter;
+int	Webserv::isServerSocket(int fd) const {
+	mapID::const_iterator	iter = this->_idMap.find(fd);
 
-	iter = this->_idMap.find(fd);
-	if (iter == this->_idMap.end())
-	{
+	if (iter == this->_idMap.end()) {
 		std::cerr << "webserv: Webserv::isClientSocket: fd " << fd << " is not in ID map" << std::endl; 
-		return (false);
+		return false;
 	}
-	else
-	{
-		return ((*iter).second->isServerSocket(fd));
+	else {
+		return (*iter).second->isServerSocket(fd);
 	}
 }
 
-bool	Webserv::isOldClient(int fd) const
-{
-	mapID::const_iterator	iter;
+bool	Webserv::isOldClient(int fd) const {
+	mapID::const_iterator	iter = this->_idMap.find(fd);
 
-	iter = this->_idMap.find(fd);
-	if (iter == this->_idMap.end())
-	{
+	if (iter == this->_idMap.end()) {
 		std::cerr << "webserv: Webserv::isOldClient: fd " << fd << " is not in ID map" << std::endl; 
-		return (false);
+		return false;
 	}
-	else
-	{
-		return ((*iter).second->isOldClient(fd));
+	else {
+		return (*iter).second->isOldClient(fd);
 	}
 }
 
-bool	Webserv::isOldChild(int fd) const
-{
-	mapID::const_iterator	iter;
+bool	Webserv::isOldChild(int fd) const {
+	mapID::const_iterator	iter = this->_idMap.find(fd);
 
-	iter = this->_idMap.find(fd);
-	if (iter == this->_idMap.end())
-	{
+	if (iter == this->_idMap.end()) {
 		std::cerr << "webserv: Webserv::isOldChild: fd " << fd << " is not in ID map" << std::endl; 
-		return (false);
+		return false;
 	}
-	else
-	{
-		return ((*iter).second->isOldChild(fd));
+	else {
+		return (*iter).second->isOldChild(fd);
 	}
 }
 

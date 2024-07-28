@@ -64,16 +64,18 @@ int	Port::acceptNewConnection(void) {
 }
 
 int	Port::removeSocketFromRequestMap(int socket) {
-	int status = this->_clientRequests.erase(socket);
+	size_t	n = this->_clientRequests.erase(socket);
 
-	if (status == 0) {
+	if (n == 0) {
 		std::cerr << "webserv: Port::removeSocketFromRequestMap: trying to remove non existing client socket "
 			<< socket << " from request map of " << this->_address << ":" << this->_port << std::endl;
 		return FAILURE;
 	}
-	std::cout << "webserv: successfully remove client socket " << socket << " in Port request map listening on "
-		<< this->_address << ":" << this->_port << std::endl;
-	return SUCCESS;
+	else {
+		std::cout << "webserv: successfully remove client socket " << socket << " in Port request map listening on "
+			<< this->_address << ":" << this->_port << std::endl;
+		return SUCCESS;
+	}
 }
 
 int	Port::removeSocketFromClientVector(int socket) {

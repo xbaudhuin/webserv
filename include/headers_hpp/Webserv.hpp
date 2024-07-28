@@ -59,7 +59,6 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void) const;
-
 		int		start(void);
 
 		class	StopServer : public std::exception
