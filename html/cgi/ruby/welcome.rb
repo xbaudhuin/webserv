@@ -15,15 +15,18 @@ if cookie_string
     bgcolor = cookies['bgcolor'].first
 
     body += "<head><title>#{name}</title>"
+    body += "<link rel=\"icon\" type=\"image/x-icon\" href=\"ruby.jpg\">"
     body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
     body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
     body += "body { background-color: #{bgcolor}; display: flex; justify-content: center; align-items: center; height: 100vh;"
     body += "margin: 0; flex-direction: column;} h1 { font-size: 3em; color: white; } </style> </head>"
     body += "<body><h1>#{name}</h1><h2>Welcome to your panel!</h2></body></html>"
     body += "<br><a href=\"/ruby/ColorModifier.html\"><button> Change Your Profile Color</button></a>"
+    body += "<br><a href=\"/ruby/rubies.rb\"><button> Go check the number of rubies you own! </button><a>"
     body += "<br><a href=\"/ruby/LogOut.rb\"><button> Log Out </button></a>"
   else
     body += "<head><title>Unknown User</title>"
+    body += "<link rel=\"icon\" type=\"image/x-icon\" href=\"ruby.jpg\">"
     body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
     body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
     body += "body { background-color: LightGoldenRodYellow; display: flex; justify-content: center; align-items: center; height: 100vh;"
@@ -33,6 +36,7 @@ if cookie_string
   end
 else
   body += "<head><title>Unknown User</title>"
+  body += "<link rel=\"icon\" type=\"image/x-icon\" href=\"ruby.jpg\">"
   body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
   body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
   body += "body { background-color: LightGoldenRodYellow; display: flex; justify-content: center; align-items: center; height: 100vh;"

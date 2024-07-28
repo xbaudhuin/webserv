@@ -5,8 +5,12 @@ form = cgi.FieldStorage()
 
 print("Content-type:text/html")
 
-body = "<head><title> BackGround Color Is modified"
-body += "</title><style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
+body = "<!DOCTYPE html><html>"
+body += "<head>"
+body += "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+body += "<title> BackGround Color Is modified"
+body += "</title><link rel=\"icon\" type=\"image/x-icon\" href=\"py.jpg\">"
+body += "<style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont,"
 body += "'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}"
 body += "body { background-color: "
 body += "Azure"
@@ -16,7 +20,7 @@ body += "} </style> </head>"
 body += "<body><h1>"
 body += "Color Successefully modified"
 body += "</h1></body></html>"
-body += "<br><a href=\"/python/welcome.py\"><button> Go back to your profile</button></a>"
+body += "<br><a href=\"/python/welcome.py\"><button> Go back to your profile</button></a></html>"
 
 if "SERVER_NAME" in os.environ:
     serverName = os.environ.get('SERVER_NAME')

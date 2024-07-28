@@ -25,5 +25,6 @@ void trimWhitespace(std::string &str, const char *whiteSpaces);
 unsigned char toLower(char c);
 std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec);
 void resetVector(std::vector<char> &vec);
+std::string getConfig(void);
 
 #endif

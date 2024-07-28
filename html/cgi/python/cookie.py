@@ -16,6 +16,7 @@ def read_form_data():
 body = """<!DOCTYPE html>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <head><title> New User !</title>
+<link rel="icon" type="image/x-icon" href="py.jpg">
 <style>* {font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;}
 body { background-color: LightGoldenRodYellow; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; flex-direction: column;}
 h1 { font-size: 3em; color: black; } </style> </head>
