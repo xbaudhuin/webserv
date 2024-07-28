@@ -309,63 +309,45 @@ bool	Webserv::isOldChild(int fd) const {
 	}
 }
 
-int	Webserv::bounceOldClients(void)
-{
-	mapID::iterator	current;
-	mapID::iterator	next;
-	int				socket;
+int	Webserv::bounceOldClients(void) {
+	mapID::iterator	current = this->_idMap.begin();
 
-	current = this->_idMap.begin();
-	while (true)
-	{
-		if (current == this->_idMap.end())
-		{
+	while (true) {
+		if (current == this->_idMap.end()) {
 			break ;
 		}
-		next = ++current;
+		mapID::iterator	next = ++current;
 		current--;
-		socket = (*current).first;
-		if (this->isClientSocket(socket) == true && this->isOldClient(socket) == true)
-		{
+		int	socket = (*current).first;
+		if (this->isClientSocket(socket) == true && this->isOldClient(socket) == true) {
 			this->closeClientConnection(socket);
 		}
 		current = next;
 	}
-	return (SUCCESS);
+	return SUCCESS;
 }
 
 int	Webserv::killOldChilds(void)
 {
-	mapPID::iterator	current;
-	mapPID::iterator	next;
-	int					fd;
-	pid_t				pid;
+	mapPID::iterator	current = this->_PID.begin();
 	int					status;
-	
 
-	if (this->_PID.size() == 0)
-	{
-		return (SUCCESS);
+	if (this->_PID.size() == 0) {
+		return SUCCESS;
 	}
-	current = this->_PID.begin();
-	while (true)
-	{
-		if (current == this->_PID.end())
-		{
+	while (true) {
+		if (current == this->_PID.end()) {
 			break ;
 		}
-		fd = (*current).first;
-		pid = (*current).second;
-		next = ++current;
+		int					fd = (*current).first;
+		pid_t				pid = (*current).second;
+		mapPID::iterator	next = ++current;
 		current--;
-		if (this->isClientSocket(fd) == true && this->isOldChild(fd) == true)
-		{
-			if (kill(pid, SIGKILL) != SUCCESS)
-			{
+		if (this->isClientSocket(fd) == true && this->isOldChild(fd) == true) {
+			if (kill(pid, SIGKILL) != SUCCESS) {
 				std::cerr << "webserv: Webserv::killOldChilds: kill: " << strerror(errno) << std::endl;
 			}
-			else
-			{
+			else {
 				if (waitpid(pid, &status, 0) != pid)
 					std::cerr << "webserv: Webserv::killOldChilds: waitpid: " << strerror(errno) << std::endl;
 				else
@@ -375,7 +357,7 @@ int	Webserv::killOldChilds(void)
 		}
 		current = next;
 	}
-	return (SUCCESS);
+	return SUCCESS;
 }
 
 int	Webserv::handleChildExit(pid_t pid, int codeExit)

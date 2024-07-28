@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define PORT 4250
+#define PORT 4252
 
 int main(void) {
   int sock = 0;
