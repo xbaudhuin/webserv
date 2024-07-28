@@ -1,2 +1,2 @@
-Error:
-Incorrect extension found inside the cgi directive
+Webserv: Error:
+Root directive parameter is missing './' at the beginning

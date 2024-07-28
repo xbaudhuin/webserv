@@ -109,7 +109,8 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   return (0);
 }
 
-size_t Client::insertInMap(std::string &line) {
+size_t Client::insertInMap(std::string &line,
+                           std::map<std::string, std::string> &map) {
   if (line.size() > _headerMaxSize)
     return (431);
   std::transform(line.begin(), line.end(), line.begin(), toLower);
@@ -130,14 +131,14 @@ size_t Client::insertInMap(std::string &line) {
 
   std::map<std::string, std::string>::iterator it;
   if (pos != line.npos) {
-    it = _headers.find(key);
-    if (it != _headers.end()) {
+    it = map.find(key);
+    if (it != map.end()) {
       if (key == "host" || "content-length" || "transfer-encoding" ||
           "content-type")
         return (400);
       (*it).second += ",\n";
       (*it).second += value;
-    } else if (_headers.insert(std::make_pair(key, value)).second == false &&
+    } else if (map.insert(std::make_pair(key, value)).second == false &&
                key == "host")
       return (400);
   }
@@ -149,8 +150,8 @@ bool Client::checkMethod(void) {
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
-    std::cout << RED << "Client::checkMethod: invalid method" << RESET
-              << std::endl;
+    std::cout << RED << "Client::checkMethod: invalid method on location: "
+              << _location->getUrl() << RESET << std::endl;
     _statusCode = 405;
     return (false);
   } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false) {
@@ -217,10 +218,11 @@ void Client::removeTrailingLineFromBuffer(void) {
   else if (_vBuffer[i] == '\n')
     i++;
   else {
-    std::cout << GREEN << "_vbuffer: " << _vBuffer << RESET << std::endl;
-    std::cout << RED
-              << "Client::parseChunkRequest: failed to remove trailing line"
-              << RESET << std::endl;
+    // std::cout << GREEN << "_vbuffer: " << _vBuffer << RESET << std::endl;
+    std::cout
+        << RED
+        << "Client:removeTrailingLineFromBuffer: failed to remove trailing line"
+        << RESET << std::endl;
     _statusCode = 400;
     return;
   }
@@ -317,7 +319,138 @@ bool Client::parseChunkRequest(void) {
   return (parseChunkRequest());
 }
 
+std::string Client::getLineFromBuffer() {
+  bool carriage = false;
+  size_t i = 0;
+  for (; i < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\r' && i + 1 < _vBuffer.size())
+      carriage = true;
+    else
+      carriage = false;
+    if (_vBuffer[i + carriage] == '\n')
+      break;
+  }
+  if (i + carriage < _vBuffer.size())
+    i++;
+  std::string line(_vBuffer.begin(), _vBuffer.begin() + i + carriage);
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + carriage);
+  return (line);
+}
+
+void Client::removeReturnCarriageNewLine(std::string &line) {
+  size_t i = 0;
+  if (line[line.size() - 1] == '\n') {
+    i++;
+    if (line.size() >= 2 && line[line.size() - 2] == '\r')
+      i++;
+    line.erase(line.size() - i);
+  }
+}
+
+void Client::parseMultipartRequest(std::string &boundary) {
+  std::cout << YELLOW
+            << "Client::parseMultipartRequest starting: boundary = " << boundary
+            << RESET << std::endl;
+  if (_vBuffer.size() < boundary.size() && _vBuffer.size() > 0 &&
+      _statusCode != 400) {
+    _statusCode = 400;
+    return;
+  }
+  std::string checkBoundary(_vBuffer.begin(),
+                            _vBuffer.begin() + boundary.size());
+  if (boundary != checkBoundary) {
+    _statusCode = 400;
+    return;
+  }
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + boundary.size());
+  if (_vBuffer.empty() == true)
+    return;
+  removeTrailingLineFromBuffer();
+  multipartRequest multi;
+  std::string line = getLineFromBuffer();
+  while (line.empty() == false && _statusCode < 400) {
+    removeReturnCarriageNewLine(line);
+    std::cout << BLUE << "New line: " << line << RESET << std::endl;
+    if (line == "")
+      break;
+    insertInMap(line, multi._header);
+    line = getLineFromBuffer();
+  }
+  if (_statusCode >= 400) {
+    std::cout << RED
+              << "Client::parseMultipartRequest: afterHeader insertion: "
+                 "statusCode = 400"
+              << RESET << std::endl;
+    return;
+  }
+  while (true) {
+    if (_vBuffer.size() < boundary.size()) {
+      std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
+                << RESET << std::endl;
+      _statusCode = 400;
+      return;
+    }
+    line = getLineFromBuffer();
+    std::cout << BLUE << "New line: " << line << RESET << std::endl;
+    if (line.compare(0, boundary.size(), boundary) == 0 &&
+        line.size() >= boundary.size() + 1) {
+      if (line.compare(boundary.size(), 2, "--") == 0) {
+        std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
+                  << std::endl;
+        _statusCode = 200;
+        return;
+        removeTrailingLineFromBuffer();
+      }
+      break;
+    } else
+      multi._vBody.insert(multi._vBody.end(), line.begin(), line.end());
+  }
+  _multipart.push_back(multi);
+  parseMultipartRequest(boundary);
+}
+
+std::string Client::getBoundaryString(std::string &boundaryHeader) {
+  size_t pos;
+  std::cout << YELLOW
+            << "Client::getBoundaryString: starting: boundaryHeader = "
+            << boundaryHeader << RESET << std::endl;
+  pos = boundaryHeader.find(';');
+  if (pos == boundaryHeader.npos) {
+    std::cout << RED << "Client::getBoundaryString: pos = npos " << RESET
+              << std::endl;
+    _statusCode = 400;
+    return ("");
+  }
+  pos++;
+  if (boundaryHeader[pos] == ' ')
+    pos++;
+  if (pos + 11 >= boundaryHeader.size() ||
+      boundaryHeader.substr(pos, 11) != "boundary=--") {
+    std::cout << RED << "Client::getBoundaryString: pos(" << pos
+              << ") + 11 > boundaryHeader.size(" << boundaryHeader.size()
+              << ") " << RESET << std::endl;
+    std::cout << RED << "boundaryHeader.substr(pos, pos +11) != boundary=-- :"
+              << boundaryHeader.substr(pos, 11) << RESET << std::endl;
+    ;
+    _statusCode = 400;
+    return ("");
+  }
+  std::cout << YELLOW << "Client::getBoundaryString: BOUNDARY = " << "----"
+            << boundaryHeader.substr(pos + 11) << RESET << std::endl;
+  return ("----" + boundaryHeader.substr(pos + 11));
+}
+
 void Client::parseBody(void) {
+  std::map<std::string, std::string>::iterator multipart;
+  multipart = _headers.find("content-type");
+  if (multipart != _headers.end() &&
+      (*multipart).second.substr(0, 9) == "multipart") {
+    std::string boundary = getBoundaryString((*multipart).second);
+    if (_statusCode < 400)
+      parseMultipartRequest(boundary);
+    return;
+  }
+
   std::map<std::string, std::string>::iterator itLength;
   itLength = _headers.find("content-length");
   std::map<std::string, std::string>::iterator itChunked;
@@ -338,6 +471,7 @@ void Client::parseBody(void) {
 
       return;
     }
+
     _bodyToRead = std::strtol(((*itLength).second).c_str(), NULL, 10);
     if (errno == ERANGE || _bodyToRead < 0 ||
         (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
@@ -382,7 +516,7 @@ void Client::vectorToHeadersMap(std::vector<std::string> &request) {
 
       return;
     }
-    _statusCode = insertInMap(request[it]);
+    _statusCode = insertInMap(request[it], _headers);
     if (_statusCode != 0)
       return;
   }
@@ -594,8 +728,8 @@ void Client::removeReturnCarriage(std::vector<char> &vec) {
     }
   }
 
-  std::cout << BLUE << "vec: " << vec << RESET << std::endl;
-  std::cout << PURP << "buffer: " << _vBuffer << RESET << std::endl;
+  // std::cout << BLUE << "vec: " << vec << RESET << std::endl;
+  // std::cout << PURP << "buffer: " << _vBuffer << RESET << std::endl;
 
   return;
 }

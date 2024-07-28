@@ -443,12 +443,13 @@ void Client::handleDelete(void) {
   }
   _statusCode = 204;
   defaultHTMLResponse();
+  _keepConnectionAlive = false;
   addConnectionHeader();
   _response.BuildResponse();
   return;
 }
 
-void Client::handlePost(void) {}
+// void Client::handlePost(void) {}
 
 bool Client::sendResponse(std::vector<char> &response) {
   errno = 0;
@@ -470,7 +471,7 @@ bool Client::sendResponse(std::vector<char> &response) {
   } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
               << std::endl;
-    handlePOST();
+    // handlePOST();
     resetClient();
     return (false);
   }

@@ -21,6 +21,11 @@
 
 class ServerConf;
 
+typedef struct multipartRequest {
+  std::map<std::string, std::string> _header;
+  std::vector<char> _vBody;
+} multipartRequest;
+
 class Client {
 public:
   // Constructor
@@ -71,6 +76,7 @@ private:
   std::vector<char> _vBuffer;
   int _bodyToRead;
   bool _chunkRequest;
+  std::vector<multipartRequest> _multipart;
   // Response attribute
   Response _response;
   bool _keepConnectionAlive;
@@ -100,18 +106,23 @@ private:
   bool checkMethod(void);
   bool checkIfValid(void);
   void removeTrailingLineFromBuffer(void);
+  std::string getLineFromBuffer();
+  void removeReturnCarriageNewLine(std::string &line);
   void removeReturnCarriage(std::vector<char> &vec);
   size_t hasNewLine(void) const;
   bool earlyParsing(int newLine);
   void parseRequest(std::string &request);
   size_t parseRequestLine(const std::string &requestLine);
   void checkPathInfo(void);
+  std::string getBoundaryString(std::string &boundaryHeader);
+  void parseMultipartRequest(std::string &boundary);
   bool parseChunkRequest(void);
   void parseBody(void);
   void uriDecoder(std::string &uri);
   int parseUri(const std::string &uri);
   void vectorToHeadersMap(std::vector<std::string> &request);
-  size_t insertInMap(std::string &line);
+  size_t insertInMap(std::string &line,
+                     std::map<std::string, std::string> &map);
   int getSizeChunkFromBuffer(void);
   bool getTrailingHeader(void);
   ServerConf *getServerConf(void);
