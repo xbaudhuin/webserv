@@ -63,7 +63,7 @@ int main(void) {
 //   std::cout << "Sent request: \n" << request << std::endl;
 //   valread = read(sock, buffer, 2048);
 //   std::cout << buffer << std::endl;
-  sleep(50);
+  sleep(150);
   // request = "Bonjour: */*\r\n";
   // request += "\r\n";
 //   valread = read(sock, buffer, 2048);
