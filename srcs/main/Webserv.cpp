@@ -402,70 +402,56 @@ int	Webserv::checkChildsEnd(void) {
 	return SUCCESS;
 }
 
-int	Webserv::checkTooManyRequests(int clientSocket)
-{
-	Client	*request;
+int	Webserv::checkTooManyRequests(int clientSocket) {
+	Client	*request = this->_idMap[clientSocket]->getClient(clientSocket);
 
-	request = this->_idMap[clientSocket]->getClient(clientSocket);
-	if (request == NULL)
-	{
+	if (request == NULL) {
 		this->closeClientConnection(clientSocket);
-		return (FAILURE);
+		return FAILURE;
 	}
-	if (this->_idMap.size() > MAX_FD)
-	{
-		try
-		{
+	if (this->_idMap.size() > MAX_FD) {
+		try {
 			request->addErrorResponse(503);
 		}
-		catch(const std::exception& e)
-		{
+		catch(const std::exception& e) {
 			std::cerr << "webserv: Webserv::checkTooManyRequests: catch error: " << e.what() << std::endl;
-			this->closeClientConnection(clientSocket);
+			return this->closeClientConnection(clientSocket);
 		}
-		if (changeEpollEvents(this->_epollFd, clientSocket, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS)
-		{
+		if (changeEpollEvents(this->_epollFd, clientSocket, (EPOLLIN | EPOLLOUT | EPOLLRDHUP)) != SUCCESS) {
 			this->closeClientConnection(clientSocket);
-			return (FAILURE);
+			return FAILURE;
 		}
 		std::cout << "webserv: can not process request for client on fd " << clientSocket << " due to too many requests" << std::endl;
-		return (SUCCESS);
+		return SUCCESS;
 	}
-	else
-	{
-		return (SUCCESS);
+	else {
+		return SUCCESS;
 	}
 }
 
-int	Webserv::handlePortEvent(int serverSocket)
-{
-	int	newClient;
+int	Webserv::handlePortEvent(int serverSocket) {
+	int	newClient = this->_idMap[serverSocket]->acceptNewConnection();
 
-	newClient = this->_idMap[serverSocket]->acceptNewConnection();
-	if (newClient == BAD_FD)
-	{
-		return (FAILURE);
+	if (newClient == BAD_FD) {
+		return FAILURE;
 	}
-	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != SUCCESS)
-	{
+	if (addSocketToEpoll(this->_epollFd, newClient, EPOLLIN | EPOLLRDHUP) != SUCCESS) {
 		this->_idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
-		return (FAILURE);
+		return FAILURE;
 	}
-	try
-	{
+	try {
 		this->_idMap[newClient] = this->_idMap[serverSocket];
 	}
-	catch(const std::exception& e)
-	{
+	catch (const std::exception &e) {
 		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, newClient, NULL) != SUCCESS)
 			std::cerr << "webserv: Webserv::handlePortEvent: epoll_ctl: " << strerror(errno) << std::endl;
 		this->_idMap[serverSocket]->removeClientSocket(newClient);
 		protectedClose(newClient);
-		return (FAILURE);
+		return FAILURE;
 	}
-	return (this->checkTooManyRequests(newClient));
+	return this->checkTooManyRequests(newClient);
 }
 
 int	Webserv::receive(int clientSocket) {
@@ -553,83 +539,68 @@ int	Webserv::respond(int clientSocket, uint32_t events) {
 	return SUCCESS;
 }
 
-int	Webserv::handleClientEvent(int clientSocket, uint32_t event)
-{
-	if (checkEvent(event, EPOLLRDHUP))
-	{
+int	Webserv::handleClientEvent(int clientSocket, uint32_t event) {
+	if (checkEvent(event, EPOLLRDHUP)) {
 		std::cout << "webserv: event EPOLLRDHUP triggered for client on fd " << clientSocket << std::endl;
-		return (this->closeClientConnection(clientSocket));
+		return this->closeClientConnection(clientSocket);
 	}
-	else if (checkEvent(event, EPOLLOUT))
-	{
+	else if (checkEvent(event, EPOLLOUT)) {
 		std::cout << "webserv: event EPOLLOUT triggered for client on fd " << clientSocket << std::endl;
-		return (this->respond(clientSocket, event));
+		return this->respond(clientSocket, event);
 	}
-	else if (checkEvent(event, EPOLLIN))
-	{
+	else if (checkEvent(event, EPOLLIN)) {
 		std::cout << "webserv: event EPOLLIN triggered for client on fd " << clientSocket << std::endl;
-		return (this->receive(clientSocket));
+		return this->receive(clientSocket);
 	}
-	else
-	{
+	else {
 		std::cerr << "webserv: Webserv::handleClientEvent: unknown event for client on fd " << clientSocket << std::endl;
-		return (FAILURE);
+		return FAILURE;
 	}
 }
 
-void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents)
-{
-	int	fd;
-
-	for (int i = 0; i < nbEvents; i++)
-	{
-		fd = events[i].data.fd;
-		if (this->isServerSocket(fd) == true)
-		{
+void	Webserv::handleEvents(const struct epoll_event *events, int nbEvents) {
+	for (int i = 0; i < nbEvents; i++) {
+		int	fd = events[i].data.fd;
+		if (this->isServerSocket(fd) == true) {
 			this->handlePortEvent(fd);
 		}
-		else if (this->isClientSocket(fd) == true)
-		{
+		else if (this->isClientSocket(fd) == true) {
 			this->handleClientEvent(fd, events[i].events);
 		}
-		else
-		{
-			std::cerr << "webserv: Webserv::handleEvents: fd " << fd << " is neither a server socket nor a client socket. It may be bounced for time out before traiting event" << std::endl;
+		else {
+			std::cerr << "webserv: Webserv::handleEvents: fd " << fd
+				<< " is neither a server socket nor a client socket. It may be bounced for time out before traiting event" << std::endl;
 		}
 		this->doCheckRoutine();
 	}
 }
 
-void	Webserv::printAllConfig(void)
-{
+void	Webserv::printAllConfig(void) {
 	mapPorts::iterator	iter = this->_Ports.begin();
-	while (iter != this->_Ports.end())
-	{
-		std::cout << "adress IP map key = " << (*iter).first.first << " | port map key = " << (*iter).first.second << std::endl;
+
+	while (iter != this->_Ports.end()) {
+		std::cout << "adress IP map key = " << (*iter).first.first
+			<< " | port map key = " << (*iter).first.second << std::endl;
 		std::cout << "Port = " << (*iter).second.getPort() << std::endl;
 		(*iter).second.printPortConfs();
 		++iter;
 	}
 }
 
-void	Webserv::checkSigint(void) const
-{
-	if (gSignal == SIGINT)
-	{
+void	Webserv::checkSigint(void) const {
+	if (gSignal == SIGINT) {
 		throw Webserv::StopServer();
 	}
 }
 
-void	Webserv::doCheckRoutine(void)
-{
+void	Webserv::doCheckRoutine(void) {
 	this->checkSigint();
 	this->bounceOldClients();
 	this->killOldChilds();
 	this->checkChildsEnd();
 }
 
-int	Webserv::start(void)
-{
+int	Webserv::start(void) {
 	int					nbEvent;
 	struct epoll_event	events[MAX_EVENTS];
 
@@ -637,28 +608,23 @@ int	Webserv::start(void)
 	this->printAllConfig();
 #endif
 	std::cout << "webserv: starting server..." << std::endl;
-	while (true)
-	{
-		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 500);
-		if (nbEvent == -1)
-		{
+	while (true) {
+		nbEvent = epoll_wait(this->_epollFd, events, MAX_EVENTS, 1000);
+		if (nbEvent == -1) {
 			std::cerr << "webserv: Webserv::start: epoll_wait: " << strerror(errno) << std::endl;
 			continue;
 		}
-		else if (nbEvent == 0)
-		{
+		else if (nbEvent == 0) {
 			std::cout << "webserv: waiting..." << std::endl;
 		}
-		else
-		{
+		else {
 			this->handleEvents(events, nbEvent);
 		}
 		this->doCheckRoutine();
 	}
-	return (SUCCESS);
+	return SUCCESS;
 }
 
-const char	*Webserv::StopServer::what(void) const throw()
-{
-	return ("Server is stoping");
+const char	*Webserv::StopServer::what(void) const throw() {
+	return "Server is stoping";
 }
