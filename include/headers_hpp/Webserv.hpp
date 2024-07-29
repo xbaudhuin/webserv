@@ -8,8 +8,8 @@
 #include <signal.h>
 #include "Client.hpp"
 
-const int MAX_EVENTS = 500;
-const int MAX_FD = 50;
+const int MAX_EVENTS = 400;
+const int MAX_FD = 3000;
 
 class Webserv
 {

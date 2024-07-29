@@ -34,7 +34,7 @@ Webserv::Webserv(const char* file) {
 #endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1) {
-		std::cerr << "wevserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
+		std::cerr << "webserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
 		throw std::logic_error("webserv: Webserv: failure in constructor");
 	}
 	std::cout << "webserv: epoll successfully created on fd " << this->_epollFd << std::endl;
@@ -388,12 +388,8 @@ int	Webserv::checkChildsEnd(void) {
 	}
 	while (true) {
 		pid_t	pid = waitpid((pid_t)-1, &status, WNOHANG);
-		if (pid == 0) {
+		if (pid == 0 || pid == (pid_t)-1) {
 			break ;
-		}
-		else if (pid == (pid_t)-1) {
-			std::cerr << "wevserv: Webserv::checkChildsEnd: waitpid: " << std::endl;
-			return FAILURE;
 		}
 		else {
 			this->handleChildExit(pid, status);
@@ -444,7 +440,7 @@ int	Webserv::handlePortEvent(int serverSocket) {
 		this->_idMap[newClient] = this->_idMap[serverSocket];
 	}
 	catch (const std::exception &e) {
-		std::cerr << "wevserv: Webserv::handlePortEvent: " << e.what() << std::endl;
+		std::cerr << "webserv: Webserv::handlePortEvent: " << e.what() << std::endl;
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, newClient, NULL) != SUCCESS)
 			std::cerr << "webserv: Webserv::handlePortEvent: epoll_ctl: " << strerror(errno) << std::endl;
 		this->_idMap[serverSocket]->removeClientSocket(newClient);

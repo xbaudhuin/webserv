@@ -58,7 +58,7 @@ int	Port::acceptNewConnection(void) {
 		this->removeSocketFromClientVector(clientSocket);
 		return BAD_FD;
 	}
-	std::cout << "wevserv: new client connection accepted on " << this->_address << ":" << this->_port
+	std::cout << "webserv: new client connection accepted on " << this->_address << ":" << this->_port
 		<< " to socket fd " << clientSocket << std::endl;
 	return clientSocket;
 }
