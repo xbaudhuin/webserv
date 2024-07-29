@@ -2,6 +2,8 @@
 #include "Colors.hpp"
 #include "Error.hpp"
 #include "Utils.hpp"
+#include <fcntl.h>
+#include <sstream>
 #include <vector>
 
 void Client::uriDecoder(std::string &uri) {
@@ -289,11 +291,6 @@ bool Client::parseChunkRequest(void) {
     _bodyToRead -= _vBuffer.size();
     return (false);
   }
-  if (_location->getLimitBodySize() != 0 &&
-      _vBody.size() > _location->getLimitBodySize()) {
-    _statusCode = 413;
-    return (true);
-  }
   if (_bodyToRead > 0) {
     std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
     std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET << std::endl;
@@ -301,6 +298,17 @@ bool Client::parseChunkRequest(void) {
               << RESET << std::endl;
     _vBody.insert(_vBody.end(), _vBuffer.begin(),
                   _vBuffer.begin() + _bodyToRead);
+    if (_bodyToRead > _vBuffer.size())
+      _bodyToRead -= _vBuffer.size();
+    else {
+      ssize_t bytesWrite = write(_chunkFd, &_vBody[0], _vBody.size());
+      if (bytesWrite != _vBody.size()) {
+        _statusCode = 500;
+        return (true);
+      }
+      resetVector(_vBody);
+      _bodyToRead = 0;
+    }
     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
     removeTrailingLineFromBuffer();
   }
@@ -308,12 +316,20 @@ bool Client::parseChunkRequest(void) {
     _statusCode = 400;
     return (true);
   }
-  _bodyToRead = getSizeChunkFromBuffer();
+  if (_bodyToRead == 0) {
+    _bodyToRead = getSizeChunkFromBuffer();
+    _sizeChunk += _bodyToRead;
+    if (_location->getLimitBodySize() != 0 &&
+        _sizeChunk > _location->getLimitBodySize()) {
+      _bodyToRead = -1;
+    }
+  }
   if (_bodyToRead == -1) {
     _statusCode = 413;
     return (true);
   }
   if (_bodyToRead == 0) {
+    close(_chunkFd);
     return (getTrailingHeader());
   }
   return (parseChunkRequest());
@@ -498,6 +514,18 @@ void Client::parseBody(void) {
       return;
     }
     _chunkRequest = true;
+    std::stringstream ss;
+    ss << _socket;
+    _chunkFile = "." + ss.str() + "fd" + "chunkfile";
+    time_t time = getTime();
+    std::stringstream t;
+    t << time;
+    _chunkFile += "id" + t.str();
+    _chunkFd = open(_chunkFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_CLOEXEC);
+    if (_chunkFd == -1) {
+      _statusCode = 500;
+      return;
+    }
     parseChunkRequest();
     return;
   }

@@ -76,6 +76,9 @@ private:
   std::vector<char> _vBuffer;
   int _bodyToRead;
   bool _chunkRequest;
+  std::string _chunkFile;
+  int _chunkFd;
+  int _sizeChunk;
   std::vector<multipartRequest> _multipart;
   // Response attribute
   Response _response;
@@ -136,6 +139,7 @@ private:
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);
   void handleError(void);
+  void handlePOST(void);
   void handleRedirection(void);
   void createResponseBody(void);
   void readFile(std::vector<char> &vec);

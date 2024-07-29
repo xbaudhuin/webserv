@@ -346,13 +346,6 @@ void Client::buildResponse(void) {
   _response.setDate();
   addConnectionHeader();
   size_t dot = _sUri.find_last_of('.');
-  if (dot < 100) {
-    std::cout << BLUE << "dot found _sUri.substr = " << _sUri.substr(dot)
-              << RESET << std::endl;
-  } else
-    std::cout << BLUE << "dot not found :" << dot << RESET << std::endl;
-  std::cout << "uri.size() = " << _sUri.size() << "; dot = " << dot << RESET
-            << std::endl;
   if (_sUri.size() > 5 && _sUri.size() - dot < 5 && dot < _sUri.size()) {
     std::cout << PURP << "inside dot file " << RESET << std::endl;
     std::string extension = _sUri.substr(dot);
@@ -449,7 +442,20 @@ void Client::handleDelete(void) {
   return;
 }
 
-// void Client::handlePost(void) {}
+void Client::handleMultipart(void) { return; }
+
+void Client::handleChunk(void) {}
+
+void Client::handlePOST(void) {
+  if (_multipart.size() >= 1) {
+    handleMultipart();
+    return;
+  }
+  if (_chunkRequest == true) {
+    handleChunk();
+    return;
+  }
+}
 
 bool Client::sendResponse(std::vector<char> &response) {
   errno = 0;
@@ -471,7 +477,7 @@ bool Client::sendResponse(std::vector<char> &response) {
   } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
               << std::endl;
-    // handlePOST();
+    handlePOST();
     resetClient();
     return (false);
   }

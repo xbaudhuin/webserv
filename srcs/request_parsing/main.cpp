@@ -13,20 +13,39 @@ int gSignal = 0;
 int main() {
   try {
     // std::string http_request = "";
-    std::string http_request =
-        "POST /catGif.gif?bonj%20our=2&salut=3 HTTP/1.0145\n";
-    http_request += "host: bonjour2\r\n";
+    std::string http_request = "POST /upload HTTP/1.1\n";
+    http_request += "host: localhost4247\r\n";
     // http_request += "GET /favicon.ico HTTP/1.0\r\n";
     // http_request += "host: bonjour\r\n";
-    http_request += "Content-Length 10\r\n";
+    // http_request += "Content-Length 10\r\n";
+    http_request +=
+        "Content-Type multipart/form-data; boundary=----BoundaryString\r\n";
     http_request += "Transfer-encoding: chunked\r\n";
     http_request += "\r\n";
-    http_request += "10\r\n";
-    http_request += "bonjour123456789\r\n";
+    http_request += "------BoundaryString\r\n";
+    http_request += "Content-Disposition: form-data; name=\"file1\"; "
+                    "filename=\"file1.txt\"\r\n";
+    http_request += "Content-Type: text/plain\r\n";
+    http_request += "\r\n";
+    http_request += "5\r\n";
+    http_request += "Hello\r\n";
+    http_request += "------BoundaryString\r\n";
+    http_request += "Content-Disposition: form-data; name=\"file2\"; "
+                    "filename=\"file2.jpeg\"\r\n";
+    http_request += "Content-Type: image/jpeg\r\n";
+    http_request += "\r\n";
     http_request += "A\r\n";
-    http_request += "coucou1234\n";
-    http_request +="0\r\n";
-    http_request += "bonjour: salut\r\n";
+    http_request += "coucou1PNG\r\n";
+    http_request += "------BoundaryString\r\n";
+    http_request += "Content-Disposition: form-data; name=\"file2\"; "
+                    "filename=\"file2.json\"\r\n";
+    http_request += "Content-Type: application/json\r\n";
+    http_request += "\r\n";
+    http_request += "10\r\n";
+    http_request += "{\"key\": \"value\"}\r\n";
+    http_request += "0\r\n";
+    http_request += "\r\n";
+    http_request += "------BoundaryString\r\n";
 
     // http_request += "bonjour=2\n";
     // http_request += "bonjour=20";
