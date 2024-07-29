@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
 
 	if (argc != 3) {
 		std::cout << "1st arg = port, 2nd arg = nb client" << std::endl;
+		return 1;
 	}
   struct sockaddr_in serv_adr;
 	std::string request = "SPAM";
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr));
 	send(sock, request.c_str(), request.size(), 0);
+	usleep(50);
   }
   sleep(150);
 
