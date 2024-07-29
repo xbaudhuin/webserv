@@ -1,2 +1,2 @@
 Error:
-Incorrect extension found inside the cgi directive
+Invalid URL passed in the location block
