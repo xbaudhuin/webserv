@@ -9,7 +9,7 @@
 #include "Client.hpp"
 
 const int MAX_EVENTS = 400;
-const int MAX_FD = 3000;
+const int MAX_FD = 400;
 
 class Webserv
 {
