@@ -4,6 +4,7 @@
 #include "Response.hpp"
 #include "ServerConf.hpp"
 #include "Utils.hpp"
+#include <cstdint>
 #include <ctime>
 #include <ctype.h>
 #include <dirent.h>
@@ -74,11 +75,11 @@ private:
   size_t _requestSize;
   std::vector<char> _vBody;
   std::vector<char> _vBuffer;
-  int _bodyToRead;
+  int64_t _bodyToRead;
   bool _chunkRequest;
   std::string _chunkFile;
   int _chunkFd;
-  int _sizeChunk;
+  int64_t _sizeChunk;
   std::vector<multipartRequest> _multipart;
   // Response attribute
   Response _response;
@@ -119,6 +120,7 @@ private:
   void checkPathInfo(void);
   std::string getBoundaryString(std::string &boundaryHeader);
   void parseMultipartRequest(std::string &boundary);
+  bool parseChunkRequest(std::string &boundary, std::vector<char> &body);
   bool parseChunkRequest(void);
   void parseBody(void);
   void uriDecoder(std::string &uri);
@@ -126,7 +128,7 @@ private:
   void vectorToHeadersMap(std::vector<std::string> &request);
   size_t insertInMap(std::string &line,
                      std::map<std::string, std::string> &map);
-  int getSizeChunkFromBuffer(void);
+  int64_t getSizeChunkFromBuffer(void);
   bool getTrailingHeader(void);
   ServerConf *getServerConf(void);
 

@@ -2,6 +2,8 @@
 #include "Colors.hpp"
 #include "Error.hpp"
 #include "Utils.hpp"
+#include <algorithm>
+#include <cstdint>
 #include <fcntl.h>
 #include <sstream>
 #include <vector>
@@ -179,7 +181,7 @@ bool Client::isHexadecimal(char c) {
   return (false);
 }
 
-int Client::getSizeChunkFromBuffer(void) {
+int64_t Client::getSizeChunkFromBuffer(void) {
   size_t i = 0;
   std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
             << std::endl;
@@ -192,17 +194,19 @@ int Client::getSizeChunkFromBuffer(void) {
     if (isHexadecimal(_vBuffer[i]) == false) {
       std::cout << RED << "is not hexadecimal i(" << i << "): " << _vBuffer[i]
                 << RESET << std::endl;
+      _statusCode = 400;
       return (-1);
     }
   }
   std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i);
   std::cout << YELLOW << "get nb string of size(" << i << ") = " << tmp << RESET
             << std::endl;
-  int nb = std::strtol(tmp.c_str(), NULL, 16);
+  int64_t nb = std::strtoll(tmp.c_str(), NULL, 16);
   if (errno == ERANGE || nb < 0 ||
-      (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
+      (_bodyToRead > static_cast<int64_t>(_server->getLimitBodySize()) &&
        _server->getLimitBodySize() != 0)) {
     std::cout << RED << "FAIL IN GET NB" << RESET << std::endl;
+    _statusCode = 413;
     return (-1);
   }
   std::cout << "Client::getSizeChunkFromBuffer: " << "\n nb = " << nb
@@ -279,6 +283,47 @@ bool Client::getTrailingHeader(void) {
   return (true);
 }
 
+bool Client::parseChunkRequest(std::string &boundary, std::vector<char> &body) {
+  if (_statusCode != 0) {
+    return (true);
+  }
+  if (_bodyToRead == 0) {
+    _bodyToRead = getSizeChunkFromBuffer();
+    _sizeChunk += _bodyToRead;
+    if (_bodyToRead == 0) {
+      removeTrailingLineFromBuffer();
+      getTrailingHeader();
+      return (true);
+    }
+  }
+  if (_statusCode != 0) {
+    return (true);
+  }
+  if (static_cast<uint64_t>(_vBuffer.size()) < _bodyToRead && _bodyToRead > 0) {
+    body.insert(body.end(), _vBuffer.begin(), _vBuffer.end());
+    _bodyToRead -= _vBuffer.size();
+    return (false);
+  }
+  if (_bodyToRead > 0) {
+    size_t min = std::min(static_cast<size_t>(_bodyToRead), _vBuffer.size());
+    std::string tmp(_vBuffer.begin(), _vBuffer.begin() + min);
+    std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET << std::endl;
+    std::cout << PURP2 << "add to _vBody and removing from _vbuffer : " << tmp
+              << RESET << std::endl;
+    body.insert(body.end(), _vBuffer.begin(), _vBuffer.begin() + min);
+    if (_bodyToRead > min)
+      _bodyToRead -= _vBuffer.size();
+    else
+      _bodyToRead = 0;
+    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + min);
+    removeTrailingLineFromBuffer();
+  }
+  if (_bodyToRead == 0) {
+    return (true);
+  }
+  return (false);
+}
+
 bool Client::parseChunkRequest(void) {
   std::cout << YELLOW << "Client::parseChunkRequest: " << RESET << std::endl;
   std::cout << YELLOW << "bodytoRead = " << _bodyToRead << RESET << std::endl;
@@ -286,19 +331,19 @@ bool Client::parseChunkRequest(void) {
   std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
   if (_statusCode != 0)
     return (true);
-  if (static_cast<long long int>(_vBuffer.size()) < _bodyToRead) {
+  if (static_cast<int64_t>(_vBuffer.size()) < _bodyToRead && _bodyToRead > 0) {
     _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
     _bodyToRead -= _vBuffer.size();
     return (false);
   }
   if (_bodyToRead > 0) {
-    std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+    size_t min = std::min(static_cast<size_t>(_bodyToRead), _vBuffer.size());
+    std::string tmp(_vBuffer.begin(), _vBuffer.begin() + min);
     std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET << std::endl;
     std::cout << PURP2 << "add to _vBody and removing from _vbuffer : " << tmp
               << RESET << std::endl;
-    _vBody.insert(_vBody.end(), _vBuffer.begin(),
-                  _vBuffer.begin() + _bodyToRead);
-    if (_bodyToRead > _vBuffer.size())
+    _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + min);
+    if (_bodyToRead > min)
       _bodyToRead -= _vBuffer.size();
     else {
       ssize_t bytesWrite = write(_chunkFd, &_vBody[0], _vBody.size());
@@ -309,13 +354,11 @@ bool Client::parseChunkRequest(void) {
       resetVector(_vBody);
       _bodyToRead = 0;
     }
-    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _bodyToRead);
+    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + min);
     removeTrailingLineFromBuffer();
   }
-  if (_vBuffer.size() < 2 || _statusCode >= 400) {
-    _statusCode = 400;
-    return (true);
-  }
+  if (_vBuffer.size() < 2)
+    return (false);
   if (_bodyToRead == 0) {
     _bodyToRead = getSizeChunkFromBuffer();
     _sizeChunk += _bodyToRead;
@@ -363,6 +406,49 @@ void Client::removeReturnCarriageNewLine(std::string &line) {
   }
 }
 
+void Client::getMultipartBody(multipartRequest &multi) {
+  std::string line;
+  while (true) {
+    line = getLineFromBuffer();
+    break;
+  }
+  else {
+    getMultipartBody(multi);
+    multi._vBody.insert(multi._vBody.end(), line.begin(), line.end());
+  }
+}
+
+void Client::getMultipartBody(multipartRequest &multi) {
+  while (true) {
+    if (_vBuffer.size() < boundary.size()) {
+      std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
+                << RESET << std::endl;
+      _statusCode = 400;
+      return;
+    }
+    line = getLineFromBuffer();
+    std::cout << BLUE << "New line: " << line << RESET << std::endl;
+    if (line.compare(0, boundary.size(), boundary) == 0 &&
+        line.size() >= boundary.size() + 1) {
+      if (line.compare(boundary.size(), 2, "--") == 0) {
+        std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
+                  << std::endl;
+        _statusCode = 200;
+        return;
+        removeTrailingLineFromBuffer();
+      }
+      break;
+    } else {
+      getMultipartBody(multi);
+      multi._vBody.insert(multi._vBody.end(), line.begin(), line.end());
+    }
+  }
+
+  if (_chunkRequest == false) {
+    multi._vBody.insert(multi._vBody.end(), line.begin(), line.end());
+  }
+}
+
 void Client::parseMultipartRequest(std::string &boundary) {
   std::cout << YELLOW
             << "Client::parseMultipartRequest starting: boundary = " << boundary
@@ -398,28 +484,6 @@ void Client::parseMultipartRequest(std::string &boundary) {
                  "statusCode = 400"
               << RESET << std::endl;
     return;
-  }
-  while (true) {
-    if (_vBuffer.size() < boundary.size()) {
-      std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
-                << RESET << std::endl;
-      _statusCode = 400;
-      return;
-    }
-    line = getLineFromBuffer();
-    std::cout << BLUE << "New line: " << line << RESET << std::endl;
-    if (line.compare(0, boundary.size(), boundary) == 0 &&
-        line.size() >= boundary.size() + 1) {
-      if (line.compare(boundary.size(), 2, "--") == 0) {
-        std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
-                  << std::endl;
-        _statusCode = 200;
-        return;
-        removeTrailingLineFromBuffer();
-      }
-      break;
-    } else
-      multi._vBody.insert(multi._vBody.end(), line.begin(), line.end());
   }
   _multipart.push_back(multi);
   parseMultipartRequest(boundary);

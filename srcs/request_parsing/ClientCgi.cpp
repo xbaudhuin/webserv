@@ -216,12 +216,17 @@ void Client::setupCgi() {
   _infileCgi = "webserv_in" + ss.str();
   _outfileCgi = "webserv_out" + ss.str();
   ss << _server->getHost();
-  _infileCgi += "host" + ss.str();
-  _outfileCgi += "host" + ss.str();
+  _infileCgi += "_host" + ss.str();
+  _outfileCgi += "_host" + ss.str();
   ss.clear();
   ss << _server->getPort();
-  _infileCgi += "port" + ss.str();
-  _outfileCgi += "port" + ss.str();
+  _infileCgi += "_port" + ss.str();
+  _outfileCgi += "_port" + ss.str();
+  time_t time = getTime();
+  ss.clear();
+  ss << time;
+  _infileCgi += "t" + ss.str();
+  _outfileCgi += "t" + ss.str();
 
   pid_t pid = fork();
   if (pid < 0) {
