@@ -115,7 +115,6 @@ void Client::resetClient(void) {
   resetVector(_vBuffer);
   resetVector(_vBody);
   _chunkRequest = false;
-  _keepConnectionAlive = true;
   _response.reset();
   _epollIn = false;
   _leftToRead = 0;

@@ -1,34 +1,10 @@
-Client::addBuffer: end: _statusCode = path = 200
-/home/thole/42/webserv/html/cgi/php && outfile cgi= webserv_out8host816777343port8167773434250
-getexecutepath = /bin/php
-getcgifile = jokes.php
-starting execve
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
-[1;94mExtensions: .php[0m
-[1;94mUriFile: jokes.php && extension: .php[0m
-Client::addBuffer: end: _statusCode = 200
-path = /home/thole/42/webserv/html/cgi/php && outfile cgi= webserv_out8host816777343port8167773434250
-[1;94mUriFile: jokes.php && extension: .php[0m
-[1;94mUriFile: jokes.php && extension: .php[0m
-getexecutepath = /bin/php
-[1;94mUriFile: jokes.php && extension: .php[0m
-getcgifile = [1;94mUriFile: jokes.php && extension: .php[0m
-jokes.php
-starting execve
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
-Client::addBuffer: end: _statusCode = 200
-path = /home/thole/42/webserv/html/cgi/python && outfile cgi= webserv_out8host816777343port8167773434250
-getexecutepath = /bin/python3
-getcgifile = welcome.py
-starting execve
-Client::setStatusCode : begin:  exitStatus = 0; _statusCode = 200
-Client::setStatusCode : end:  exitStatus = 0; _statusCode = 200
-wevserv: Webserv::checkChildsEnd: waitpid: 
-Client::handleCgi: _statusCode = 200
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
+webserv: Webserv::respond: send: Connection reset by peer
 webserv: Webserv::start: epoll_wait: Interrupted system call

@@ -20,12 +20,10 @@ class	Port
 		bool					isServerSocket(int fd) const;
 		int						initPortSocket(void);
 		int						getPort(void) const;
-		uint32_t				getAddress(void) const;
 		Client					*getClient(int clientSocket);
 		bool					isOldClient(int fd) const;
 		void					printPortConfs(void);
 		void					addToConf(const std::string &name, ServerConf *newConf);
-		const std::vector<int>	getClientsVector(void) const;
 		bool					isOldChild(int fd) const;
 
 	protected:

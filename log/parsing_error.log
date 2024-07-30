@@ -1,2 +1,2 @@
-Error:
-Incorrect extension found inside the cgi directive
+Webserv: Error:
+Unknown directive found in the server block: index
