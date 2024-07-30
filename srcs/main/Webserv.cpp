@@ -455,7 +455,7 @@ int	Webserv::receive(int clientSocket) {
 	std::vector<char>	vecBuffer;
 
 	try {
-		int bytesRead = recv(clientSocket, buffer, BUFSIZ - 1, 0);
+		ssize_t bytesRead = recv(clientSocket, buffer, BUFSIZ - 1, 0);
 		if (bytesRead < 0) {
 			std::cerr << "webserv: Webserv::receive: recv: " << strerror(errno) << std::endl;
 			this->closeClientConnection(clientSocket);
@@ -517,11 +517,17 @@ int	Webserv::respond(int clientSocket, uint32_t events) {
 		}
 		bool	remainRequest = clientRequest->sendResponse(response);
 		std::cout << "webserv: size of response = " << response.size() << std::endl;
-		int	bytesSend = send(clientSocket, &response[0], response.size(), 0);
+		ssize_t	bytesSend = send(clientSocket, &response[0], response.size(), 0);
 		std::cout << "Bytes send to fd " << clientSocket << " = " << bytesSend << std::endl;
 		if (bytesSend < 0) {
 			std::cerr << "webserv: Webserv::respond: send: " << strerror(errno) << std::endl;
-			return this->closeClientConnection(clientSocket);
+			this->closeClientConnection(clientSocket);
+			return FAILURE;
+		}
+		else if (static_cast<size_t>(bytesSend) != response.size()) {
+			std::cerr << "webserv: Webserv::respond: bytes send to client fd " << clientSocket << " do not match response size" << std::endl;
+			this->closeClientConnection(clientSocket);
+			return FAILURE;
 		}
 		if (remainRequest == false) {
 			return this->handleEndResponse(clientSocket, clientRequest);
