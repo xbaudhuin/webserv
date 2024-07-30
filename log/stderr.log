@@ -1,10 +1,4 @@
 webserv: Webserv::respond: send: Connection reset by peer
 webserv: Webserv::respond: send: Connection reset by peer
 webserv: Webserv::respond: send: Connection reset by peer
-webserv: Webserv::respond: send: Connection reset by peer
-webserv: Webserv::respond: send: Connection reset by peer
-webserv: Webserv::respond: send: Connection reset by peer
-webserv: Webserv::respond: send: Connection reset by peer
-webserv: Webserv::respond: send: Connection reset by peer
-webserv: Webserv::respond: send: Connection reset by peer
 webserv: Webserv::start: epoll_wait: Interrupted system call
