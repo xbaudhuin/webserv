@@ -14,12 +14,15 @@ int main(int argc, char **argv) {
   int long valread;
 
 
-	if (argc != 3) {
-		std::cout << "1st arg = port, 2nd arg = nb client" << std::endl;
+	if (argc != 4) {
+		std::cout << "1st arg = port, 2nd arg = nb client, 3rd arg = request" << std::endl;
 		return 1;
 	}
   struct sockaddr_in serv_adr;
-	std::string request = "SPAM";
+	// std::string request = argv[3];
+	std::string request = "GET / HTTP/1.1\r\n";
+	request += "host: Taylor\r\n";
+	request += "\r\n";
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     std::cout << "Error: fail to create socket" << std::endl;
     return 1;
