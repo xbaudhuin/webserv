@@ -120,6 +120,8 @@ int testIndex(const vec_string &split, size_t &i, const size_t &size, Location &
         // i++;
         while(split[i] != ";")
         {
+            if(split[i].find_first_of("{}", 0) != std::string::npos)
+                throw std::logic_error("Webserv: Error:\nSyntax error inside the set_method directive, no ';' found");
             loc.setIndexFile(split[i]);
             i++;
         }
@@ -193,6 +195,8 @@ int testSet_method(const vec_string &split, size_t &i, const size_t &size, Locat
         i--;
         while(split[j] != ";")
         {
+            if(split[j].find_first_of("{}", 0) != std::string::npos)
+                throw std::logic_error("Webserv: Error:\nSyntax error inside the set_method directive, no ';' found");
             j++;
         }
         j--;

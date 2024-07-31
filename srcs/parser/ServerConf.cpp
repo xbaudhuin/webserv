@@ -2,11 +2,12 @@
 
 ServerConf::ServerConf()
 {
-    port = 80;
-    host = 0;
+    port = 4243;
+    // host = 0;
+    addHost("127.0.0.1");
     limit_body_size = 0;
     rank = -1;
-    root = "/html";
+    root = "";
     err_pages[100] = "/error_pages/100.html";
     err_pages[101] = "/error_pages/101.html";
     err_pages[102] = "/error_pages/102.html";
