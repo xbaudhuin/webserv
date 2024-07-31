@@ -11,6 +11,10 @@ void goToNextServer(const vec_string &split, size_t &i, size_t &index ,const siz
             brackets--;
         if(brackets == 0)
             break;
+        if(split[i] == "server"){
+            i--; 
+            break;   
+        }
     }
 }
 
