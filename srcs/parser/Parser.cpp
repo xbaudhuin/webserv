@@ -11,6 +11,10 @@ void goToNextServer(const vec_string &split, size_t &i, size_t &index ,const siz
             brackets--;
         if(brackets == 0)
             break;
+        if(split[i] == "server"){
+            i--; 
+            break;   
+        }
     }
 }
 
@@ -118,14 +122,15 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     size_t pos = 0;
     static size_t rank = 0;
     size_t index = i;
-
+    if (i >= split.size())
+        throw std::logic_error("Webserv: Error:\nMissing '{' of the server block");
     if (split[i] != "{" )
         throw std::logic_error("Webserv: Error:\nMissing '{' of the server block");
     else if (( pos = split[i].find("}")) != std::string::npos)
         throw std::logic_error("Webserv: Error:\nMisconfigured server block, issue comes from '}'");
     i++;
-    if(split[i].find_first_of("{};") != std::string::npos)
-        throw std::logic_error("Webserv: Error:\nMisconfigured server block, found \"{\" again");
+    // if(split[i].find_first_of("{};") != std::string::npos)
+    //     throw std::logic_error("Webserv: Error:\nMisconfigured server block, found \"{\" again");
     try
     {    
         while(i < size)
@@ -168,6 +173,8 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
         goToNextServer(split, i, index, size);
         throw;
     }
+    if(cf.getServerNames().size() == 0)
+        cf.addServerName("webserv");
     cf.setMainServerName();
     cf.setRank(rank);
     cf.setRootToErrorPages();
@@ -179,6 +186,7 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     }
     
     rank++;
+    std::cout << cf << std::endl;
     return(cf);
 }
 
