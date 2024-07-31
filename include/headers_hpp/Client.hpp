@@ -4,6 +4,7 @@
 #include "Response.hpp"
 #include "ServerConf.hpp"
 #include "Utils.hpp"
+#include <cstdint>
 #include <ctime>
 #include <ctype.h>
 #include <dirent.h>
@@ -134,7 +135,7 @@ private:
   void vectorToHeadersMap(std::vector<std::string> &request);
   size_t insertInMap(std::string &line,
                      std::map<std::string, std::string> &map);
-  int getSizeChunkFromBuffer(void);
+  int64_t getSizeChunkFromBuffer(void);
   bool getTrailingHeader(void);
   ServerConf *getServerConf(void);
 
