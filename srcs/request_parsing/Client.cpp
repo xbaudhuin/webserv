@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include <cstddef>
 #include <exception>
+#include <fcntl.h>
 #include <stdexcept>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -13,11 +14,12 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _location(NULL), _statusCode(0), _sMethod(""), _sUri(""), _sPath(""),
       _sQueryUri(""), _version(0), _sHost(""), _requestSize(0), _bodyToRead(-1),
-      _chunkRequest(false), _response(), _keepConnectionAlive(true),
-      _epollIn(false), _filefd(-1), _leftToRead(0), _infileCgi(""),
-      _outfileCgi(""), _cgiPid(0), _sPathInfo("") {
+      _chunkRequest(false), _requestIsDone(true), _boundary(""),
+      _multipartRequest(false), _chunkFile(""), _chunkFd(-1), _sizeChunk(0),
+      _response(), _keepConnectionAlive(true), _epollIn(false), _filefd(-1),
+      _leftToRead(0), _infileCgi(""), _outfileCgi(""), _cgiPid(0),
+      _sPathInfo("") {
 
-  _filefd = -1;
   _time = getTime();
   if (defaultConf == NULL)
     throw(std::logic_error("Default server is NULL"));
@@ -25,6 +27,13 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
 }
 
 Client::~Client(void) {
+  for (size_t i = 0; i < _multipart.size(); i++) {
+    if (_multipart[i].filename.empty() == false) {
+      unlink(_multipart[i].filename.c_str());
+    }
+  }
+  if (_chunkFd != -1)
+    close(_chunkFd);
   if (_filefd != -1)
     close(_filefd);
   if (_infileCgi.empty() == false) {
@@ -44,6 +53,7 @@ Client::~Client(void) {
 
 Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
   _filefd = -1;
+  _chunkFd = -1;
   if (this != &copy)
     *this = copy;
   return;
@@ -69,13 +79,29 @@ Client &Client::operator=(Client const &rhs) {
     _vBuffer = rhs._vBuffer;
     _bodyToRead = rhs._bodyToRead;
     _chunkRequest = rhs._chunkRequest;
+    _requestIsDone = rhs._requestIsDone;
+    _boundary = rhs._boundary;
+    _multipartRequest = rhs._multipartRequest;
+    if (_chunkFile.empty() == false) {
+      unlink(_chunkFile.c_str());
+    }
+    _chunkFile = rhs._chunkFile;
+    if (_chunkFd != -1) {
+      close(_chunkFd);
+    }
+    if (rhs._chunkFd != -1) {
+      _chunkFd = dup(rhs._chunkFd);
+    } else
+      _chunkFd = -1;
+    _sizeChunk = rhs._sizeChunk;
+    _multipart = rhs._multipart;
     _response = rhs._response;
     _keepConnectionAlive = rhs._keepConnectionAlive;
     _epollIn = rhs._epollIn;
     if (_filefd != -1)
       close(_filefd);
     if (rhs._filefd != -1)
-      _filefd = open(rhs._sPath.c_str(), O_RDONLY | O_CLOEXEC);
+      _filefd = dup(rhs._filefd);
     else
       _filefd = -1;
     _leftToRead = rhs._leftToRead;
@@ -177,7 +203,8 @@ void Client::addCgiToMap(std::map<int, pid_t> &mapCgi) {
 }
 
 void Client::setStatusCode(size_t exitStatus) {
-  std::cerr << "Client::setStatusCode : begin:  exitStatus = " << exitStatus << "; _statusCode = " << _statusCode << std::endl;
+  std::cerr << "Client::setStatusCode : begin:  exitStatus = " << exitStatus
+            << "; _statusCode = " << _statusCode << std::endl;
   switch (exitStatus) {
   case 0: {
     _statusCode = 200;
@@ -195,7 +222,8 @@ void Client::setStatusCode(size_t exitStatus) {
     _statusCode = 500;
   }
   }
-  std::cerr << "Client::setStatusCode : end:  exitStatus = " << exitStatus << "; _statusCode = " << _statusCode << std::endl;
+  std::cerr << "Client::setStatusCode : end:  exitStatus = " << exitStatus
+            << "; _statusCode = " << _statusCode << std::endl;
 }
 
 void Client::print() {

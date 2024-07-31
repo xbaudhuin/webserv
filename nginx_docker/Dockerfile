@@ -26,6 +26,9 @@ COPY ${SPACE} /usr/share/nginx/html/html3/html2/index.html
 COPY ${SPACE} /usr/share/nginx/html/space.html
 COPY index.html /usr/share/nginx/html/bonjour.html
 COPY favicon.ico /usr/share/nginx/html/favicon.ico
+COPY uploadTest.html /usr/share/nginx/html/uploadTest.html
+RUN  chmod 644 /usr/share/nginx/html/uploadTest.html
+RUN  chown www-data:www-data /usr/share/nginx/html/uploadTest.html
 # COPY index2.html /usr/share/nginx/html2/index.html
 
 

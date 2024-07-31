@@ -22,8 +22,9 @@
 class ServerConf;
 
 typedef struct multipartRequest {
-  std::map<std::string, std::string> _header;
-  std::vector<char> _vBody;
+  std::map<std::string, std::string> header;
+  std::vector<char> body;
+  std::string filename;
 } multipartRequest;
 
 class Client {
@@ -68,18 +69,23 @@ private:
   std::string _sPath;
   std::string _sQueryUri;
   size_t _version;
+
   // request attribute
   std::string _sHost;
   std::map<std::string, std::string> _headers;
   size_t _requestSize;
   std::vector<char> _vBody;
   std::vector<char> _vBuffer;
-  int _bodyToRead;
+  int64_t _bodyToRead;
   bool _chunkRequest;
+  bool _requestIsDone;
+  std::string _boundary;
+  bool _multipartRequest;
   std::string _chunkFile;
   int _chunkFd;
-  int _sizeChunk;
+  int64_t _sizeChunk;
   std::vector<multipartRequest> _multipart;
+
   // Response attribute
   Response _response;
   bool _keepConnectionAlive;
@@ -118,9 +124,11 @@ private:
   size_t parseRequestLine(const std::string &requestLine);
   void checkPathInfo(void);
   std::string getBoundaryString(std::string &boundaryHeader);
-  void parseMultipartRequest(std::string &boundary);
+  bool saveToTmpFile(void);
+  bool parseMultipartRequest(std::string &boundary);
   bool parseChunkRequest(void);
-  void parseBody(void);
+  void setupBodyParsing(void);
+  bool parseBody(void);
   void uriDecoder(std::string &uri);
   int parseUri(const std::string &uri);
   void vectorToHeadersMap(std::vector<std::string> &request);
