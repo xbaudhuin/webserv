@@ -37,6 +37,25 @@ bool Client::findIndex(std::string &url) {
   return (true);
 }
 
+void Client::addContentTypeHeader(void) {
+  size_t dot = _sUri.find_last_of('.');
+  if (_sUri.size() > 5 && _sUri.size() - dot < 5 && dot < _sUri.size()) {
+    std::cout << PURP << "inside dot file " << RESET << std::endl;
+    std::string extension = _sUri.substr(dot);
+    if (extension == ".ico") {
+      _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
+      // _response.setHeader("Content-encoding", "gzip");
+    } else if (extension == ".png") {
+      std::cout << PURP << "found .png" << RESET << std::endl;
+      _response.setHeader("Content-Type", "image/png");
+    } else if (extension == ".gif") {
+      _response.setHeader("Content-Type", "image/gif");
+    }
+  } else {
+    _response.setHeader("Content-Type", "text/html");
+  }
+}
+
 void Client::buildListingDirectory(std::string &url) {
   if (_location->getAutoIndex() == 0) {
     _statusCode = 404;
@@ -184,6 +203,7 @@ void Client::findPages(const std::string &urlu) {
   std::cout << YELLOW << "size of file: " << st.st_size << RESET << std::endl;
   _leftToRead = st.st_size;
   _response.setHeader("Content-Length", st.st_size);
+  addConnectionHeader();
   readFile();
 }
 
@@ -345,22 +365,7 @@ void Client::buildResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   addConnectionHeader();
-  size_t dot = _sUri.find_last_of('.');
-  if (_sUri.size() > 5 && _sUri.size() - dot < 5 && dot < _sUri.size()) {
-    std::cout << PURP << "inside dot file " << RESET << std::endl;
-    std::string extension = _sUri.substr(dot);
-    if (extension == ".ico") {
-      _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
-      // _response.setHeader("Content-encoding", "gzip");
-    } else if (extension == ".png") {
-      std::cout << PURP << "found .png" << RESET << std::endl;
-      _response.setHeader("Content-Type", "image/png");
-    } else if (extension == ".gif") {
-      _response.setHeader("Content-Type", "image/gif");
-    }
-  } else {
-    _response.setHeader("Content-Type", "text/html");
-  }
+  addContentTypeHeader();
   std::cout << PURP << "End of Client::buildResponse: body.size() = "
             << _response.getBody().size() << RESET << std::endl;
   _response.BuildResponse();
@@ -442,7 +447,38 @@ void Client::handleDelete(void) {
   return;
 }
 
-void Client::handleMultipart(void) { return; }
+void Client::handleMultipart(void) {
+  std::string filename;
+  std::map<std::string, std::string>::iterator it;
+  for (size_t i = 0; i < _multipart.size(); i++) {
+    it = _multipart[i].header.find("content-disposition");
+    size_t pos = (*it).second.find("filename=\"");
+    pos += 10;
+    if (pos != (*it).second.npos) {
+      size_t end = (*it).second.find_first_of(pos + 1, '\"');
+      if (end > pos + 1 && end != (*it).second.npos)
+        filename =
+            _location->getUploadLocation() + (*it).second.substr(pos + 1, end);
+    }
+    if (filename.empty() == true) {
+      std::stringstream ss;
+      ss << getTime();
+      filename = _location->getUploadLocation() + "webserv_tmp" + ss.str();
+    }
+    struct stat st;
+    if (stat(filename.c_str(), &st) != -1) {
+      _statusCode = 409;
+      return;
+    }
+    int fd = open(filename.c_str(), O_CLOEXEC, O_RDWR, O_CREAT, O_APPEND);
+    if (fd == -1) {
+      _statusCode = 500;
+      return;
+    }
+    write(fd, &(_multipart[i].body)[0], _multipart[i].body.size());
+  }
+  return;
+}
 
 void Client::handleChunk(void) {}
 

@@ -20,32 +20,27 @@ int main() {
     // http_request += "Content-Length 10\r\n";
     http_request +=
         "Content-Type multipart/form-data; boundary=----BoundaryString\r\n";
-    http_request += "Transfer-encoding: chunked\r\n";
     http_request += "\r\n";
     http_request += "------BoundaryString\r\n";
     http_request += "Content-Disposition: form-data; name=\"file1\"; "
                     "filename=\"file1.txt\"\r\n";
     http_request += "Content-Type: text/plain\r\n";
     http_request += "\r\n";
-    http_request += "5\r\n";
     http_request += "Hello\r\n";
     http_request += "------BoundaryString\r\n";
     http_request += "Content-Disposition: form-data; name=\"file2\"; "
                     "filename=\"file2.jpeg\"\r\n";
     http_request += "Content-Type: image/jpeg\r\n";
     http_request += "\r\n";
-    http_request += "A\r\n";
     http_request += "coucou1PNG\r\n";
     http_request += "------BoundaryString\r\n";
     http_request += "Content-Disposition: form-data; name=\"file2\"; "
                     "filename=\"file2.json\"\r\n";
     http_request += "Content-Type: application/json\r\n";
     http_request += "\r\n";
-    http_request += "10\r\n";
     http_request += "{\"key\": \"value\"}\r\n";
-    http_request += "0\r\n";
     http_request += "\r\n";
-    http_request += "------BoundaryString\r\n";
+    http_request += "------BoundaryString--\r\n";
 
     // http_request += "bonjour=2\n";
     // http_request += "bonjour=20";

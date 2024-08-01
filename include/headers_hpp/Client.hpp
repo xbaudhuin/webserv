@@ -126,6 +126,10 @@ private:
   void checkPathInfo(void);
   std::string getBoundaryString(std::string &boundaryHeader);
   bool saveToTmpFile(void);
+  void checkBodyHeader(multipartRequest &multi, std::vector<char> &body);
+  bool checkBoundary(void);
+  bool checkHeaderMulti(multipartRequest &multi);
+  bool getMultipartBody(multipartRequest &multi);
   bool parseMultipartRequest(std::string &boundary);
   bool parseChunkRequest(void);
   void setupBodyParsing(void);
@@ -145,6 +149,7 @@ private:
   bool findIndex(std::string &url);
   void buildListingDirectory(std::string &url);
   void buildResponse(void);
+  void addContentTypeHeader(void);
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);
   void handleError(void);
