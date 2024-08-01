@@ -111,34 +111,32 @@ void Webserv::parse(vec_string split) {
     size_t size = split.size();
 
     if (checkNumberBrackets(split)) {
-		throw std::invalid_argument("Webserv: Error:\nIssue with the file, uneven number of {}");
-	}
+        throw std::invalid_argument("Webserv: Error:\nIssue with the file, uneven number of {}");
+    }
     for (size_t i = 0; i < size; i++) {
         if (split[i] == "server") {
             i++;
-            try {
                 ServerConf newConf = parser(split, i, size);
                 vec_string name = newConf.getServerNames();
                 this->_confs.push_back(std::make_pair(name, newConf));
                 check++;
-            }
-            catch(const std::exception& e) {
-                writeInsideLog(e, errorParsing);
-            }
         }
+       else{
+            throw std::invalid_argument("Unknown Directive/n");
+}
     }
     if (!check) {
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
-	}
+    }
 #if PRINT == 3
-	try {
-		std::cout << findErrorPage(600, this->_confs[0].second) << std::endl;
-	}
-	catch(const std::exception& e) {
-		std::cerr << e.what() << '\n';
-	}
+    try {
+        std::cout << findErrorPage(600, this->_confs[0].second) << std::endl;
+    }
+    catch(const std::exception& e) {
+        std::cerr << e.what() << '\n';
+    }
 #endif
-	this->checkConfigs();
+    this->checkConfigs();
     this->createMaps();
 }
 

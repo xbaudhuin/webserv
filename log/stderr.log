@@ -1,1 +1,2 @@
-webserv: Webserv::start: epoll_wait: Interrupted system call
+webserv: bind: Cannot assign requested address
+Can not create server socket
