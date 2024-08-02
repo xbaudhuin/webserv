@@ -459,23 +459,58 @@ bool Client::checkBoundary(void) {
   return (true);
 }
 
-bool Client::checkHeaderMulti(multipartRequest &multi){
+bool Client::checkHeaderMulti(multipartRequest &multi) {
   std::map<std::string, std::string>::iterator it;
   it = multi.header.find("content-type");
-  if (it == multi.header.end()){
+  if (it == multi.header.end()) {
     _statusCode = 400;
     return (false);
   }
   it = multi.header.find("content-disposition");
-  if (it == multi.header.end()){
+  if (it == multi.header.end()) {
     _statusCode = 400;
+    return (false);
+  }
+  std::string tmp = (*it).second;
+  size_t pos = tmp.find("name=\"");
+  if (pos == tmp.npos || pos + 7 >= tmp.size()) {
+    _statusCode = 422;
+    return (false);
+  }
+  pos += 7;
+  pos = tmp.find_first_of('\"');
+  if (pos == tmp.npos) {
+    _statusCode = 422;
+    return (false);
+  }
+  pos = tmp.find("filename=\"", pos);
+  if (pos == tmp.npos) {
+    _statusCode = 422;
+    return (false);
+  }
+  pos += 10;
+  pos = tmp.find_first_of('\"', pos);
+  if (pos == tmp.npos) {
+    _statusCode = 422;
     return (false);
   }
   return (true);
 }
 
+bool Client::checkBodyMultipartCgi(std::string &boundary) {
+  _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
+  std::string tmp(_vBuffer.begin(), _vBuffer.end());
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.end());
+  size_t pos = tmp.rfind(boundary + "--");
+  if (pos != tmp.npos)
+    return (true);
+  return (false);
+}
+
 bool Client::parseMultipartRequest(std::string &boundary) {
 
+  if (_location && _location->isCgi(_sUri) == true)
+    return (checkBodyMultipartCgi(boundary));
   std::cout << YELLOW
             << "Client::parseMultipartRequest starting: boundary = " << boundary
             << RESET << std::endl;
@@ -499,7 +534,7 @@ bool Client::parseMultipartRequest(std::string &boundary) {
     line = getLineFromBuffer();
   }
   if (checkHeaderMulti(multi) == false)
-    return(true);
+    return (true);
   if (_statusCode >= 400) {
     std::cout << RED
               << "Client::parseMultipartRequest: afterHeader insertion: "

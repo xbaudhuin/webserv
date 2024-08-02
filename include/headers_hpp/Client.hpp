@@ -4,7 +4,7 @@
 #include "Response.hpp"
 #include "ServerConf.hpp"
 #include "Utils.hpp"
-#include <cstdint>
+// #include <cstdint>
 #include <ctime>
 #include <ctype.h>
 #include <dirent.h>
@@ -25,7 +25,8 @@ class ServerConf;
 typedef struct multipartRequest {
   std::map<std::string, std::string> header;
   std::vector<char> body;
-  std::string filename;
+  std::string tmpFilename;
+  std::string file;
 } multipartRequest;
 
 class Client {
@@ -83,13 +84,16 @@ private:
   std::string _boundary;
   bool _multipartRequest;
   std::string _chunkFile;
+  int _fdUpload;
   int _chunkFd;
   int64_t _sizeChunk;
   std::vector<multipartRequest> _multipart;
+  size_t _currentMultipart;
 
   // Response attribute
   Response _response;
   bool _keepConnectionAlive;
+  bool _diffFileSystem;
   bool _epollIn;
   int _filefd;
   size_t _leftToRead;
@@ -153,6 +157,9 @@ private:
   void addConnectionHeader(void);
   void defaultHTMLResponse(void);
   void handleError(void);
+  void uploadTmpFileDifferentFileSystem(std::string &tmp, std::string &outfile);
+  void handleMultipartSameFileSystem(void);
+  void handleMultipartDifferentFileSystem(void);
   void handlePOST(void);
   void handleRedirection(void);
   void createResponseBody(void);

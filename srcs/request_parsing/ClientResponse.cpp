@@ -448,48 +448,137 @@ void Client::handleDelete(void) {
 }
 
 void Client::handleMultipart(void) {
-  std::string filename;
-  std::map<std::string, std::string>::iterator it;
-  for (size_t i = 0; i < _multipart.size(); i++) {
-    it = _multipart[i].header.find("content-disposition");
-    size_t pos = (*it).second.find("filename=\"");
-    pos += 10;
-    if (pos != (*it).second.npos) {
-      size_t end = (*it).second.find_first_of(pos + 1, '\"');
-      if (end > pos + 1 && end != (*it).second.npos)
-        filename =
-            _location->getUploadLocation() + (*it).second.substr(pos + 1, end);
-    }
-    if (filename.empty() == true) {
-      std::stringstream ss;
-      ss << getTime();
-      filename = _location->getUploadLocation() + "webserv_tmp" + ss.str();
-    }
-    struct stat st;
-    if (stat(filename.c_str(), &st) != -1) {
+  if (_diffFileSystem == false &&
+      rename(_multipart[_currentMultipart].tmpFilename.c_str(),
+             _multipart[_currentMultipart].file.c_str()) != 0) {
+    switch (errno) {
+    case EXDEV:
+      errno = 0;
+      _diffFileSystem = true;
+      break;
+    case EACCES:
+      _statusCode = 403;
+      break;
+    case EEXIST:
       _statusCode = 409;
-      return;
+      break;
+    default:
+      _statusCode = 500;
     }
-    int fd = open(filename.c_str(), O_CLOEXEC, O_RDWR, O_CREAT, O_APPEND);
-    if (fd == -1) {
+  }
+  if (_diffFileSystem == true) {
+    uploadTmpFileDifferentFileSystem(_multipart[_currentMultipart].tmpFilename,
+                                     _multipart[_currentMultipart].file);
+  }
+  if (_diffFileSystem == false || _bodyToRead == 0)
+    _currentMultipart++;
+  if (_statusCode < 400 && _currentMultipart == _multipart.size()) {
+    _statusCode = 201;
+  }
+}
+
+void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
+                                              std::string &outfile) {
+  std::vector<char> body;
+  if (_bodyToRead == 0) {
+    struct stat st;
+    if (stat(tmp.c_str(), &st) == -1) {
       _statusCode = 500;
       return;
     }
-    write(fd, &(_multipart[i].body)[0], _multipart[i].body.size());
+    if (stat(outfile.c_str(), &st) != -1) {
+      _statusCode = 409;
+      return;
+    }
+    _filefd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
+    _fdUpload = open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND);
+    if (_filefd == -1) {
+      _statusCode = 500;
+      return;
+    }
+    _bodyToRead = st.st_size;
+  }
+  readFile(body);
+  if (_statusCode == 500) {
+    return;
+  }
+  ssize_t writeByte = write(_fdUpload, &body[0], body.size());
+  if (writeByte == -1 || writeByte < body.size())
+    _statusCode = 500;
+  if (_bodyToRead == 0) {
+    close(_filefd);
+    _filefd = -1;
+    unlink(tmp.c_str());
+    close(_fdUpload);
+    _fdUpload = -1;
   }
   return;
 }
 
-void Client::handleChunk(void) {}
+void Client::handleChunk(void) {
+  if (_diffFileSystem == false &&
+      rename(_chunkFile.c_str(), _sPathUpload().c_str()) != 0) {
+    switch (errno) {
+    case EXDEV:
+      errno = 0;
+      _diffFileSystem = true;
+      break;
+    case EACCES:
+      _statusCode = 403;
+      break;
+    case EEXIST:
+      _statusCode = 409;
+      break;
+    default:
+      _statusCode = 500;
+    }
+  }
+  if (_diffFileSystem == true) {
+    uploadTmpFileDifferentFileSystem(_chunkFile, _sPathUpload);
+  }
+}
+
+void Client::handleUpload(void) {
+
+  struct stat st;
+  if (stat(_sPathUpload.c_str(), &st) != -1) {
+    _statusCode = 409;
+    return;
+  }
+  _filefd = open(_sPathUpload.c_str(), O_CLOEXEC | O_CREAT | O_RDWR);
+  if (_filefd == -1) {
+    _statusCode = 501;
+    return;
+  }
+  ssize_t byteWrite = write(_filefd, &_vBody[0], _vBody.size());
+  if (byteWrite != _vBody.size()) {
+    _statusCode = 500;
+    close(_chunkFd);
+    unlink(_sPathUpload.c_str());
+    return;
+  }
+  _statusCode = 201;
+  return;
+}
 
 void Client::handlePOST(void) {
   if (_multipart.size() >= 1) {
     handleMultipart();
+    if (_statusCode) {
+      defaultHTMLResponse();
+    }
     return;
-  }
-  if (_chunkRequest == true) {
+  } else if (_chunkRequest == true) {
     handleChunk();
+    if (_statusCode) {
+      defaultHTMLResponse();
+    }
     return;
+  } else {
+    handleUpload();
+    if (_statusCode) {
+      defaultHTMLResponse();
+    }
   }
 }
 

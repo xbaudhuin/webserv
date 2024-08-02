@@ -29,6 +29,7 @@ COPY favicon.ico /usr/share/nginx/html/favicon.ico
 COPY uploadTest.html /usr/share/nginx/html/uploadTest.html
 RUN  chmod 644 /usr/share/nginx/html/uploadTest.html
 RUN  chown www-data:www-data /usr/share/nginx/html/uploadTest.html
+RUN mkdir -p /usr/share/nginx/bonjour
 # COPY index2.html /usr/share/nginx/html2/index.html
 
 
