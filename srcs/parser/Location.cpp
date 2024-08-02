@@ -2,9 +2,11 @@
 
 Location::Location(){
     this->url = "";
+    this->_is_generated = 0;
     this->root = "";
-    _root_server = "";
+    this->_root_server = "";
     this->redirection = "";
+    this->alias = "";
     this->_directory_listing = 0;
     this->limit_body_size = 0;
     this->code_redirection = 0;
@@ -17,6 +19,7 @@ Location::Location(){
     this->_post = 0;
     this->_delete = 1;
     this->_root_check = 0;
+    this->_alias_check = 0;
     this->upload_location = "";
     this->_is_a_dir = 0;
     this->_exec_path[".php"] = "/bin/php";
@@ -24,10 +27,46 @@ Location::Location(){
     this->_exec_path[".rb"] = "/bin/ruby";
     this->_exec_path[".pl"] = "/bin/perl";
     this->_path_info = 0;
+    this->_base_uri = "";
 }
 
 Location::Location(const Location &rhs){
     this->operator=(rhs);
+}
+
+Location::Location(const Location &rhs, int i){
+    if(i == 0)
+        this->operator=(rhs);
+    else
+    {
+        this->url = rhs.index_file[0] + "/";
+        vec_string s = rhs.index_file;
+        s.erase(s.begin(), s.begin() + 1);
+        this->index_file = s;
+        if(this->index_file.size() == 0)
+            this->index_file.push_back("/index.html");
+        this->_is_generated = 1;
+        this->root = rhs.root;
+        this->redirection = rhs.redirection;
+        this->code_redirection = rhs.code_redirection;
+        this->_directory_listing = rhs._directory_listing;
+        this->limit_body_size = rhs.limit_body_size;
+        this->_exact_match = rhs._exact_match;
+        this->available_extension = rhs.available_extension;
+        this->cgi = rhs.cgi;
+        this->_get = rhs._get;
+        this->_post = rhs._post;
+        this->_delete = rhs._delete;
+        this->_root_check = rhs._root_check;
+        this->_alias_check = rhs._alias_check;
+        this->upload_location = rhs.upload_location;
+        this->_is_a_dir = 1;
+        this->_root_server = rhs._root_server;
+        this->_exec_path = rhs._exec_path;
+        this->_path_info = rhs._path_info;
+        this->alias = rhs.alias;
+        this->_base_uri = rhs._base_uri;
+    }
 }
 
 Location& Location::operator=(const Location &rhs){
@@ -47,11 +86,15 @@ Location& Location::operator=(const Location &rhs){
         this->_post = rhs._post;
         this->_delete = rhs._delete;
         this->_root_check = rhs._root_check;
+        this->_alias_check = rhs._alias_check;
         this->upload_location = rhs.upload_location;
         this->_is_a_dir = rhs._is_a_dir;
         this->_root_server = rhs._root_server;
         this->_exec_path = rhs._exec_path;
         this->_path_info = rhs._path_info;
+        this->alias = rhs.alias;
+        this->_is_generated = rhs._is_generated;
+        this->_base_uri = rhs._base_uri;
     }
     return(*this);
 }
@@ -95,6 +138,9 @@ const bool& Location::hasPathInfo(void) const{
     return(this->_path_info);
 }
 
+const bool& Location::isGenerated() const{
+    return(this->_is_generated);
+}
 
 const bool& Location::isExactMatch(void) const{
     return(this->_exact_match);
@@ -203,19 +249,16 @@ void Location::addUrl(const std::string &url, std::string root){
 
 void Location::addRoot(const std::string &dir){
     std::string check = dir;
-    // if(check[0] != '.')
-    //     check.insert(0, ".");
     std::string save = check;
+    if(this->hasAlias() || this->hasRoot())
+        throw std::logic_error("Webserv: Error:\nAlias directive impossible to set since a root or alias was already set before");
     vec_string s = tokenizer(check, " ", "/");
     check = save;
-    // if(s[0] != ".")
-    //     throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
-    // if(check[check.size() - 1] == '/')
-    //     check.erase(check.end() - 1);
     if(check[0] != '.' && check[1] && check[1] != '/')
         throw std::logic_error("Webserv: Error:\nRoot directive parameter is missing './' at the beginning");
     check.erase(0, 1);
     this->root = check;
+    this->_root_check++;
 }
 
 void Location::addRedirection(const std::string &code, const std::string &redirect){
@@ -294,19 +337,32 @@ void Location::setMethod(const std::string &method, const std::string &status){
 
 void Location::fixUrl(const std::string &url){
     std::string s;
-    std::string uri = url;
-    this->_root_server = url;
-    // std::cout << this->_root_server << std::endl;
-
-    // std::cout << "HERE: " << this->root << " && " << this->url<< std::endl;
-    if(this->root[this->root.size() - 1] == '/')
-        s = this->root.substr(0, this->root.size() - 1);
+    // std::string uri = url;
+    if(this->hasAlias())
+        this->_root_server = this->alias;
+    else if(this->hasRoot())
+        this->_root_server = this->root;
     else
-        s = this->root;
+        this->_root_server = url;
+    this->_base_uri = this->url;
+    // std::cout << "HERE: " << this->root << " && " << this->url<< std::endl;
+    if(this->_root_server[this->_root_server.size() - 1] == '/')
+        s = this->_root_server.substr(0, this->_root_server.size() - 1);
+    else
+        s = this->_root_server;
     // s = s.substr(s.find_last_of("/", s.size()), s.size() );
-    this->url = uri + s + this->url;
+    if(this->hasAlias())
+    {
+        // this->_root_server = this->_root_server;
+        this->url = this->_root_server;
+    }
+    else
+    {
+        this->_root_server = s;
+        this->url = s + this->url;
+    }
     if(this->upload_location.size() > 0)
-        this->upload_location.insert(0, uri);
+        this->upload_location.insert(0, s);
 }
 
 void Location::fixCgi(void){
@@ -351,8 +407,11 @@ std::ostream& operator<<(std::ostream& out, const Location& loc){
         out << "Url: " << loc.getUrl() << "\n\t";
     out << "Server Root: " << loc.getRootServer() << "\n\t";
     out << "Exact Match: " << (loc.isExactMatch() ? "YES" : "NO") << "\n\t";
-    if(loc.getRoot().size() >  0)
+    out << "Base Uri: " << loc.myUri() << "\n\t";
+    if(loc.hasRoot())
         out << "Root: " << loc.getRoot() << "\n\t";
+    if(loc.hasAlias())
+        out << "Alias: " << loc.getAlias() << "\n\t";
     if(loc.getIndexFile().size() > 0)
         for (size_t j = 0; j < loc.getIndexFile().size(); j++)
         {
@@ -531,4 +590,43 @@ const std::string& Location::getExecutePath(const std::string& uri){
         return(this->_exec_path[ex]);
     }
     return(uri);
+}
+
+const int &Location::hasAlias()const{
+    return(this->_alias_check);
+}
+
+const int &Location::hasRoot()const{
+    return(this->_root_check);
+}
+
+const std::string & Location::getAlias()const{
+    return(this->alias);
+}
+
+void Location::addAlias(const std::string &dir){
+    std::string check = dir;
+    std::string save = check;
+    if(this->hasAlias() || this->hasRoot())
+        throw std::logic_error("Webserv: Error:\nAlias directive impossible to set since a root or alias was already set before");
+    vec_string s = tokenizer(check, " ", "/");
+    check = save;
+    if(this->hasAlias() || this->hasRoot())
+        throw std::logic_error("Webserv: Error:\nAlias directive impossible to set since a root or alias was already set before");
+    if(check[0] != '.' && check[1] && check[1] != '/')
+        throw std::logic_error("Webserv: Error:\nAlias directive parameter is missing './' at the beginning");
+    check.erase(0, 1);
+    this->alias = check;
+    this->_alias_check++;
+}
+
+void Location::setBaseUri() {
+    this->_base_uri = this->url;
+}
+
+std::string Location::myUri() const{
+    // std::string s = this->_root_server;
+    // if(s[s.size() - 1] == '/')
+        // s = s.substr(0, s.size() - 1);
+    return(this->_base_uri);
 }
