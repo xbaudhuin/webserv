@@ -353,7 +353,7 @@ void Location::fixUrl(const std::string &url){
     // s = s.substr(s.find_last_of("/", s.size()), s.size() );
     if(this->hasAlias())
     {
-        this->_root_server = this->_root_server;
+        // this->_root_server = this->_root_server;
         this->url = this->_root_server;
     }
     else

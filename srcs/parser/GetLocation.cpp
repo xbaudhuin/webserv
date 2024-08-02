@@ -40,6 +40,7 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     size_t pos = s.size();
     pos = s.find_last_of("/", pos);
     std::string s1 = s.substr(0, pos + 1);
+    std::string safe = s1;
     std::string s2;
     if(s1 == s)
     {
@@ -76,6 +77,8 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
 #if PRINT == 2
                         std::cout << PURP << "NICE, FOUND IN FILE LOCATION!" << std::endl;
 #endif
+                        std::cout <<RED "HERE MATE: " << this->_locations[i].getRootServer() + safe << RESET<< std::endl;
+                        check_if_safe(this->_locations[i].getRootServer() + url, is_file);
                         return(this->_locations[i]);
                     }
                     for (size_t z = 0; z < this->_locations[i].getCgi().size(); z++)
@@ -87,6 +90,8 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
 #if PRINT == 2
                             std::cout << PURP << "NICE, FOUND IN FILE CGI LOCATION!" << std::endl;
 #endif
+                            std::cout <<RED "HERE MATE: " << this->_locations[i].getRootServer() + safe << RESET<< std::endl;
+                            check_if_safe(this->_locations[i].getRootServer() + url, is_file);
                             return(this->_locations[i]);
                         }
                     }
@@ -111,6 +116,8 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;
                 std::cout << s1 << RESET << std::endl;
 #endif
+                std::cout <<RED "HERE MATE: " << this->_locations[i].getRootServer() + safe << RESET<< std::endl;
+                check_if_safe(this->_locations[i].getRootServer() + url, is_file);
                 return(this->_locations[i]);
             }
         }
