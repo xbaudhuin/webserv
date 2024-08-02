@@ -15,9 +15,10 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
       _location(NULL), _statusCode(0), _sMethod(""), _sUri(""), _sPath(""),
       _sQueryUri(""), _version(0), _sHost(""), _requestSize(0), _bodyToRead(-1),
       _chunkRequest(false), _requestIsDone(true), _boundary(""),
-      _multipartRequest(false), _chunkFile(""), _chunkFd(-1), _sizeChunk(0),
-      _response(), _keepConnectionAlive(true), _epollIn(false), _filefd(-1),
-      _leftToRead(0), _infileCgi(""), _outfileCgi(""), _cgiPid(0),
+      _multipartRequest(false), _chunkFile(""), _fdUpload(-1), _chunkFd(-1),
+      _sizeChunk(0), _currentMultipart(0), _response(),
+      _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
+      _filefd(-1), _leftToRead(0), _infileCgi(""), _outfileCgi(""), _cgiPid(0),
       _sPathInfo("") {
 
   _time = getTime();
@@ -28,8 +29,11 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
 
 Client::~Client(void) {
   for (size_t i = 0; i < _multipart.size(); i++) {
-    if (_multipart[i].filename.empty() == false) {
-      unlink(_multipart[i].filename.c_str());
+    if (_multipart[i].tmpFilename.empty() == false) {
+      unlink(_multipart[i].tmpFilename.c_str());
+    }
+    if (_multipart[i].file.empty() == false) {
+      unlink(_multipart[i].file.c_str());
     }
   }
   if (_chunkFd != -1)
@@ -54,6 +58,7 @@ Client::~Client(void) {
 Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
   _filefd = -1;
   _chunkFd = -1;
+  _fdUpload = -1;
   if (this != &copy)
     *this = copy;
   return;
@@ -132,19 +137,38 @@ void Client::resetClient(void) {
   _statusCode = 0;
   _sMethod = "";
   _sUri = "";
+  _sPath = "";
+  _sPathUpload = "";
   _sQueryUri = "";
   _version = 1;
   _sHost = "";
   _headers.clear();
   _requestSize = 0;
-  _bodyToRead = -1;
   resetVector(_vBuffer);
   resetVector(_vBody);
+  _bodyToRead = -1;
   _chunkRequest = false;
+  _requestIsDone = true;
+  _boundary = "";
+  _multipartRequest = false;
+  if (_chunkFile.empty() == false) {
+    unlink(_chunkFile.c_str());
+  }
+  _chunkFile = "";
+  if (_fdUpload != -1)
+    close(_fdUpload);
+  _fdUpload = -1;
+  if (_chunkFd != -1) {
+    close(_chunkFd);
+  }
+  _chunkFd = -1;
+  _sizeChunk = 0;
+  resetVector(_multipart);
+  _currentMultipart = 0;
   _response.reset();
+  _diffFileSystem = false;
   _epollIn = false;
   _leftToRead = 0;
-  _sPath = "";
   _cgiPid = 0;
   if (_outfileCgi.size() > 0)
     unlink(_outfileCgi.c_str());

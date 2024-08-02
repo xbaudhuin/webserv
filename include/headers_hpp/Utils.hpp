@@ -6,6 +6,7 @@
 #include "bad_key_error.hpp"
 #include "cgiException.hpp"
 #include "security_error.hpp"
+#include <ctime>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -23,6 +24,7 @@ std::vector<char> findErrorPage(int error_code, ServerConf &map);
 
 void trimWhitespace(std::string &str, const char *whiteSpaces);
 unsigned char toLower(char c);
+time_t getTime(void);
 std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec);
 // void resetVector(std::vector<char> &vec);
 template <typename T> void resetVector(std::vector<T> &vec) {

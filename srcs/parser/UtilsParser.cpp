@@ -72,6 +72,8 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec) {
   }
   return (stream);
 }
+
+time_t getTime(void) { return (std::time(0)); }
 //
 // void resetVector(std::vector<char> &vec) {
 //   std::vector<char> tmp;

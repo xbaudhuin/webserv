@@ -69,6 +69,7 @@ private:
   std::string _sMethod;
   std::string _sUri;
   std::string _sPath;
+  std::string _sPathUpload;
   std::string _sQueryUri;
   size_t _version;
 
@@ -133,6 +134,7 @@ private:
   void checkBodyHeader(multipartRequest &multi, std::vector<char> &body);
   bool checkBoundary(void);
   bool checkHeaderMulti(multipartRequest &multi);
+  bool checkBodyMultipartCgi(std::string &boundary);
   bool getMultipartBody(multipartRequest &multi);
   bool parseMultipartRequest(std::string &boundary);
   bool parseChunkRequest(void);
@@ -158,8 +160,10 @@ private:
   void defaultHTMLResponse(void);
   void handleError(void);
   void uploadTmpFileDifferentFileSystem(std::string &tmp, std::string &outfile);
-  void handleMultipartSameFileSystem(void);
-  void handleMultipartDifferentFileSystem(void);
+  void handleMultipart(void);
+  void uploadTmpFileDifferentFileSystem(void);
+  void handleUpload(void);
+  void handleChunk(void);
   void handlePOST(void);
   void handleRedirection(void);
   void createResponseBody(void);

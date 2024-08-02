@@ -369,14 +369,14 @@ bool Client::saveToTmpFile(void) {
   multipartRequest &multi = _multipart.back();
   std::stringstream ss;
   ss << _multipart.size();
-  multi.filename = "tmpmulti" + ss.str();
+  multi.tmpFilename = "tmpmulti" + ss.str();
   ss.clear();
   ss << _socket;
-  multi.filename += ss.str() + "socket";
+  multi.tmpFilename += ss.str() + "socket";
   ss.clear();
   ss << getTime();
-  multi.filename += "id" + ss.str();
-  int fd = open(multi.filename.c_str(), O_RDWR | O_CLOEXEC);
+  multi.tmpFilename += "id" + ss.str();
+  int fd = open(multi.tmpFilename.c_str(), O_RDWR | O_CLOEXEC);
   if (fd == -1) {
     _statusCode = 500;
     return (false);
