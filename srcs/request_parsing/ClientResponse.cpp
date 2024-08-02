@@ -42,7 +42,10 @@ void Client::buildListingDirectory(std::string &url) {
     _statusCode = 404;
     return;
   }
-  _sUri = "." + _location->getRootServer() + _sUri;
+  if(_location->hasAlias())
+    _sUri = "." + _location->getRootServer() + _sUri.substr(_location->myUri().size() - 1);
+  else
+    _sUri = "." + _location->getRootServer() + _sUri;
   _response.setStatusCode(200);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
@@ -124,7 +127,14 @@ void Client::buildListingDirectory(std::string &url) {
 
 void Client::findPages(const std::string &urlu) {
   (void)urlu;
-  std::string url = "." + _location->getRootServer() + _sUri;
+  std::string url;
+  if(_location->hasAlias())
+  {
+    url = "." + _location->getRootServer() + _sUri.substr(_location->myUri().size());
+    std::cout << "HERE _sUri substr = " << _sUri.substr(_location->myUri().size()) << std::endl;
+  }
+  else
+    url = "." + _location->getRootServer() + _sUri;
   std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
   std::cout << RED << "url = " << url << RESET << std::endl;
   if (_location->isADir() == true) {

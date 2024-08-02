@@ -110,6 +110,7 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/Parser.cpp \
 					parser/ServerConf.cpp \
 					parser/ServerConfGetter.cpp \
+					parser/GetLocation.cpp \
 					parser/UtilsParser.cpp \
 					parser/Location.cpp \
 					parser/ParserLocation.cpp \

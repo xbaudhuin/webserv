@@ -209,9 +209,10 @@ void Webserv::checkConfigs(void)
     {
         vec_string v = this->_confs[i].first;
         int port = this->_confs[i].second.getPort();
+        uint32_t host = this->_confs[i].second.getHost();
         for (size_t j = i + 1; j < this->_confs.size(); j++)
         {
-            if(this->_confs[j].second.getPort() == port)
+            if(this->_confs[j].second.getPort() == port && this->_confs[j].second.getHost() == host)
             {
                 isSameVec_string(v, this->_confs[j].first);
             }

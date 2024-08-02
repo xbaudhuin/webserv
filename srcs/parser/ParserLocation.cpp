@@ -21,6 +21,26 @@ int testRoot(const vec_string &split, size_t &i, const size_t &size, Location &l
     return(0);
 }
 
+int testAlias(const vec_string &split, size_t &i, const size_t &size, Location &loc)
+{
+    if(split[i] == "alias")
+    {
+        i++;
+        if(split[i].find_first_of("{};", 0) != std::string::npos)
+        {
+            throw std::logic_error("Webserv: Error:\nSyntax error inside the alias directive");
+        }
+        if(i + 1 < size && split[i + 1] != ";")
+        {
+            throw std::logic_error("Webserv: Error:\nSyntax error inside the alias directive, ';' not found");
+        }
+        loc.addAlias(split[i]);
+        i+=2;
+        return(1);
+    }
+    return(0);
+}
+
 int testRedir(const vec_string &split, size_t &i, const size_t &size, Location &loc)
 {
     if(split[i] == "return")
@@ -236,6 +256,10 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         {
             continue;
         }
+        else if(testAlias(split, i, size, loc))
+        {
+            continue;
+        }
         else if(testAutoIndex(split, i, size, loc))
         {
             continue;
@@ -282,5 +306,6 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
         throw std::logic_error("Webserv: Error:\nupload_location set without any cgi specified");
     if(!loc.getCgi().size() && loc.hasPathInfo())
         throw std::logic_error("Webserv: Error:\npath_info set without any cgi specified");
+    // std::cout << loc << std::endl;
     cf.addLocation(loc);
 }
