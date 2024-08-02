@@ -335,6 +335,20 @@ void Location::setMethod(const std::string &method, const std::string &status){
     else throw std::logic_error("Error:\nUnknown method passed inside the set_method directive");
 }
 
+std::string getFile(const std::string &uri)
+{
+    size_t pos = uri.size();
+    pos = uri.find_last_of("/", pos);
+    if(pos == std::string::npos)
+        return(std::string(uri));
+    std::string s1 = uri.substr(0, pos + 1);
+    if(s1 == uri)
+        throw std::logic_error("not a file");
+    std::string s2 = uri.substr(pos, uri.size());
+    s2.erase(0, 1);
+    return(s2);
+}
+
 void Location::fixUrl(const std::string &url){
     std::string s;
     // std::string uri = url;
@@ -345,7 +359,9 @@ void Location::fixUrl(const std::string &url){
     else
         this->_root_server = url;
     this->_base_uri = this->url;
-    // std::cout << "HERE: " << this->root << " && " << this->url<< std::endl;
+    if(!this->isADir())
+        this->_base_uri =this->index_file[0]; 
+    // std::cout << "HERE: " << this->_base_uri << " && " << this->url << std::endl;
     if(this->_root_server[this->_root_server.size() - 1] == '/')
         s = this->_root_server.substr(0, this->_root_server.size() - 1);
     else
@@ -354,12 +370,14 @@ void Location::fixUrl(const std::string &url){
     if(this->hasAlias())
     {
         // this->_root_server = this->_root_server;
-        this->url = this->_root_server;
+        this->url = this->_root_server + "/";
+        // std::cout << this->url <<std::endl;
     }
     else
     {
         this->_root_server = s;
         this->url = s + this->url;
+        // std::cout << this->url <<std::endl;
     }
     if(this->upload_location.size() > 0)
         this->upload_location.insert(0, s);
@@ -449,20 +467,6 @@ const bool& Location::isADir(void) const{
 
 const std::string& Location::getRootServer(void) const{
     return (this->_root_server);
-}
-
-std::string getFile(const std::string &uri)
-{
-    size_t pos = uri.size();
-    pos = uri.find_last_of("/", pos);
-    if(pos == std::string::npos)
-        return(std::string(uri));
-    std::string s1 = uri.substr(0, pos + 1);
-    if(s1 == uri)
-        throw std::logic_error("not a file");
-    std::string s2 = uri.substr(pos, uri.size());
-    s2.erase(0, 1);
-    return(s2);
 }
 
 std::string getDirectory(const std::string &uri)

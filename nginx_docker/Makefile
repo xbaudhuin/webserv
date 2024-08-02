@@ -1,8 +1,8 @@
 IMAGE_NAME = nginx_img
 CONTAINER_NAME = nginx_my
 DOCKERFILE_PATH = .
-PORT1 = 4247
-PORT2 = 4248
+PORT1 = 4244
+PORT2 = 4245
 
 all: build run
 
