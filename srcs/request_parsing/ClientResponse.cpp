@@ -130,11 +130,12 @@ void Client::findPages(const std::string &urlu) {
   std::string url;
   if(_location->hasAlias())
   {
-	std::string urli = _location->getRootServer();
-	if (urli[urli.size() - 1] != '/')
-		urli += '/';
-    url = "." + urli + (_sUri.size() > _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "");
-    std::cout << "HERE _sUri substr = " << _sUri.substr(_location->myUri().size()) << std::endl;
+	  std::string urli = _location->getRootServer();
+	  if (urli[urli.size() - 1] != '/')
+	  	urli += '/';
+    url = "." + urli + (_sUri.size() >= _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "");
+    std::cout << "s_Uri size: " << _sUri.size() << " && myUri size:" << _location->myUri().size() << std::endl;
+    std::cout << "HERE _sUri substr = " << (_sUri.size() >= _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "") << std::endl;
   }
   else
     url = "." + _location->getRootServer() + _sUri;
