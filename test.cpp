@@ -78,16 +78,14 @@ int main(int argc, char **argv, char**env)
         std::string str = "coucou je suis un chat";
         for (size_t i = 0; i < str.size(); i++)
         {
-          s.push_back(s[i]);
-          /* code */
+          s.push_back(str[i]);
+        }
+        for(size_t i = 0; i < s.size(); i++)
+        {
+          if(s[i] == 't')
+            s.erase(s.begin() + i, s.begin() + i + 1);
         }
         
-        std::cout << s << std::endl;
-        size_t to_read = 10000;
-        if(to_read > s.size())
-          s.erase(s.begin(), s.end());
-        else
-          s.erase(s.begin(), s.begin() + to_read);
         std::cout << s << std::endl;
     }
     catch(const cgiException& e)
