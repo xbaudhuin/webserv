@@ -11,12 +11,8 @@
 #include <unistd.h>
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
-    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _location(NULL), _statusCode(0), _sMethod(""), _sUri(""), _sPath(""),
-      _sQueryUri(""), _version(0), _sHost(""), _requestSize(0), _bodyToRead(-1),
-      _chunkRequest(false), _requestIsDone(true), _boundary(""),
-      _multipartRequest(false), _chunkFile(""), _fdUpload(-1), _chunkFd(-1),
-      _sizeChunk(0), _currentMultipart(0), _response(),
+    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
+      _request(mapConfs, defaultConf), _statusCode(0), _response(),
       _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
       _filefd(-1), _leftToRead(0), _infileCgi(""), _outfileCgi(""), _cgiPid(0),
       _sPathInfo("") {
@@ -28,16 +24,16 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
 }
 
 Client::~Client(void) {
-  for (size_t i = 0; i < _multipart.size(); i++) {
-    if (_multipart[i].tmpFilename.empty() == false) {
-      unlink(_multipart[i].tmpFilename.c_str());
-    }
-    if (_multipart[i].file.empty() == false) {
-      unlink(_multipart[i].file.c_str());
-    }
-  }
-  if (_chunkFd != -1)
-    close(_chunkFd);
+  // for (size_t i = 0; i < _multipart.size(); i++) {
+  //   if (_multipart[i].tmpFilename.empty() == false) {
+  //     unlink(_multipart[i].tmpFilename.c_str());
+  //   }
+  //   if (_multipart[i].file.empty() == false) {
+  //     unlink(_multipart[i].file.c_str());
+  //   }
+  // }
+  // if (_chunkFd != -1)
+  //   close(_chunkFd);
   if (_filefd != -1)
     close(_filefd);
   if (_infileCgi.empty() == false) {
@@ -55,10 +51,11 @@ Client::~Client(void) {
   return;
 }
 
-Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
+Client::Client(Client const &copy)
+    : _mapConf(copy._mapConf), _request(copy._request) {
   _filefd = -1;
-  _chunkFd = -1;
-  _fdUpload = -1;
+  // _chunkFd = -1;
+  // _fdUpload = -1;
   if (this != &copy)
     *this = copy;
   return;
@@ -68,38 +65,39 @@ Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
     _socket = rhs._socket;
     _defaultConf = rhs._defaultConf;
-    _server = rhs._server;
-    _location = rhs._location;
+    // _server = rhs._server;
+    // _location = rhs._location;
     _time = rhs._time;
     _statusCode = rhs._statusCode;
-    _sMethod = rhs._sMethod;
-    _sUri = rhs._sUri;
-    _sPath = rhs._sPath;
-    _sQueryUri = rhs._sQueryUri;
-    _version = rhs._version;
-    _sHost = rhs._sHost;
-    _headers = rhs._headers;
-    _requestSize = rhs._requestSize;
-    _vBody = rhs._vBody;
-    _vBuffer = rhs._vBuffer;
-    _bodyToRead = rhs._bodyToRead;
-    _chunkRequest = rhs._chunkRequest;
-    _requestIsDone = rhs._requestIsDone;
-    _boundary = rhs._boundary;
-    _multipartRequest = rhs._multipartRequest;
-    if (_chunkFile.empty() == false) {
-      unlink(_chunkFile.c_str());
-    }
-    _chunkFile = rhs._chunkFile;
-    if (_chunkFd != -1) {
-      close(_chunkFd);
-    }
-    if (rhs._chunkFd != -1) {
-      _chunkFd = dup(rhs._chunkFd);
-    } else
-      _chunkFd = -1;
-    _sizeChunk = rhs._sizeChunk;
-    _multipart = rhs._multipart;
+    // _sMethod = rhs._sMethod;
+    // _sUri = rhs._sUri;
+    // _sPath = rhs._sPath;
+    // _sQueryUri = rhs._sQueryUri;
+    // _version = rhs._version;
+    // _sHost = rhs._sHost;
+    // _headers = rhs._headers;
+    // _requestSize = rhs._requestSize;
+    // _vBody = rhs._vBody;
+    // _vBuffer = rhs._vBuffer;
+    // _bodyToRead = rhs._bodyToRead;
+    // _chunkRequest = rhs._chunkRequest;
+    // _requestIsDone = rhs._requestIsDone;
+    // _boundary = rhs._boundary;
+    // _multipartRequest = rhs._multipartRequest;
+    // if (_chunkFile.empty() == false) {
+    //   unlink(_chunkFile.c_str());
+    // }
+    // _chunkFile = rhs._chunkFile;
+    // if (_chunkFd != -1) {
+    //   close(_chunkFd);
+    // }
+    // if (rhs._chunkFd != -1) {
+    //   _chunkFd = dup(rhs._chunkFd);
+    // } else
+    //   _chunkFd = -1;
+    // _sizeChunk = rhs._sizeChunk;
+    // _multipart = rhs._multipart;
+    _request = rhs._request;
     _response = rhs._response;
     _keepConnectionAlive = rhs._keepConnectionAlive;
     _epollIn = rhs._epollIn;
@@ -131,40 +129,41 @@ bool Client::isTimedOut(void) const {
 
 void Client::resetClient(void) {
   std::cout << YELLOW << "reset client + response" << RESET << std::endl;
-  _server = NULL;
-  _location = NULL;
+  // _server = NULL;
+  // _location = NULL;
   _time = getTime();
-  _statusCode = 0;
-  _sMethod = "";
-  _sUri = "";
-  _sPath = "";
-  _sPathUpload = "";
-  _sQueryUri = "";
-  _version = 1;
-  _sHost = "";
-  _headers.clear();
-  _requestSize = 0;
-  resetVector(_vBuffer);
-  resetVector(_vBody);
-  _bodyToRead = -1;
-  _chunkRequest = false;
-  _requestIsDone = true;
-  _boundary = "";
-  _multipartRequest = false;
-  if (_chunkFile.empty() == false) {
-    unlink(_chunkFile.c_str());
-  }
-  _chunkFile = "";
-  if (_fdUpload != -1)
-    close(_fdUpload);
-  _fdUpload = -1;
-  if (_chunkFd != -1) {
-    close(_chunkFd);
-  }
-  _chunkFd = -1;
-  _sizeChunk = 0;
-  resetVector(_multipart);
-  _currentMultipart = 0;
+  // _statusCode = 0;
+  // _sMethod = "";
+  // _sUri = "";
+  // _sPath = "";
+  // _sPathUpload = "";
+  // _sQueryUri = "";
+  // _version = 1;
+  // _sHost = "";
+  // _headers.clear();
+  // _requestSize = 0;
+  // resetVector(_vBuffer);
+  // resetVector(_vBody);
+  // _bodyToRead = -1;
+  // _chunkRequest = false;
+  // _requestIsDone = true;
+  // _boundary = "";
+  // _multipartRequest = false;
+  // if (_chunkFile.empty() == false) {
+  //   unlink(_chunkFile.c_str());
+  // }
+  // _chunkFile = "";
+  // if (_fdUpload != -1)
+  //   close(_fdUpload);
+  // _fdUpload = -1;
+  // if (_chunkFd != -1) {
+  //   close(_chunkFd);
+  // }
+  // _chunkFd = -1;
+  // _sizeChunk = 0;
+  // resetVector(_multipart);
+  // _currentMultipart = 0;
+  _request.resetRequest();
   _response.reset();
   _diffFileSystem = false;
   _epollIn = false;
@@ -182,22 +181,22 @@ void Client::resetClient(void) {
   _filefd = -1;
 }
 
-ServerConf *Client::getServerConf(void) {
-  mapConfs::const_iterator it;
-  it = _mapConf.find(_sHost);
-  if (it != _mapConf.end()) {
-    std::cout << YELLOW << "found via host: " << _sHost
-              << "; server name: " << ((*it).second)->getMainServerName()
-              << RESET << std::endl;
-    return ((*it).second);
-  }
-  std::cout << YELLOW << "return default server" << RESET << std::endl;
-  return (_defaultConf);
-}
+// ServerConf *Client::getServerConf(void) {
+//   mapConfs::const_iterator it;
+//   it = _mapConf.find(_sHost);
+//   if (it != _mapConf.end()) {
+//     std::cout << YELLOW << "found via host: " << _sHost
+//               << "; server name: " << ((*it).second)->getMainServerName()
+//               << RESET << std::endl;
+//     return ((*it).second);
+//   }
+//   std::cout << YELLOW << "return default server" << RESET << std::endl;
+//   return (_defaultConf);
+// }
 
-const std::vector<char> &Client::getBuffer(void) const { return (_vBuffer); }
+// const std::vector<char> &Client::getBuffer(void) const { return (_vBuffer); }
 
-int Client::getBodyToRead(void) const { return (_bodyToRead); }
+// int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
 bool Client::keepConnectionOpen(void) const { return (_keepConnectionAlive); }
 
@@ -249,33 +248,43 @@ void Client::setStatusCode(size_t exitStatus) {
             << "; _statusCode = " << _statusCode << std::endl;
 }
 
-void Client::print() {
-
-  if (_server == NULL)
-    std::cout << RED << "no server\n" << RESET;
-  else
-    std::cout << GREEN "server    = " << _server->getServerNames()[0] << RESET
-              << "\n";
-  if (_location == NULL)
-    std::cout << RED << "no location\n" << RESET;
-  else
-    std::cout << GREEN "location    = " << _location->getUrl() << RESET << "\n";
-  std::cout << "time        = " << _time << "\n";
-  std::cout << "time out ?  = " << isTimedOut() << "\n";
-
-  std::cout << "_socket     = " << _socket << "\n";
-  std::cout << "status code = " << _statusCode << "\n";
-  std::cout << "method      = " << _sMethod << "\n";
-  std::cout << "uri         = " << _sUri << "\n";
-  std::cout << "queryUri    = " << _sQueryUri << "\n";
-  std::cout << "_requestSize= " << _requestSize << "\n";
-  std::cout << "_version    = " << _version << "\n";
-  std::cout << "_sHost       = " << _sHost << "\n";
-  std::cout << "_headers: key = value" << "\n";
-  for (std::map<std::string, std::string>::iterator i = _headers.begin();
-       i != _headers.end(); i++) {
-    std::cout << (*i).first << " = " << (*i).second << "\n";
-  }
-  std::cout << "_bodyToRead    = " << _bodyToRead << "\n";
-  std::cout << "remain buffer = " << _vBuffer << std::endl;
+bool Client::addBuffer(std::vector<char> &buffer) {
+  bool ret = _request.addBuffer(buffer);
+  _statusCode = _request._statusCode;
+  if (ret == true && _request.isCgi() == true)
+    setupCgi();
+  return (ret);
 }
+
+// void Client::print() {
+//
+//   if (_server == NULL)
+//     std::cout << RED << "no server\n" << RESET;
+//   else
+//     std::cout << GREEN "server    = " << _server->getServerNames()[0] <<
+//     RESET
+//               << "\n";
+//   if (_location == NULL)
+//     std::cout << RED << "no location\n" << RESET;
+//   else
+//     std::cout << GREEN "location    = " << _location->getUrl() << RESET <<
+//     "\n";
+//   std::cout << "time        = " << _time << "\n";
+//   std::cout << "time out ?  = " << isTimedOut() << "\n";
+//
+//   std::cout << "_socket     = " << _socket << "\n";
+//   std::cout << "status code = " << _statusCode << "\n";
+//   std::cout << "method      = " << _sMethod << "\n";
+//   std::cout << "uri         = " << _sUri << "\n";
+//   std::cout << "queryUri    = " << _sQueryUri << "\n";
+//   std::cout << "_requestSize= " << _requestSize << "\n";
+//   std::cout << "_version    = " << _version << "\n";
+//   std::cout << "_sHost       = " << _sHost << "\n";
+//   std::cout << "_headers: key = value" << "\n";
+//   for (std::map<std::string, std::string>::iterator i = _headers.begin();
+//        i != _headers.end(); i++) {
+//     std::cout << (*i).first << " = " << (*i).second << "\n";
+//   }
+//   std::cout << "_bodyToRead    = " << _bodyToRead << "\n";
+//   std::cout << "remain buffer = " << _vBuffer << std::endl;
+// }

@@ -290,6 +290,24 @@ size_t Request::parseRequestLine(const std::string &requestLine) {
   return (0);
 }
 
+std::string Request::getLineFromBuffer() {
+  bool carriage = false;
+  size_t i = 0;
+  for (; i < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\r' && i + 1 < _vBuffer.size())
+      carriage = true;
+    else
+      carriage = false;
+    if (_vBuffer[i + carriage] == '\n')
+      break;
+  }
+  if (i + carriage < _vBuffer.size())
+    i++;
+  std::string line(_vBuffer.begin(), _vBuffer.begin() + i + carriage);
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + carriage);
+  return (line);
+}
+
 void Request::fillBufferWithoutReturnCarriage(const std::vector<char> &vec) {
   size_t emptyLine = 0;
   size_t i = 0;
@@ -431,16 +449,467 @@ bool Request::checkMethod(void) {
   } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false) {
     _statusCode = 405;
   }
+  if (_statusCode < 400 && _sMethod != "POST") {
+    if (_headers.count("content-length") != 0 ||
+        _headers.count("transfer-encoding") != 0)
+      _statusCode = 413;
+    std::map<std::string, std::string>::iterator it =
+        _headers.find("content-type");
+    if ((*it).second.find("multipart") != (*it).second.npos)
+      _statusCode = 413;
+  }
   if (_statusCode >= 400)
     return (false);
   return (true);
 }
 
+void Request::getPathUpload(void) {
+  _sPathUpload = _location->getUploadLocation();
+  if (_sPathUpload.empty() == true) {
+    _sPathUpload = _sUri;
+    if (_sPathUpload == _location->getUrl()) {
+      std::stringstream ss;
+      ss << getTime();
+      _sPathUpload += "/";
+      _sPathUpload += ss.str();
+    }
+  }
+}
+
 bool Request::requestValidbyLocation(void) {
+  if (_sMethod == "POST") {
+    getPathUpload();
+  }
   checkPathInfo();
   if (checkMethod() == false)
     return (false);
   return (true);
+}
+
+std::string Request::getBoundaryString(std::string &boundaryHeader) {
+  size_t pos;
+  std::cout << YELLOW
+            << "Client::getBoundaryString: starting: boundaryHeader = "
+            << boundaryHeader << RESET << std::endl;
+  pos = boundaryHeader.find(';');
+  if (pos == boundaryHeader.npos) {
+    std::cout << RED << "Client::getBoundaryString: pos = npos " << RESET
+              << std::endl;
+    _statusCode = 400;
+    return ("");
+  }
+  pos++;
+  if (boundaryHeader[pos] == ' ')
+    pos++;
+  if (pos + 11 >= boundaryHeader.size() ||
+      boundaryHeader.substr(pos, 11) != "boundary=--") {
+    std::cout << RED << "Client::getBoundaryString: pos(" << pos
+              << ") + 11 > boundaryHeader.size(" << boundaryHeader.size()
+              << ") " << RESET << std::endl;
+    std::cout << RED << "boundaryHeader.substr(pos, pos +11) != boundary=-- :"
+              << boundaryHeader.substr(pos, 11) << RESET << std::endl;
+    ;
+    _statusCode = 400;
+    return ("");
+  }
+  std::cout << YELLOW << "Client::getBoundaryString: BOUNDARY = " << "----"
+            << boundaryHeader.substr(pos + 11) << RESET << std::endl;
+  return ("----" + boundaryHeader.substr(pos + 11));
+}
+
+bool Request::checkBodyMultipartCgi(std::string &boundary) {
+  _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
+  std::string tmp(_vBuffer.begin(), _vBuffer.end());
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.end());
+  size_t pos = tmp.rfind(boundary + "--");
+  if (pos != tmp.npos)
+    return (true);
+  return (false);
+}
+
+bool Request::checkBoundary(void) {
+  if (_vBuffer.size() < _boundary.size())
+    return (false);
+  std::string tmp(_vBuffer.begin(), _vBuffer.end());
+  if (tmp.find(_boundary) != 0) {
+    _statusCode = 400;
+    return (true);
+  }
+  if (tmp.find(_boundary, _boundary.size()) == tmp.npos) {
+    return (false);
+  }
+  return (true);
+}
+
+void Request::removeTrailingLineFromBuffer(void) {
+  size_t i = 0;
+  if (_vBuffer.size() >= 2 && _vBuffer[i] == '\r' && _vBuffer[i + 1] == '\n')
+    i += 2;
+  else if (_vBuffer[i] == '\n')
+    i++;
+  else {
+    // std::cout << GREEN << "_vbuffer: " << _vBuffer << RESET << std::endl;
+    std::cout
+        << RED
+        << "Client:removeTrailingLineFromBuffer: failed to remove trailing line"
+        << RESET << std::endl;
+    _statusCode = 400;
+    return;
+  }
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+}
+
+bool Request::checkHeaderMulti(multipartRequest &multi) {
+  if (multi.header.count("content-type") == 0) {
+    _statusCode = 400;
+    return (false);
+  }
+  if (multi.header.count("content-disposition") == 0) {
+    _statusCode = 400;
+    return (false);
+  }
+  std::string tmp = multi.header.at("content-disposition");
+  size_t pos = tmp.find("name=\"");
+  if (pos == tmp.npos || pos + 7 >= tmp.size()) {
+    _statusCode = 422;
+    return (false);
+  }
+  pos += 7;
+  pos = tmp.find_first_of('\"');
+  if (pos == tmp.npos) {
+    _statusCode = 422;
+    return (false);
+  }
+  pos = tmp.find("filename=\"", pos);
+  if (pos == tmp.npos) {
+    _statusCode = 422;
+    return (false);
+  }
+  pos += 10;
+  pos = tmp.find_first_of('\"', pos);
+  if (pos == tmp.npos) {
+    _statusCode = 422;
+    return (false);
+  }
+  return (true);
+}
+
+void Request::checkBodyHeader(std::map<std::string, std::string> header,
+                              std::vector<char> &body) {
+  std::map<std::string, std::string>::const_iterator itHeader;
+  std::map<std::string, std::string>::const_iterator itMulti;
+  itHeader = header.find("content-type");
+  itMulti = header.find("content-disposition");
+  if (itHeader != header.end()) {
+    if (((*itHeader).second.find("application/x-www-form-urlencoded") !=
+         (*itHeader).second.npos) ||
+        ((*itMulti).second.find("application/x-www-form-urlencoded") !=
+         (*itMulti).second.npos)) {
+      std::string url(body.begin(), body.end());
+      uriDecoder(url);
+      std::vector<char> tmp(url.begin(), url.end());
+      body = tmp;
+    }
+  }
+}
+
+bool Request::getMultipartBody(multipartRequest &multi) {
+  std::string line;
+  while (true) {
+    line = getLineFromBuffer();
+    std::cout << BLUE << "New line: " << line << RESET << std::endl;
+    if (line.compare(0, _boundary.size(), _boundary) == 0 &&
+        line.size() >= _boundary.size() + 1) {
+      if (line.compare(_boundary.size(), 2, "--") == 0) {
+        std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
+                  << std::endl;
+        _statusCode = 200;
+        return (true);
+        removeTrailingLineFromBuffer();
+      }
+      break;
+    } else {
+      multi.body.insert(multi.body.end(), line.begin(), line.end());
+    }
+  }
+  std::vector<char> tmp;
+  checkBodyHeader(multi.header, tmp);
+  return (false);
+}
+
+bool Request::saveToTmpFile(int fd, std::string &filename,
+                            std::vector<char> body) {
+  ssize_t writeBytes = write(fd, &(body)[0], body.size());
+  if (writeBytes == -1 || writeBytes < body.size()) {
+    _statusCode = 500;
+    return (false);
+  }
+  return (true);
+}
+
+bool Request::saveToTmpFile(void) {
+  if (_tmpFd == -1) {
+    if (isCgi() == true)
+      _tmpFile = _location->getCgiPath(_sUri) + "infileCgi_";
+    else
+      _tmpFile = "webserv_tmpfile_";
+    std::stringstream ss;
+    ss << getTime();
+    _tmpFile += ss.str();
+  }
+  _tmpFd = open(_tmpFile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT);
+  if (_tmpFd == -1) {
+    _statusCode = 500;
+    return (false);
+  }
+  ssize_t writeBytes = write(_tmpFd, &(_vBody)[0], _vBody.size());
+  if (writeBytes == -1 || writeBytes < _vBody.size()) {
+    _statusCode = 500;
+    return (false);
+  }
+  resetVector(_vBody);
+  return (true);
+}
+
+bool Request::saveMultiToTmpfile(void) {
+  multipartRequest &multi = _multipart.back();
+  std::stringstream ss;
+  ss << _multipart.size();
+  multi.tmpFilename = "webserv_tmpmulti" + ss.str();
+  ss.clear();
+  ss << getTime();
+  multi.tmpFilename += "id" + ss.str();
+  int fd = open(multi.tmpFilename.c_str(), O_RDWR | O_CLOEXEC);
+  if (fd == -1) {
+    _statusCode = 500;
+    return (false);
+  }
+  bool ret = saveToTmpFile(fd, multi.tmpFilename, multi.body);
+  close(fd);
+  resetVector(multi.body);
+  return (ret);
+}
+
+bool Request::parseMultipartRequest(std::string &boundary) {
+  if (_location && _location->isCgi(_sUri) == true)
+    return (checkBodyMultipartCgi(boundary));
+  std::cout << YELLOW
+            << "Client::parseMultipartRequest starting: boundary = " << boundary
+            << RESET << std::endl;
+  if (_vBuffer.size() < boundary.size() && _vBuffer.size() > 0) {
+    return (false);
+  }
+  if (checkBoundary() == false)
+    return (false);
+  if (_statusCode >= 400)
+    return (true);
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + boundary.size());
+  removeTrailingLineFromBuffer();
+  multipartRequest multi;
+  std::string line = getLineFromBuffer();
+  while (line.empty() == false && _statusCode < 400) {
+    removeReturnCarriageNewLine(line);
+    std::cout << BLUE << "New line: " << line << RESET << std::endl;
+    if (line == "")
+      break;
+    insertInMap(line, multi.header);
+    line = getLineFromBuffer();
+  }
+  if (checkHeaderMulti(multi) == false)
+    return (true);
+  if (_statusCode >= 400) {
+    std::cout << RED
+              << "Client::parseMultipartRequest: afterHeader insertion: "
+                 "statusCode = 400"
+              << RESET << std::endl;
+    return (true);
+  }
+  while (true) {
+    if (_vBuffer.size() < boundary.size()) {
+      std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
+                << RESET << std::endl;
+      return (false);
+    }
+    line = getLineFromBuffer();
+    std::cout << BLUE << "New line: " << line << RESET << std::endl;
+    if (line.compare(0, boundary.size(), boundary) == 0 &&
+        line.size() >= boundary.size() + 1) {
+      break;
+    } else
+      getMultipartBody(multi);
+  }
+  _multipart.push_back(multi);
+  if (saveMultiToTmpfile() == false)
+    return (true);
+  if (line.compare(boundary.size(), 2, "--") == 0) {
+    std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
+              << std::endl;
+    _statusCode = 200;
+    removeTrailingLineFromBuffer();
+    return (true);
+  }
+  parseMultipartRequest(boundary);
+  return (false);
+}
+
+int64_t Request::getSizeChunkFromBuffer(void) {
+  size_t i = 0;
+  std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
+            << std::endl;
+  std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
+  std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
+  for (; i < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\n')
+      break;
+    if (isHexadecimal(_vBuffer[i]) == false) {
+      std::cout << RED << "is not hexadecimal i(" << i << "): " << _vBuffer[i]
+                << RESET << std::endl;
+      _statusCode = 400;
+      return (-1);
+    }
+  }
+  std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i);
+  std::cout << YELLOW << "get nb string of size(" << i << ") = " << tmp << RESET
+            << std::endl;
+  int64_t nb = std::strtoll(tmp.c_str(), NULL, 16);
+  if (errno == ERANGE || nb < 0 ||
+      (_bodyToRead > static_cast<int64_t>(_server->getLimitBodySize()) &&
+       _server->getLimitBodySize() != 0)) {
+    std::cout << RED << "FAIL IN GET NB" << RESET << std::endl;
+    _statusCode = 413;
+    return (-1);
+  }
+  std::cout << "Client::getSizeChunkFromBuffer: " << "\n nb = " << nb
+            << "; i = " << i << "\n";
+  std::string out(_vBuffer.begin(), _vBuffer.begin() + i + 1);
+  std::cout << "erase from buffer: " << out << std::endl;
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + 1);
+  return (nb);
+}
+
+bool Request::getTrailingHeader(void) {
+  std::map<std::string, std::string>::iterator it;
+  std::vector<std::string> trailer;
+  it = _headers.find("trailer");
+  if (it != _headers.end()) {
+    std::string header = (*it).second;
+    size_t pos = 0;
+    size_t start = 0;
+    while (true) {
+      pos = header.find(",\n");
+      if (pos == header.npos)
+        break;
+      trailer.insert(trailer.end(), header.substr(start, pos));
+      start = pos;
+    }
+  }
+  std::vector<std::string> vec;
+  bool carriage = false;
+  for (size_t i = 0; i < _vBuffer.size(); i++) {
+    if (_vBuffer[i] == '\n') {
+      if (i > 0 && _vBuffer[i - 1] == '\r') {
+        carriage = true;
+      }
+      std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i - carriage);
+      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+      removeTrailingLineFromBuffer();
+      if (_statusCode == 400)
+        return (true);
+      vec.push_back(tmp);
+      carriage = false;
+      if (_vBuffer.empty() == true)
+        break;
+    }
+  }
+  vectorToHeadersMap(vec);
+  if (_statusCode != 0)
+    return (true);
+  for (size_t i = 0; i < trailer.size(); i++) {
+    it = _headers.find(trailer[i]);
+    if (it == _headers.end()) {
+      _statusCode = 400;
+      return (true);
+    }
+  }
+  _chunkRequest = false;
+  return (true);
+}
+
+bool Request::parseChunkRequest(void) {
+  std::cout << YELLOW << "Client::parseChunkRequest: " << RESET << std::endl;
+  std::cout << YELLOW << "bodytoRead = " << _bodyToRead << RESET << std::endl;
+  std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
+  std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
+  if (_statusCode != 0)
+    return (true);
+  if (static_cast<int64_t>(_vBuffer.size()) < _bodyToRead && _bodyToRead > 0) {
+    _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
+    _bodyToRead -= _vBuffer.size();
+    return (false);
+  }
+  if (_bodyToRead > 0) {
+    size_t min = std::min(static_cast<size_t>(_bodyToRead), _vBuffer.size());
+    std::string tmp(_vBuffer.begin(), _vBuffer.begin() + min);
+    std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET << std::endl;
+    std::cout << PURP2 << "add to _vBody and removing from _vbuffer : " << tmp
+              << RESET << std::endl;
+    _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + min);
+    if (_bodyToRead > min)
+      _bodyToRead -= _vBuffer.size();
+    else {
+      ssize_t bytesWrite = write(_tmpFd, &_vBody[0], _vBody.size());
+      if (bytesWrite != _vBody.size()) {
+        _statusCode = 500;
+        return (true);
+      }
+      resetVector(_vBody);
+      _bodyToRead = 0;
+    }
+    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + min);
+    removeTrailingLineFromBuffer();
+  }
+  if (_vBuffer.size() < 2)
+    return (false);
+  if (_bodyToRead == 0) {
+    _bodyToRead = getSizeChunkFromBuffer();
+    _sizeChunk += _bodyToRead;
+    if (_location->getLimitBodySize() != 0 &&
+        _sizeChunk > _location->getLimitBodySize()) {
+      _bodyToRead = -1;
+    }
+  }
+  if (_bodyToRead == -1) {
+    _statusCode = 413;
+    return (true);
+  }
+  if (_bodyToRead == 0) {
+    close(_tmpFd);
+    return (getTrailingHeader());
+  }
+  return (parseChunkRequest());
+}
+
+bool Request::parseBody(void) {
+  if (_vBuffer.size() == 0)
+    return (_bodyToRead == 0);
+  if (_multipartRequest == true)
+    return (parseMultipartRequest(_boundary));
+  else if (_chunkRequest == true)
+    return (parseChunkRequest());
+  else {
+    if (_bodyToRead > 0) {
+      int64_t min =
+          std::min(_bodyToRead, static_cast<int64_t>(_vBuffer.size()));
+      _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + min);
+      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + min);
+      _bodyToRead -= min;
+      if (_bodyToRead != 0)
+        // if (saveToTmpFile() == false)
+        // return (false);
+        return (_bodyToRead == 0);
+    }
+  }
+  return (_bodyToRead == 0);
 }
 
 void Request::setupBodyParsing(void) {
@@ -481,17 +950,27 @@ void Request::setupBodyParsing(void) {
     }
   } else if (itChunked != _headers.end()) {
     _chunkRequest = true;
-    _tmpFile = "webserv_tmpfile_";
+    if (isCgi() == true)
+      _tmpFile = _location->getCgiPath(_sUri);
+    else
+      _tmpFile = "webserv_tmpfile_";
     time_t time = getTime();
     std::stringstream t;
     t << time;
     _tmpFile += "id" + t.str();
+    std::cout << "tmpFile = " << _tmpFile << std::endl;
     _tmpFd = open(_tmpFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_CLOEXEC);
     if (_tmpFd == -1) {
       _statusCode = 500;
       return;
     }
   }
+}
+
+bool Request::isCgi(void) {
+  if (_location && _location->isCgi(_sUri) == true)
+    return (true);
+  return (false);
 }
 
 void Request::parseRequest(std::string &buffer) {
@@ -519,17 +998,17 @@ void Request::parseRequest(std::string &buffer) {
   if (_sMethod == "POST") {
     setupBodyParsing();
     if (_statusCode == 0 && parseBody() == false) {
-      // _requestIsDone = false;
-      return;
-    }
-    if (_vBuffer.size() != 0 && _bodyToRead == 0) {
-      _statusCode = 400;
+      _requestIsDone = false;
       return;
     }
   }
-  if (_location && _location->isCgi(_sUri) == true) {
-    setupCgi();
+  if (_vBuffer.size() != 0 && _bodyToRead == 0) {
+    _statusCode = 400;
+    return;
   }
+  // if (_location && _location->isCgi(_sUri) == true) {
+  //   setupCgi();
+  // }
   if (_statusCode == 0)
     _statusCode = 200;
   return;
@@ -537,7 +1016,8 @@ void Request::parseRequest(std::string &buffer) {
 
 bool Request::addBuffer(const std::vector<char> buffer) {
   if (_bodyToRead > 0 || _requestIsDone == false) {
-    return (checkBodyToRead(buffer));
+    _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
+    return (parseBody());
   }
   fillBufferWithoutReturnCarriage(buffer);
   int newLine = hasNewLine();
@@ -563,7 +1043,8 @@ bool Request::addBuffer(const std::vector<char> buffer) {
 
   if (_vBuffer.empty() == false) {
     if (_bodyToRead > 0) {
-      return (checkBodyToRead(_vBuffer));
+      _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
+      return (parseBody());
     } else
       _statusCode = 400;
   }

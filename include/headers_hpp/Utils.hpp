@@ -26,6 +26,7 @@ void trimWhitespace(std::string &str, const char *whiteSpaces);
 unsigned char toLower(char c);
 time_t getTime(void);
 std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec);
+bool isHexadecimal(char c);
 // void resetVector(std::vector<char> &vec);
 template <typename T> void resetVector(std::vector<T> &vec) {
   std::vector<T> tmp;

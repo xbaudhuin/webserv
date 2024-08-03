@@ -73,6 +73,16 @@ std::ostream &operator<<(std::ostream &stream, const std::vector<char> &vec) {
   return (stream);
 }
 
+bool isHexadecimal(char c) {
+  if (c >= '0' && c <= '9')
+    return (true);
+  if (c >= 'a' && c <= 'f')
+    return (true);
+  if (c >= 'A' && c <= 'F')
+    return (true);
+  return (false);
+}
+
 time_t getTime(void) { return (std::time(0)); }
 //
 // void resetVector(std::vector<char> &vec) {
