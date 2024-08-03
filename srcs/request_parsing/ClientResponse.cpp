@@ -133,12 +133,14 @@ void Client::findPages(const std::string &urlu) {
 	  std::string urli = _location->getRootServer();
 	  if (urli[urli.size() - 1] != '/')
 	  	urli += '/';
-    url = "." + urli + (_sUri.size() >= _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "");
+    url = "." + urli + (_sUri.size() > _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "");
+    std::cout << "MY URI AND MY URI SIZE: " << _location->myUri() << " && " << _location->myUri().size() << std::endl;
     std::cout << "s_Uri size: " << _sUri.size() << " && myUri size:" << _location->myUri().size() << std::endl;
     std::cout << "HERE _sUri substr = " << (_sUri.size() >= _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "") << std::endl;
   }
   else
     url = "." + _location->getRootServer() + _sUri;
+  std::cout << std::endl << *_location << std::endl;
   std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
   std::cout << RED << "url = " << url << RESET << std::endl;
   if (_location->isADir() == true) {

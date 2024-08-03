@@ -353,15 +353,21 @@ void Location::fixUrl(const std::string &url){
     std::string s;
     // std::string uri = url;
     if(this->hasAlias())
+    {
         this->_root_server = this->alias;
+        // std::cout << this->alias << std::endl;
+    }
     else if(this->hasRoot())
+    {
         this->_root_server = this->root;
+        // std::cout << this->root << std::endl;
+    }
     else
         this->_root_server = url;
     this->_base_uri = this->url;
-    if(!this->isADir())
+    if(!this->isADir() && !this->isExactMatch())
         this->_base_uri =this->index_file[0]; 
-    // std::cout << "HERE: " << this->_base_uri << " && " << this->url << std::endl;
+    std::cout << "HERE MATE: " << this->_root_server << " && " << this->url << std::endl;
     if(this->_root_server[this->_root_server.size() - 1] == '/')
         s = this->_root_server.substr(0, this->_root_server.size() - 1);
     else
@@ -370,14 +376,19 @@ void Location::fixUrl(const std::string &url){
     if(this->hasAlias())
     {
         // this->_root_server = this->_root_server;
-        this->url = this->_root_server + "/";
-        // std::cout << this->url <<std::endl;
+        // if(this->_root_server[this->_root_server.size() - 1] == '/')
+        //     this->url = this->_root_server + "/";
+        // else
+        this->url = this->_root_server;
+        this->_root_server = s;
+        std::cout << "HERE ALIAS: "<< this->url <<std::endl;
     }
     else
     {
         this->_root_server = s;
         this->url = s + this->url;
-        // std::cout << this->url <<std::endl;
+        std::cout << "HERE NORMAL:" << this->url <<std::endl;
+        std::cout << "HERE NORMAL 2:" << s <<std::endl;
     }
     if(this->upload_location.size() > 0)
         this->upload_location.insert(0, s);
@@ -633,4 +644,11 @@ std::string Location::myUri() const{
     // if(s[s.size() - 1] == '/')
         // s = s.substr(0, s.size() - 1);
     return(this->_base_uri);
+}
+
+void Location::fixFileLocationAlias(){
+    if(this->index_file.size() == 1)
+    {
+        this->index_file.push_back("/index.html");
+    }
 }
