@@ -1,21 +1,22 @@
 #include "Client.hpp"
-#include "Error.hpp"
-#include "Port.hpp"
-#include "ServerConf.hpp"
-#include "Utils.hpp"
-#include <cstddef>
-#include <exception>
-#include <fcntl.h>
-#include <stdexcept>
-#include <sys/wait.h>
-#include <unistd.h>
+// #include "Error.hpp"
+// #include "Port.hpp"
+// #include "ServerConf.hpp"
+// #include "Utils.hpp"
+// #include <cstddef>
+// #include <exception>
+// #include <fcntl.h>
+// #include <stdexcept>
+// #include <sys/wait.h>
+// #include <unistd.h>
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
-    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
-      _request(mapConfs, defaultConf), _statusCode(0), _response(),
-      _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
-      _filefd(-1), _leftToRead(0), _infileCgi(""), _outfileCgi(""), _cgiPid(0),
-      _sPathInfo("") {
+    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
+      _location(NULL), _statusCode(0), _version(1), _requestSize(0),
+      _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true),
+      _multipartRequest(false), _tmpFd(-1), _sizeChunk(0), _currentMultipart(0),
+      _response(), _keepConnectionAlive(true), _diffFileSystem(false),
+      _epollIn(false), _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
 
   _time = getTime();
   if (defaultConf == NULL)
@@ -24,18 +25,18 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
 }
 
 Client::~Client(void) {
-  // for (size_t i = 0; i < _multipart.size(); i++) {
-  //   if (_multipart[i].tmpFilename.empty() == false) {
-  //     unlink(_multipart[i].tmpFilename.c_str());
-  //   }
-  //   if (_multipart[i].file.empty() == false) {
-  //     unlink(_multipart[i].file.c_str());
-  //   }
-  // }
-  // if (_chunkFd != -1)
-  //   close(_chunkFd);
-  if (_filefd != -1)
-    close(_filefd);
+  for (size_t i = 0; i < _multipart.size(); i++) {
+    if (_multipart[i].tmpFilename.empty() == false) {
+      unlink(_multipart[i].tmpFilename.c_str());
+    }
+    if (_multipart[i].file.empty() == false) {
+      unlink(_multipart[i].file.c_str());
+    }
+  }
+  if (_tmpFd != -1)
+    close(_tmpFd);
+  if (_uploadFd != -1)
+    close(_uploadFd);
   if (_infileCgi.empty() == false) {
     unlink(_infileCgi.c_str());
   }
@@ -51,10 +52,9 @@ Client::~Client(void) {
   return;
 }
 
-Client::Client(Client const &copy)
-    : _mapConf(copy._mapConf), _request(copy._request) {
-  _filefd = -1;
-  // _chunkFd = -1;
+Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
+  _uploadFd = -1;
+  _tmpFd = -1;
   // _fdUpload = -1;
   if (this != &copy)
     *this = copy;
@@ -65,48 +65,53 @@ Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
     _socket = rhs._socket;
     _defaultConf = rhs._defaultConf;
-    // _server = rhs._server;
-    // _location = rhs._location;
+    _server = rhs._server;
+    _location = rhs._location;
     _time = rhs._time;
     _statusCode = rhs._statusCode;
-    // _sMethod = rhs._sMethod;
-    // _sUri = rhs._sUri;
-    // _sPath = rhs._sPath;
-    // _sQueryUri = rhs._sQueryUri;
-    // _version = rhs._version;
+    _sMethod = rhs._sMethod;
+    _sUri = rhs._sUri;
+    _sPath = rhs._sPath;
+    _sQueryUri = rhs._sQueryUri;
+    _version = rhs._version;
     // _sHost = rhs._sHost;
-    // _headers = rhs._headers;
-    // _requestSize = rhs._requestSize;
-    // _vBody = rhs._vBody;
-    // _vBuffer = rhs._vBuffer;
-    // _bodyToRead = rhs._bodyToRead;
-    // _chunkRequest = rhs._chunkRequest;
-    // _requestIsDone = rhs._requestIsDone;
-    // _boundary = rhs._boundary;
-    // _multipartRequest = rhs._multipartRequest;
-    // if (_chunkFile.empty() == false) {
-    //   unlink(_chunkFile.c_str());
-    // }
-    // _chunkFile = rhs._chunkFile;
-    // if (_chunkFd != -1) {
-    //   close(_chunkFd);
-    // }
-    // if (rhs._chunkFd != -1) {
-    //   _chunkFd = dup(rhs._chunkFd);
-    // } else
-    //   _chunkFd = -1;
-    // _sizeChunk = rhs._sizeChunk;
-    // _multipart = rhs._multipart;
-    _request = rhs._request;
+    _headers = rhs._headers;
+    _requestSize = rhs._requestSize;
+    _vBody = rhs._vBody;
+    _vBuffer = rhs._vBuffer;
+    _bodyToRead = rhs._bodyToRead;
+    _chunkRequest = rhs._chunkRequest;
+    _requestIsDone = rhs._requestIsDone;
+    _boundary = rhs._boundary;
+    _multipartRequest = rhs._multipartRequest;
+    if (_tmpFile.empty() == false) {
+      unlink(_tmpFile.c_str());
+    }
+    _tmpFile = rhs._tmpFile;
+    if (_tmpFd != -1) {
+      close(_tmpFd);
+    }
+    if (rhs._tmpFd != -1) {
+      _tmpFd = open(_tmpFile.c_str(), O_CLOEXEC | O_RDWR | O_APPEND);
+      if (_tmpFd == -1)
+        throw std::runtime_error("Client::operator=: fail to open _tmpFd on " +
+                                 _tmpFile);
+    } else
+      _tmpFd = -1;
+    _sizeChunk = rhs._sizeChunk;
+    _multipart = rhs._multipart;
+    _currentMultipart = rhs._currentMultipart;
+    // _request = rhs._request;
     _response = rhs._response;
     _keepConnectionAlive = rhs._keepConnectionAlive;
+    _diffFileSystem = rhs._diffFileSystem;
     _epollIn = rhs._epollIn;
-    if (_filefd != -1)
-      close(_filefd);
-    if (rhs._filefd != -1)
-      _filefd = dup(rhs._filefd);
+    if (_uploadFd != -1)
+      close(_uploadFd);
+    if (rhs._uploadFd != -1)
+      _uploadFd = dup(rhs._uploadFd);
     else
-      _filefd = -1;
+      _uploadFd = -1;
     _leftToRead = rhs._leftToRead;
     _infileCgi = rhs._infileCgi;
     _outfileCgi = rhs._outfileCgi;
@@ -129,70 +134,74 @@ bool Client::isTimedOut(void) const {
 
 void Client::resetClient(void) {
   std::cout << YELLOW << "reset client + response" << RESET << std::endl;
-  // _server = NULL;
-  // _location = NULL;
+  _server = NULL;
+  _location = NULL;
   _time = getTime();
-  // _statusCode = 0;
-  // _sMethod = "";
-  // _sUri = "";
-  // _sPath = "";
-  // _sPathUpload = "";
-  // _sQueryUri = "";
-  // _version = 1;
-  // _sHost = "";
-  // _headers.clear();
-  // _requestSize = 0;
-  // resetVector(_vBuffer);
-  // resetVector(_vBody);
-  // _bodyToRead = -1;
-  // _chunkRequest = false;
-  // _requestIsDone = true;
-  // _boundary = "";
-  // _multipartRequest = false;
-  // if (_chunkFile.empty() == false) {
-  //   unlink(_chunkFile.c_str());
-  // }
-  // _chunkFile = "";
-  // if (_fdUpload != -1)
-  //   close(_fdUpload);
-  // _fdUpload = -1;
-  // if (_chunkFd != -1) {
-  //   close(_chunkFd);
-  // }
-  // _chunkFd = -1;
-  // _sizeChunk = 0;
-  // resetVector(_multipart);
-  // _currentMultipart = 0;
-  _request.resetRequest();
+  _statusCode = 0;
+  _sMethod = "";
+  _sUri = "";
+  _sPath = "";
+  _sPathUpload = "";
+  _sQueryUri = "";
+  _version = 1;
+  _headers.clear();
+  _requestSize = 0;
+  resetVector(_vBuffer);
+  resetVector(_vBody);
+  _bodyToRead = -1;
+  _chunkRequest = false;
+  _requestIsDone = true;
+  _boundary = "";
+  _multipartRequest = false;
+  if (_tmpFile.empty() == false) {
+    std::cerr << "unlink: " << _tmpFile << std::endl;
+    unlink(_tmpFile.c_str());
+  }
+  _tmpFile = "";
+  if (_uploadFd != -1)
+    close(_uploadFd);
+  _uploadFd = -1;
+  if (_tmpFd != -1) {
+    close(_tmpFd);
+  }
+  _tmpFd = -1;
+  _sizeChunk = 0;
+  resetVector(_multipart);
+  _currentMultipart = 0;
+  // _request.resetRequest();
   _response.reset();
   _diffFileSystem = false;
   _epollIn = false;
   _leftToRead = 0;
   _cgiPid = 0;
-  if (_outfileCgi.size() > 0)
+  if (_outfileCgi.size() > 0) {
+    std::cerr << "unlink: " << _outfileCgi << std::endl;
     unlink(_outfileCgi.c_str());
+  }
   _outfileCgi = "";
-  if (_infileCgi.size() > 0)
+  if (_infileCgi.size() > 0) {
+    std::cerr << "unlink: " << _infileCgi << std::endl;
     unlink(_infileCgi.c_str());
+  }
   _infileCgi = "";
   _sPathInfo = "";
-  if (_filefd != -1)
-    close(_filefd);
-  _filefd = -1;
+  if (_uploadFd != -1)
+    close(_uploadFd);
+  _uploadFd = -1;
 }
 
-// ServerConf *Client::getServerConf(void) {
-//   mapConfs::const_iterator it;
-//   it = _mapConf.find(_sHost);
-//   if (it != _mapConf.end()) {
-//     std::cout << YELLOW << "found via host: " << _sHost
-//               << "; server name: " << ((*it).second)->getMainServerName()
-//               << RESET << std::endl;
-//     return ((*it).second);
-//   }
-//   std::cout << YELLOW << "return default server" << RESET << std::endl;
-//   return (_defaultConf);
-// }
+ServerConf *Client::getServerConf(const std::string &host) {
+  mapConfs::const_iterator it;
+  it = _mapConf.find(host);
+  if (it != _mapConf.end()) {
+    std::cout << YELLOW << "found via host: " << host
+              << "; server name: " << ((*it).second)->getMainServerName()
+              << RESET << std::endl;
+    return ((*it).second);
+  }
+  std::cout << YELLOW << "return default server" << RESET << std::endl;
+  return (_defaultConf);
+}
 
 // const std::vector<char> &Client::getBuffer(void) const { return (_vBuffer); }
 
@@ -248,13 +257,47 @@ void Client::setStatusCode(size_t exitStatus) {
             << "; _statusCode = " << _statusCode << std::endl;
 }
 
-bool Client::addBuffer(std::vector<char> &buffer) {
-  bool ret = _request.addBuffer(buffer);
-  _statusCode = _request._statusCode;
-  if (ret == true && _request.isCgi() == true)
-    setupCgi();
-  return (ret);
-}
+// bool Request::addBuffer(const std::vector<char> buffer) {
+//   if (_bodyToRead > 0 || _requestIsDone == false) {
+//     _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
+//     return (parseBody());
+//   }
+//   fillBufferWithoutReturnCarriage(buffer);
+//   int newLine = hasNewLine();
+//   if (newLine == 0) {
+//     return (false);
+//   }
+//   if (_vBuffer.size() < 20 || newLine > 0) {
+//     if (earlyParsing(newLine) == false) {
+//       _statusCode = 400;
+//       _server = _defaultConf;
+//       return (true);
+//     }
+//   }
+//   int64_t pos = hasEmptyLine(newLine);
+//   if (pos == -1) {
+//     return (false);
+//   }
+//   std::string request(&_vBuffer[0], &_vBuffer[pos]);
+//   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + pos + 2);
+//   parseRequest(request);
+//   std::cout << RED << "End after parseRequest; StatusCode = " << _statusCode
+//             << RESET << std::endl;
+//
+//   if (_vBuffer.empty() == false) {
+//     if (_bodyToRead > 0) {
+//       _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
+//       return (parseBody());
+//     } else
+//       _statusCode = 400;
+//   }
+//   if (_statusCode != 0) {
+//     return (true);
+//   }
+//   std::cerr << "Client::addBuffer: end: _statusCode = " << _statusCode
+//             << std::endl;
+//   return (false);
+// }
 
 // void Client::print() {
 //

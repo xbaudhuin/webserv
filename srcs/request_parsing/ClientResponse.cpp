@@ -18,11 +18,12 @@ bool Client::findIndex(std::string &url) {
   size_t it = 0;
   for (; it < vector.size(); it++) {
     tmp = "." + vector[it];
-    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET
-              << std::endl;
+    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET;
     if (stat(tmp.c_str(), &statbuf) == 0) {
+      std::cout << " found" << std::endl;
       break;
     }
+    std::cout << " not found" << std::endl;
     if (errno == EACCES)
       _statusCode = 403;
     else if (_statusCode != 403 && errno == ENOENT) {
@@ -172,7 +173,7 @@ void Client::findPages(const std::string &urlu) {
   struct stat st;
   std::cout << GREEN
             << "Client::findPages: AFTER searching location: _statusCode = "
-            << _statusCode << std::endl;
+            << _statusCode << "; url = " << url << std::endl;
   if (stat(url.c_str(), &st) == -1) {
     std::cout << RED << "Clent::findPages: stat(" << url << ") = -1" << RESET
               << std::endl;
@@ -189,10 +190,10 @@ void Client::findPages(const std::string &urlu) {
     _statusCode = 403;
     return;
   }
-  _filefd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
+  _tmpFd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
   // _file.open(url.c_str(), std::ios::in);
   std::cout << RED << "trying to open file: " << url << RESET << std::endl;
-  if (_filefd == -1) {
+  if (_tmpFd == -1) {
     std::cout << RED << "failed to open file: " << url << RESET << std::endl;
     if (access(url.c_str(), F_OK) == -1)
       _statusCode = 404;
@@ -216,11 +217,12 @@ void Client::readFile(void) {
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
   std::cout << "Bytes to read=" << toRead << std::endl;
   std::vector<char> buf(toRead);
-  ssize_t readBytes = read(_filefd, &buf[0], toRead);
+  ssize_t readBytes = read(_tmpFd, &buf[0], toRead);
 
   std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
             << "; tried " << _leftToRead << std::endl;
   if (readBytes < 0) {
+    std::cout << RED << "invalid read on _tmpFd" << RESET << std::endl;
     _statusCode = 500;
     return;
   }
@@ -253,7 +255,7 @@ void Client::readFile(std::vector<char> &vec) {
   // char buf[_sizeMaxResponse] = {0};
   int toRead = std::min(_sizeMaxResponse, _leftToRead);
   std::vector<char> buf(toRead);
-  ssize_t readBytes = read(_filefd, &buf[0], toRead);
+  ssize_t readBytes = read(_tmpFd, &buf[0], toRead);
 
   std::cout << PURP << "read of size " << readBytes << ": " << buf.size()
             << std::endl;
@@ -400,7 +402,7 @@ void Client::handleCgi(std::vector<char> &response) {
   }
   char buf[1000];
   getcwd(buf, 1000);
-  std::cout << "trying to open: " << _outfileCgi << "at path= " << buf
+  std::cout << "trying to open: " << _outfileCgi << " at path= " << buf
             << std::endl;
   struct stat st;
   if (stat(_outfileCgi.c_str(), &st) == -1) {
@@ -409,13 +411,13 @@ void Client::handleCgi(std::vector<char> &response) {
     response = _response.getResponse();
     return;
   }
-  std::cout << RED << "Client::HandleCGI: stat() == -1" << RESET << std::endl;
+  std::cout << RED << "Client::HandleCGI: stat() != -1" << RESET << std::endl;
   std::stringstream ss;
   ss << st.st_size;
   std::cout << "stat->size = " << ss.str() << std::endl;
   _leftToRead = st.st_size;
-  _filefd = open(_outfileCgi.c_str(), O_RDONLY);
-  if (_filefd == -1) {
+  _tmpFd = open(_outfileCgi.c_str(), O_RDONLY);
+  if (_tmpFd == -1) {
     std::cout << RED << "fail to open " << _outfileCgi << RESET << std::endl;
     _statusCode = 500;
     buildResponse();
@@ -448,6 +450,11 @@ void Client::handleDelete(void) {
 }
 
 void Client::handleMultipart(void) {
+  std::cout << YELLOW << "Client:handleMultipart: _currentMultipart = "
+            << _currentMultipart
+            << "; tmpfilename = " << _multipart[_currentMultipart].tmpFilename
+            << "; file = " << _multipart[_currentMultipart].file << RESET
+            << std::endl;
   if (_diffFileSystem == false &&
       rename(_multipart[_currentMultipart].tmpFilename.c_str(),
              _multipart[_currentMultipart].file.c_str()) != 0) {
@@ -475,6 +482,10 @@ void Client::handleMultipart(void) {
   if (_statusCode < 400 && _currentMultipart == _multipart.size()) {
     _statusCode = 201;
   }
+  if (_statusCode >= 201)
+    return;
+  std::cout << "next multipart" << std::endl;
+  handleMultipart();
 }
 
 void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
@@ -490,9 +501,9 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
       _statusCode = 409;
       return;
     }
-    _filefd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
-    _fdUpload = open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND);
-    if (_filefd == -1) {
+    _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
+    _uploadFd = open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND);
+    if (_tmpFd == -1 || _uploadFd == -1) {
       _statusCode = 500;
       return;
     }
@@ -502,22 +513,23 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
   if (_statusCode == 500) {
     return;
   }
-  ssize_t writeByte = write(_fdUpload, &body[0], body.size());
-  if (writeByte == -1 || writeByte < body.size())
+  ssize_t writeByte = write(_uploadFd, &body[0], body.size());
+  if (writeByte == -1 || static_cast<size_t>(writeByte) < body.size())
     _statusCode = 500;
   if (_bodyToRead == 0) {
-    close(_filefd);
-    _filefd = -1;
+    close(_tmpFd);
+    _tmpFd = -1;
+    std::cerr << "unlink: " << tmp << std::endl;
     unlink(tmp.c_str());
-    close(_fdUpload);
-    _fdUpload = -1;
+    close(_uploadFd);
+    _uploadFd = -1;
   }
   return;
 }
 
 void Client::handleChunk(void) {
   if (_diffFileSystem == false &&
-      rename(_chunkFile.c_str(), _sPathUpload().c_str()) != 0) {
+      rename(_tmpFile.c_str(), _sPathUpload.c_str()) != 0) {
     switch (errno) {
     case EXDEV:
       errno = 0;
@@ -534,7 +546,7 @@ void Client::handleChunk(void) {
     }
   }
   if (_diffFileSystem == true) {
-    uploadTmpFileDifferentFileSystem(_chunkFile, _sPathUpload);
+    uploadTmpFileDifferentFileSystem(_tmpFile, _sPathUpload);
   }
 }
 
@@ -545,15 +557,14 @@ void Client::handleUpload(void) {
     _statusCode = 409;
     return;
   }
-  _filefd = open(_sPathUpload.c_str(), O_CLOEXEC | O_CREAT | O_RDWR);
-  if (_filefd == -1) {
+  _uploadFd = open(_sPathUpload.c_str(), O_CLOEXEC | O_CREAT | O_RDWR);
+  if (_uploadFd == -1) {
     _statusCode = 501;
     return;
   }
-  ssize_t byteWrite = write(_filefd, &_vBody[0], _vBody.size());
-  if (byteWrite != _vBody.size()) {
+  ssize_t byteWrite = write(_uploadFd, &_vBody[0], _vBody.size());
+  if (byteWrite == -1 || static_cast<size_t>(byteWrite) != _vBody.size()) {
     _statusCode = 500;
-    close(_chunkFd);
     unlink(_sPathUpload.c_str());
     return;
   }
@@ -561,50 +572,35 @@ void Client::handleUpload(void) {
   return;
 }
 
-void Client::handlePOST(void) {
+void Client::handlePOST() {
   if (_multipart.size() >= 1) {
     handleMultipart();
-    if (_statusCode) {
-      defaultHTMLResponse();
-    }
-    return;
   } else if (_chunkRequest == true) {
     handleChunk();
-    if (_statusCode) {
-      defaultHTMLResponse();
-    }
-    return;
   } else {
     handleUpload();
-    if (_statusCode) {
-      defaultHTMLResponse();
-    }
   }
+  handleError();
 }
 
-bool Client::sendResponse(std::vector<char> &response) {
-  errno = 0;
-  resetVector(response);
+bool Client::getResponse(std::vector<char> &response) {
   if (_cgiPid > 0) {
     std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
               << std::endl;
     handleCgi(response);
     if (_leftToRead == 0)
       resetClient();
-    _time = getTime();
     return (_leftToRead != 0);
   } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
               << std::endl;
     handleDelete();
-    resetClient();
-    return (false);
+    response = _response.getResponse();
   } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
               << std::endl;
     handlePOST();
-    resetClient();
-    return (false);
+    response = _response.getResponse();
   }
   // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
   else if (_response.isReady() == false) {
@@ -616,7 +612,6 @@ bool Client::sendResponse(std::vector<char> &response) {
               << std::endl;
     if (_leftToRead == 0)
       resetClient();
-    _time = getTime();
     return (_leftToRead != 0);
   }
   bool ret = _leftToRead != 0;
@@ -625,7 +620,6 @@ bool Client::sendResponse(std::vector<char> &response) {
     readFile(response);
     if (_statusCode == 500) {
       std::cerr << "Client::sendResponse: error in readFile()" << std::endl;
-      _time = getTime();
       return (false);
     }
   }
@@ -634,4 +628,15 @@ bool Client::sendResponse(std::vector<char> &response) {
     resetClient();
   std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   return (_leftToRead != 0);
+}
+
+bool Client::sendResponse(std::vector<char> &response) {
+  errno = 0;
+  resetVector(response);
+  if (_location == NULL) {
+    std::cout << RED << "FAIL NO LOCATION OSKOUR" << RESET << std::endl;
+  }
+  bool ret = getResponse(response);
+  _time = getTime();
+  return (ret);
 }

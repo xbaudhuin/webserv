@@ -1,4 +1,5 @@
-obj/request_parsing/Client.o: srcs/request_parsing/Client.cpp \
+obj/request_parsing/ClientParseRequest.o: \
+ srcs/request_parsing/ClientParseRequest.cpp \
  include/headers_hpp/Client.hpp include/headers_hpp/Response.hpp \
  include/headers_hpp/Location.hpp include/headers_hpp/Utils.hpp \
  include/headers_hpp/Colors.hpp include/headers_hpp/Typedef.hpp \

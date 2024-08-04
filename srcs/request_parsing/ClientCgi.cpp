@@ -25,15 +25,13 @@ void Client::cgiPOSTMethod(void) {
   if (fd == -1) {
     throw std::runtime_error("Client::cgiPOSTMethod: fail to open infileCgi");
   }
-  std::vector<char> body = _request.getBody();
-  ssize_t writeBytes = write(fd, &body[0], body.size());
-  // ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
+  ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
   close(fd);
   fd = -1;
   if (writeBytes == -1)
     throw std::runtime_error(
         "Client::cgiPOSTMethod: fail to write to infileCgi");
-  if (static_cast<size_t>(writeBytes) < body.size()) {
+  if (static_cast<size_t>(writeBytes) < _vBody.size()) {
     throw std::runtime_error(
         "Client::cgiPOSTMethod: writeBytes < _body.size()");
   }
@@ -167,13 +165,13 @@ void Client::freeVector(std::vector<char *> &vEnv,
 }
 
 void Client::buildArguments(std::vector<char *> &arg) {
-  std::string path = _request.getExecutePath();
-  // addVariableToEnv(arg, _location->getExecutePath(_sUri).c_str());
-  addVariableToEnv(arg, path.c_str());
-  std::cerr << "getexecutepath = " << path << std::endl;
-  path = _request.getCgiFile();
+  // std::string path = _request.getExecutePath();
+  addVariableToEnv(arg, _location->getExecutePath(_sUri).c_str());
+  // addVariableToEnv(arg, path.c_str());
+  // std::cerr << "getexecutepath = " << path << std::endl;
+  // path = _request.getCgiFile();
   addVariableToEnv(arg, _location->getCgiFile(_sUri));
-  addVariableToEnv(arg, path);
+  // addVariableToEnv(arg, path);
   std::cerr << "getcgifile = " << _location->getCgiFile(_sUri) << std::endl;
   arg.push_back(NULL);
 }

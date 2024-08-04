@@ -3,7 +3,6 @@
 
 #include "Response.hpp"
 #include "ServerConf.hpp"
-#include "Request.hpp"
 #include "Utils.hpp"
 // #include <cstdint>
 #include <ctime>
@@ -23,6 +22,13 @@
 
 class ServerConf;
 
+typedef struct multipartRequest {
+  std::map<std::string, std::string> header;
+  std::vector<char> body;
+  std::string tmpFilename;
+  std::string file;
+} multipartRequest;
+
 class Client {
 public:
   // Constructor
@@ -37,10 +43,10 @@ public:
 
   // method to debug
   void print();
-  // int getBodyToRead(void) const;
+  int getBodyToRead(void) const;
 
   // method
-  bool addBuffer(std::vector<char> &buffer);
+  bool addBuffer(const std::vector<char> &buffer);
   const std::vector<char> &getBuffer(void) const;
   bool sendResponse(std::vector<char> &response);
   void setStatusCode(size_t code);
@@ -54,44 +60,44 @@ private:
   int _socket;
   mapConfs &_mapConf;
   ServerConf *_defaultConf;
-  // ServerConf *_server;
-  // Location *_location;
+  ServerConf *_server;
+  Location *_location;
   time_t _time;
-  Request _request;
+  // Request _request;
 
   // requestLine attribute
   size_t _statusCode;
-  // std::string _sMethod;
-  // std::string _sUri;
-  // std::string _sPath;
-  // std::string _sPathUpload;
-  // std::string _sQueryUri;
-  // size_t _version;
+  std::string _sMethod;
+  std::string _sUri;
+  std::string _sPath;
+  std::string _sPathUpload;
+  std::string _sQueryUri;
+  size_t _version;
 
   // request attribute
   // std::string _sHost;
-  // std::map<std::string, std::string> _headers;
-  // size_t _requestSize;
-  // std::vector<char> _vBody;
-  // std::vector<char> _vBuffer;
-  // int64_t _bodyToRead;
-  // bool _chunkRequest;
-  // bool _requestIsDone;
-  // std::string _boundary;
-  // bool _multipartRequest;
-  // std::string _chunkFile;
-  // int _fdUpload;
+  std::map<std::string, std::string> _headers;
+  size_t _requestSize;
+  std::vector<char> _vBody;
+  std::vector<char> _vBuffer;
+  int64_t _bodyToRead;
+  bool _chunkRequest;
+  bool _requestIsDone;
+  std::string _boundary;
+  bool _multipartRequest;
+  std::string _tmpFile;
+  int _tmpFd;
   // int _chunkFd;
-  // int64_t _sizeChunk;
-  // std::vector<multipartRequest> _multipart;
-  // size_t _currentMultipart;
+  int64_t _sizeChunk;
+  std::vector<multipartRequest> _multipart;
+  size_t _currentMultipart;
 
   // Response attribute
   Response _response;
   bool _keepConnectionAlive;
   bool _diffFileSystem;
   bool _epollIn;
-  int _filefd;
+  int _uploadFd;
   size_t _leftToRead;
 
   // cgi attributes
@@ -113,39 +119,44 @@ private:
   static const std::map<std::string, char> _uriEncoding;
 
   // Parsing Method
-  // bool checkMethod(void);
-  // bool checkIfValid(void);
-  // void removeTrailingLineFromBuffer(void);
-  // std::string getLineFromBuffer();
-  // void removeReturnCarriageNewLine(std::string &line);
+  bool parseBuffer(const std::vector<char> &buffer);
+  bool checkMethod(void);
+  void getPathUpload(void);
+  bool requestValidByLocation(void);
   // void removeReturnCarriage(std::vector<char> &vec);
-  // size_t hasNewLine(void) const;
-  // bool earlyParsing(int newLine);
-  // void parseRequest(std::string &request);
-  // size_t parseRequestLine(const std::string &requestLine);
-  // void checkPathInfo(void);
-  // std::string getBoundaryString(std::string &boundaryHeader);
-  // bool saveToTmpFile(void);
-  // void checkBodyHeader(multipartRequest &multi, std::vector<char> &body);
-  // bool checkBoundary(void);
-  // bool checkHeaderMulti(multipartRequest &multi);
-  // bool checkBodyMultipartCgi(std::string &boundary);
-  // bool getMultipartBody(multipartRequest &multi);
-  // bool parseMultipartRequest(std::string &boundary);
-  // bool parseChunkRequest(void);
-  // void setupBodyParsing(void);
-  // bool parseBody(void);
-  // void uriDecoder(std::string &uri);
-  // int parseUri(const std::string &uri);
-  // void vectorToHeadersMap(std::vector<std::string> &request);
-  // size_t insertInMap(std::string &line,
-  //                    std::map<std::string, std::string> &map);
-  // int64_t getSizeChunkFromBuffer(void);
-  // bool getTrailingHeader(void);
-  // ServerConf *getServerConf(void);
+  size_t hasNewLine(void) const;
+  bool earlyParsing(int newLine);
+  void parseRequest(std::string &request);
+  size_t parseRequestLine(const std::string &requestLine);
+  void checkPathInfo(void);
+  bool saveToTmpFile(void);
+  void checkBodyHeader(multipartRequest &multi, std::vector<char> &body);
+  void setupBodyParsing(void);
+  bool parseBody(void);
+  void uriDecoder(std::string &uri);
+  int parseUri(const std::string &uri);
+  void vectorToHeadersMap(std::vector<std::string> &request);
+  size_t insertInMap(std::string &line,
+                     std::map<std::string, std::string> &map);
+  bool getLocation(void);
+  ServerConf *getServerConf(const std::string &host);
+
+  // multipart method
+  std::string getLineFromBuffer();
+  bool checkHeaderMulti(multipartRequest &multi);
+  bool checkBodyMultipartCgi(std::string &boundary);
+  std::string getBoundaryString(std::string &boundaryHeader);
+  bool checkBoundary(void);
+  bool getMultipartBody(multipartRequest &multi, std::string &line);
+  bool parseMultipartRequest(std::string &boundary, bool check);
+  bool saveMultiToTmpfile(void);
+  // chunked method
+  bool parseChunkRequest(void);
+  bool getTrailingHeader(void);
+  int64_t getSizeChunkFromBuffer(void);
 
   // Response Method
-  bool getResponse(std::string &response);
+  bool getResponse(std::vector<char> &response);
   void findPages(const std::string &url);
   bool findIndex(std::string &url);
   void buildListingDirectory(std::string &url);
@@ -164,7 +175,7 @@ private:
   void createResponseBody(void);
   void readFile(std::vector<char> &vec);
   void readFile(void);
-  // bool checkBodyToRead(std::vector<char> buffer);
+  bool checkBodyToRead(std::vector<char> buffer);
 
   // cgi Method
   void handleDelete(void);
@@ -182,6 +193,12 @@ private:
   void setupChild(std::string &cgiPathScript);
   void setupCgi();
   // utils Method
+  bool saveToTmpFile(int fd, std::vector<char> body);
+  void removeTrailingLineFromBuffer(void);
+  void removeReturnCarriageNewLine(std::string &line);
+  bool isCgi(void);
+  void fillBufferWithoutReturnCarriage(const std::vector<char> &vec);
+  int64_t hasEmptyLine(int newLine);
   // bool isHexadecimal(char c);
   std::string getDateOfFile(time_t rawtime) const;
   std::string getDate(void);
