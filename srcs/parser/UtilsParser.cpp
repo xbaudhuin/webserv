@@ -84,9 +84,8 @@ bool isHexadecimal(char c) {
 }
 
 time_t getTime(void) { return (std::time(0)); }
-//
-// void resetVector(std::vector<char> &vec) {
-//   std::vector<char> tmp;
-//   vec.clear();
-//   vec.swap(tmp);
-// }
+
+std::string getConfig(void)
+{
+  return("server {  listen 127.0.0.1:4250;  server_name webserv ;  client_max_body_size 12k ;  root ./html/cgi;error_page 404 405 406 /404.html;    location /python/ {                  cgi .py welcome.py;              upload_location /cookies/;      path_info on;      set_method POST DELETE GET on;  }  location /ruby/ {                  cgi .rb welcome.rb;              upload_location /cookies/;      path_info on;      set_method POST DELETE GET on;  }  location /perl/ {            cgi .pl welcome.pl;        upload_location /cookies/;      path_info on;       set_method POST DELETE GET on;      }  location /php/ {                  cgi .php jokes.php;              upload_location /cookies/;      path_info on;      set_method POST DELETE GET on;  }  location / {      set_method POST DELETE GET on;      autoindex on;  }}server {  server_name Taylor;  listen 4252;  root ./website/taylor;  location / {      index site.html;  }}server {  server_name oof;  listen 4253;  root ./;  location / {      autoindex on;  }}server {  server_name webserv;  listen 4251;  root ./website/dumas;  location / {      index site.html;  }}");
+}

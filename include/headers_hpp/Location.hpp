@@ -16,12 +16,8 @@ class Location
         bool _delete;
         bool _is_a_dir;
         std::string _root_server;
-        /* POST */
-        /* DELETE */
-        /* FAST_CGI */
         std::vector<std::string> available_extension;
         std::vector<std::pair<std::string, std::string> > cgi;
-        /* TYPE_FILE IF EXIST */
         bool _exact_match;
         std::string root;
         std::string redirection;
@@ -33,17 +29,24 @@ class Location
         int _root_check;
         std::string upload_location;
         std::map<std::string, std::string> _exec_path;
-
+        int _alias_check;
+        std::string alias;
+        bool _is_generated;
+        std::string _base_uri;
     public:
         Location();
         Location(const Location &rhs);
+        Location(const Location &rhs, int);
         Location &operator=(const Location &rhs);
         ~Location();
 
         /* getters */
+        const int& hasAlias(void) const;
+        const int& hasRoot(void) const;
         const uint64_t& getLimitBodySize(void) const;
         const std::string& getUrl(void) const;
         const std::string& getRoot(void) const;
+        const std::string& getAlias(void) const;
         const std::string& getRedirection(void) const;
         const vec_string& getIndexFile(void) const;
         const int& getRedirCode(void) const;
@@ -64,11 +67,14 @@ class Location
         const std::string& getExecutePath(const std::string& uri);
         std::string getExtension(const std::string& uri) const;
         const vec_string& availableExtension() const;
+        const bool& isGenerated() const;
+        std::string myUri() const;
 
         /* setters */
         void addLimitBodySize(const std::string &limit);
         void addUrl(const std::string &url, std::string root);
         void addRoot(const std::string &root);
+        void addAlias(const std::string &alias);
         void addRedirection(const std::string &code, const std::string &redirect);
         void setAutoIndex(const std::string &check);
         void setPathInfo(const std::string &check);
@@ -80,6 +86,7 @@ class Location
         void fixUrl(const std::string &url);
         void fixCgi();
         void fixIndexFile();
+        void setBaseUri();
 };
 
 std::ostream& operator<<(std::ostream& out, const Location& cf);

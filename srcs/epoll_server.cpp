@@ -221,7 +221,7 @@ int	main()
 	add_client_socket_to_epoll(epoll_fd, server_socket, server_sockets, EPOLLIN);
 	if (epoll_fd == -1)
 	{
-		std::cerr << "wevserv: epoll_create: " << strerror(errno) << std::endl;
+		std::cerr << "webserv: epoll_create: " << strerror(errno) << std::endl;
 		return (1);
 	}
 	while (true)

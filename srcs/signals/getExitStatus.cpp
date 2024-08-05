@@ -1,24 +1,16 @@
 #include "sockets.hpp"
 
-int	getExitStatus(int codeExit)
-{
-	int	exitStatus;
-
-	if (WIFEXITED(codeExit))
-	{
-		exitStatus = WEXITSTATUS(codeExit);
+int	getExitStatus(int codeExit) {
+	if (WIFEXITED(codeExit)) {
+		return WEXITSTATUS(codeExit);
 	}
-	else if (WIFSIGNALED(codeExit))
-	{
-		exitStatus = WTERMSIG(codeExit) + 128;
+	else if (WIFSIGNALED(codeExit)) {
+		return (WTERMSIG(codeExit) + 128);
 	}
-	else if (WIFSTOPPED(codeExit))
-	{
-		exitStatus = WSTOPSIG(codeExit) + 128;
+	else if (WIFSTOPPED(codeExit)) {
+		return (WSTOPSIG(codeExit) + 128);
 	}
-	else
-	{
-		exitStatus = codeExit;
+	else {
+		return codeExit;
 	}
-	return (exitStatus);
 }

@@ -2,14 +2,17 @@
 <html>
 
 <head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>ConnectionForm</title>
+	<link rel="icon" type="image/x-icon" href="perl.jpg">
 	<style>
 		* {
 			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 		}
 
 		body {
-			background-color: bisque;
+			background-color: seagreen;
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -26,9 +29,12 @@
 </head>
 
 <body>
-	<h1> Change Your BackGround Color !</h1>
-	<form action="ColorSetter.php" method="get">
+	<h1>Create Your UserBoard !</h1>
+	<form action="/perl/cookie.pl" method="post">
+		Username: <input type="text" name="username" />
+
 		<br />
+
 		<label for="colors">BackGround Color:</label>
 		<select name="BackGroundColor" id="Colors">
 			<option value="PaleGreen">PaleGreen</option>

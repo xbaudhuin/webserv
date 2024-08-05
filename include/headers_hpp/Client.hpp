@@ -51,6 +51,7 @@ public:
   bool sendResponse(std::vector<char> &response);
   void setStatusCode(size_t code);
   bool isTimedOut(void) const;
+  bool isTimedOutCgi(void) const;
   void addErrorResponse(size_t errorCode);
   bool keepConnectionOpen(void) const;
   void addCgiToMap(std::map<int, pid_t> &mapCgi);
@@ -180,7 +181,6 @@ private:
   // cgi Method
   void handleDelete(void);
   void handleCgi(std::vector<char> &response);
-  bool isTimedOutCgi(void) const;
   void cgiPOSTMethod(void);
   void cgiOutfile(void);
   void addHeaderToEnv(std::vector<char *> &vEnv, const std::string &envVariable,

@@ -1,14 +1,4 @@
 #include "Client.hpp"
-// #include "Error.hpp"
-// #include "Port.hpp"
-// #include "ServerConf.hpp"
-// #include "Utils.hpp"
-// #include <cstddef>
-// #include <exception>
-// #include <fcntl.h>
-// #include <stdexcept>
-// #include <sys/wait.h>
-// #include <unistd.h>
 
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
@@ -55,7 +45,6 @@ Client::~Client(void) {
 Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
   _uploadFd = -1;
   _tmpFd = -1;
-  // _fdUpload = -1;
   if (this != &copy)
     *this = copy;
   return;
@@ -74,7 +63,6 @@ Client &Client::operator=(Client const &rhs) {
     _sPath = rhs._sPath;
     _sQueryUri = rhs._sQueryUri;
     _version = rhs._version;
-    // _sHost = rhs._sHost;
     _headers = rhs._headers;
     _requestSize = rhs._requestSize;
     _vBody = rhs._vBody;
@@ -101,7 +89,6 @@ Client &Client::operator=(Client const &rhs) {
     _sizeChunk = rhs._sizeChunk;
     _multipart = rhs._multipart;
     _currentMultipart = rhs._currentMultipart;
-    // _request = rhs._request;
     _response = rhs._response;
     _keepConnectionAlive = rhs._keepConnectionAlive;
     _diffFileSystem = rhs._diffFileSystem;
@@ -168,7 +155,6 @@ void Client::resetClient(void) {
   _sizeChunk = 0;
   resetVector(_multipart);
   _currentMultipart = 0;
-  // _request.resetRequest();
   _response.reset();
   _diffFileSystem = false;
   _epollIn = false;

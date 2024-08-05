@@ -8,12 +8,13 @@
 #include <signal.h>
 #include "Client.hpp"
 
-const int MAX_EVENTS = 500;
-const int MAX_FD = 50;
+const int MAX_EVENTS = 400;
+const int MAX_FD = 900;
 
 class Webserv
 {
     private:
+		bool 		_has_config;
 		int			_epollFd;
 		mapPorts	_Ports;
         vec_string	_env;
@@ -58,7 +59,6 @@ class Webserv
        		 	~Webserv();
         void	addEnv(char **env);
         char	** getEnv(void) const;
-
 		int		start(void);
 
 		class	StopServer : public std::exception

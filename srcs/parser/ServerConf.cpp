@@ -2,11 +2,12 @@
 
 ServerConf::ServerConf()
 {
-    port = 80;
-    host = 0;
+    port = 4243;
+    // host = 0;
+    addHost("127.0.0.1");
     limit_body_size = 0;
     rank = -1;
-    root = "/html";
+    root = "";
     err_pages[100] = "/error_pages/100.html";
     err_pages[101] = "/error_pages/101.html";
     err_pages[102] = "/error_pages/102.html";
@@ -264,7 +265,33 @@ void ServerConf::addLimitBodySize(const std::string &limit)
 
 void ServerConf::addLocation(const Location &loc)
 {
+    if(loc.isADir())
+    {
+        std::string url = loc.getUrl();
+        std::cout << RED << url << RESET << std::endl;
+        for (size_t i = 0; i < this->_locations.size(); i++)
+        {
+            if(url == this->_locations[i].getUrl() && this->_locations[i].isGenerated())
+            {
+                this->_locations.erase(_locations.begin() + i, _locations.begin() + i + 1);
+                i = 0;
+            }
+            // std::cout << RED << this->_locations[i] << RESET << std::endl;
+        }
+    }
     this->_locations.push_back(loc);
+    if(!loc.isADir() && !loc.isExactMatch())
+    {
+        std::string url = loc.getIndexFile()[0] + "/";
+        for (size_t i = 0; i < this->_locations.size(); i++)
+        {
+            if(url == this->_locations[i].getUrl())
+                return;
+        }
+        Location lc(loc, 1);
+        this->_locations.push_back(lc);
+        // std::cout << YELLOW << lc << " && " << lc.getUrl() << RESET << std::endl;
+    }
 }
 
 void ServerConf::addRoot(const std::string &dir)

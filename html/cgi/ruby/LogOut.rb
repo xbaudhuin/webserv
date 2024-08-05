@@ -5,6 +5,7 @@ def log_out
   body = <<~HTML
     <!DOCTYPE html>
     <html><head><title>Bye Bye!</title>
+    <link rel="icon" type="image/x-icon" href="ruby.jpg">
     <style>* {
     font-family: system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
@@ -20,6 +21,7 @@ def log_out
   puts "Content-Type: text/html"
   puts "Set-Cookie: user=blbkvvv; Expires=Thu, 01-Jan-1970 00:00:10 GMT"
   puts "Set-Cookie: bgcolor=spspspsp; Expires=Thu, 01-Jan-1970 00:00:10 GMT"
+  puts "Set-Cookie: rubies=coakdp; Expires=Thu, 01-Jan-1970 00:00:10 GMT"
 
   # Print server name if available
   if ENV['SERVER_NAME']
