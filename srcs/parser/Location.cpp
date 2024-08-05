@@ -401,6 +401,10 @@ void Location::fixCgi(void){
             this->cgi[i].second.erase(0, 1);
         this->cgi[i].second = this->url + this->cgi[i].second;
     }
+    if(this->getPostStatus() && this->upload_location.size() == 0)
+    {
+        this->upload_location = this->_root_server + "/";
+    }
 }
 
 void Location::fixIndexFile(void){
