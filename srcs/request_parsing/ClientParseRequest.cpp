@@ -1,4 +1,6 @@
 #include "Client.hpp"
+#include "Error.hpp"
+#include "Utils.hpp"
 #include <fcntl.h>
 // #include "Colors.hpp"
 // #include "Error.hpp"
@@ -176,15 +178,17 @@ bool Client::checkMethod(void) {
   if (_sMethod == "POST") {
     std::map<std::string, std::string>::iterator it =
         _headers.find("content-type");
-    if (it == _headers.end() && _headers.count("transfer-encoding") == 0) {
-      std::cout << RED << "no header content-type" << RESET << std::endl;
-      _statusCode = 400;
-      return (false);
-    }
-    if ((*it).second.find("multipart") == (*it).second.npos &&
-        _headers.count("content-length") == 0) {
-      std::cout << RED << "Client::checkMethod: no multipart" << std::endl;
-      _statusCode = 413;
+    if (_headers.count("transfer-encoding") == 0) {
+      if (it == _headers.end()) {
+        std::cout << RED << "no header content-type" << RESET << std::endl;
+        _statusCode = 400;
+        return (false);
+      }
+      if ((*it).second.find("multipart") == (*it).second.npos &&
+          _headers.count("content-length") == 0) {
+        std::cout << RED << "Client::checkMethod: no multipart" << std::endl;
+        _statusCode = 413;
+      }
     }
   }
   if (_statusCode >= 400)
@@ -193,8 +197,8 @@ bool Client::checkMethod(void) {
 }
 
 void Client::getPathUpload(void) {
-  _sPathUpload = _location->getUploadLocation();
-  if (_sPathUpload.empty() == true) {
+  _sPathUpload = "." + _location->getUploadLocation();
+  if (_sPathUpload == ".") {
     _sPathUpload = _sUri;
     if (_sPathUpload == _location->getUrl()) {
       std::stringstream ss;
@@ -202,7 +206,12 @@ void Client::getPathUpload(void) {
       _sPathUpload += "/";
       _sPathUpload += ss.str();
     }
+  } else {
+    std::string path = _sUri.substr(_location->myUri().size());
+    std::cout << PURP << "added path : " << path << RESET << std::endl;
+    _sPathUpload += path;
   }
+  std::cout << PURP << "uploadpath : " << _sPathUpload << RESET << std::endl;
 }
 
 bool Client::requestValidByLocation(void) {
@@ -220,16 +229,22 @@ int64_t Client::getSizeChunkFromBuffer(void) {
   std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
             << std::endl;
 
-  std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
-  std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
+  // std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
+  // std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
   for (; i < _vBuffer.size(); i++) {
-    if (_vBuffer[i] == '\n')
+    if (_vBuffer[i] == '\n' ||
+        (_vBuffer[i] == '\r' && i + 1 < _vBuffer.size() &&
+         _vBuffer[i + 1] == '\n'))
       break;
     if (isHexadecimal(_vBuffer[i]) == false) {
-      std::cout << RED << "is not hexadecimal i(" << i << "): " << _vBuffer[i]
-                << RESET << std::endl;
+      std::cout << RED << "is not hexadecimal i(" << i
+                << "): " << static_cast<int>(_vBuffer[i]) << RESET << std::endl;
+      for (size_t i = 0; i < _vBuffer.size(); i++) {
+        std::cout << YELLOW << static_cast<int>(_vBuffer[i]) << ";";
+      }
+      std::cout << RESET << std::endl;
       _statusCode = 400;
-      return (-1);
+      return (0);
     }
   }
   std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i);
@@ -241,13 +256,12 @@ int64_t Client::getSizeChunkFromBuffer(void) {
        _server->getLimitBodySize() != 0)) {
     std::cout << RED << "FAIL IN GET NB" << RESET << std::endl;
     _statusCode = 413;
-    return (-1);
+    return (0);
   }
   std::cout << "Client::getSizeChunkFromBuffer: " << "\n nb = " << nb
             << "; i = " << i << "\n";
-  std::string out(_vBuffer.begin(), _vBuffer.begin() + i + 1);
-  std::cout << "erase from buffer: " << out << std::endl;
-  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + 1);
+  _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+  removeTrailingLineFromBuffer();
   return (nb);
 }
 
@@ -267,93 +281,57 @@ void Client::removeTrailingLineFromBuffer(void) {
     return;
   }
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
+  std::cout << "Removed trailing line buffer: i = " << i << std::endl;
 }
 
 bool Client::getTrailingHeader(void) {
-  std::map<std::string, std::string>::iterator it;
-  std::vector<std::string> trailer;
-  it = _headers.find("trailer");
-  if (it != _headers.end()) {
-    std::string header = (*it).second;
-    size_t pos = 0;
-    size_t start = 0;
-    while (true) {
-      pos = header.find(",\n");
-      if (pos == header.npos)
-        break;
-      trailer.insert(trailer.end(), header.substr(start, pos));
-      start = pos;
-    }
-  }
-  std::vector<std::string> vec;
-  bool carriage = false;
-  for (size_t i = 0; i < _vBuffer.size(); i++) {
-    if (_vBuffer[i] == '\n') {
-      if (i > 0 && _vBuffer[i - 1] == '\r') {
-        carriage = true;
-      }
-      std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i - carriage);
-      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
-      removeTrailingLineFromBuffer();
-      if (_statusCode == 400)
-        return (true);
-      vec.push_back(tmp);
-      carriage = false;
-      if (_vBuffer.empty() == true)
-        break;
-    }
-  }
-  vectorToHeadersMap(vec);
-  if (_statusCode != 0)
-    return (true);
-  for (size_t i = 0; i < trailer.size(); i++) {
-    it = _headers.find(trailer[i]);
-    if (it == _headers.end()) {
-      _statusCode = 400;
-      return (true);
-    }
-  }
-  _chunkRequest = false;
+  std::cout << GREEN
+            << "Client::getTrailingHeader: start: _statusCode = " << _statusCode
+            << "; buffer = " << _vBuffer << RESET << std::endl;
+  removeTrailingLineFromBuffer();
+  std::string tmp(_vBuffer.begin(), _vBuffer.end());
+  _vBuffer.clear();
+  vec_string trailing;
+  trailing = split(tmp, "\n");
+  vectorToHeadersMap(trailing);
+  if (_statusCode == 0)
+    _statusCode = 201;
   return (true);
 }
 
 bool Client::parseChunkRequest(void) {
   std::cout << YELLOW << "Client::parseChunkRequest: " << RESET << std::endl;
   std::cout << YELLOW << "bodytoRead = " << _bodyToRead << RESET << std::endl;
-  std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
-  std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
-  if (_statusCode != 0)
+  std::cout << YELLOW << "buffer.size() = " << _vBuffer.size() << RESET
+            << std::endl;
+  // std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
+  // std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
+  if (_statusCode != 0) {
+    if (_tmpFd != -1)
+      close(_tmpFd);
     return (true);
-  if (static_cast<int64_t>(_vBuffer.size()) < _bodyToRead && _bodyToRead > 0) {
-    _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.end());
-    _bodyToRead -= _vBuffer.size();
-    return (false);
   }
   if (_bodyToRead > 0) {
     size_t min = std::min(static_cast<size_t>(_bodyToRead), _vBuffer.size());
-    std::string tmp(_vBuffer.begin(), _vBuffer.begin() + min);
-    std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET << std::endl;
-    std::cout << PURP2 << "add to _vBody and removing from _vbuffer : " << tmp
-              << RESET << std::endl;
+    // std::string tmp(_vBuffer.begin(), _vBuffer.begin() + min);
+    // std::cout << PURP << "_bodyToRead = " << _bodyToRead << RESET <<
+    // std::endl; std::cout << PURP2 << "add to _vBody and removing from
+    // _vbuffer : " << tmp
+    // << RESET << std::endl;
     _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + min);
-    if (static_cast<size_t>(_bodyToRead) > min)
-      _bodyToRead -= _vBuffer.size();
-    else {
-      ssize_t bytesWrite = write(_tmpFd, &_vBody[0], _vBody.size());
-      if (bytesWrite == -1 ||
-          static_cast<size_t>(bytesWrite) != _vBody.size()) {
-        _statusCode = 500;
-        return (true);
-      }
-      resetVector(_vBody);
-      _bodyToRead = 0;
-    }
+    _bodyToRead -= min;
     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + min);
-    removeTrailingLineFromBuffer();
+    std::cout << BLUE << "insert and removing size of " << min << RESET
+              << std::endl;
+    if (_vBody.size() > 0)
+      saveToTmpFile();
+    std::cout << PURP << _bodyToRead << " = _bodyToRead" << RESET << std::endl;
+    if (_bodyToRead == 0)
+      removeTrailingLineFromBuffer();
   }
-  if (_vBuffer.size() < 2)
+  if (hasNewLine() == false)
     return (false);
-  if (_bodyToRead == 0) {
+  if (_bodyToRead <= 0) {
     _bodyToRead = getSizeChunkFromBuffer();
     _sizeChunk += _bodyToRead;
     if (_location->getLimitBodySize() != 0 &&
@@ -361,7 +339,6 @@ bool Client::parseChunkRequest(void) {
       std::cout << RED << "Client::parseChunkRequest: invalid body size "
                 << RESET << std::endl;
       _statusCode = 413;
-      return (true);
     }
   }
   if (_bodyToRead == 0) {
@@ -419,17 +396,20 @@ bool Client::saveToTmpFile(void) {
     std::stringstream ss;
     ss << getTime();
     _tmpFile += ss.str();
-  }
-  _tmpFd = open(_tmpFile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT, 00644);
-  if (_tmpFd == -1) {
-    _statusCode = 500;
-    return (false);
+    _tmpFd = open(_tmpFile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT, 00644);
+    if (_tmpFd == -1) {
+      _statusCode = 500;
+      return (false);
+    }
   }
   ssize_t writeBytes = write(_tmpFd, &(_vBody)[0], _vBody.size());
   if (writeBytes == -1 || static_cast<size_t>(writeBytes) < _vBody.size()) {
     _statusCode = 500;
     return (false);
   }
+  std::cout << YELLOW << "Client::saveToTmpFile: _tmpfile(" << _tmpFile
+            << ") on _tmpFd(" << _tmpFd << ") write: " << writeBytes << RESET
+            << std::endl;
   resetVector(_vBody);
   return (true);
 }
@@ -707,23 +687,24 @@ void Client::setupBodyParsing(void) {
     }
   } else if (itChunked != _headers.end()) {
     _chunkRequest = true;
-    if (isCgi() == true)
-      _tmpFile = _location->getCgiPath(_sUri);
-    else
-      _tmpFile = "webserv_tmpfile_";
-    std::stringstream ss;
-    ss << _socket;
-    _tmpFile = "." + ss.str() + "fd";
-    time_t time = getTime();
-    std::stringstream t;
-    t << time;
-    _tmpFile += "id" + t.str();
-    _tmpFd =
-        open(_tmpFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_CLOEXEC, 00644);
-    if (_tmpFd == -1) {
-      _statusCode = 500;
-      return;
-    }
+    // if (isCgi() == true)
+    //   _tmpFile = _location->getCgiPath(_sUri);
+    // else
+    //   _tmpFile = "webserv_tmpfile_";
+    // std::stringstream ss;
+    // ss << _socket;
+    // _tmpFile = "." + ss.str() + "fd";
+    // time_t time = getTime();
+    // std::stringstream t;
+    // t << time;
+    // _tmpFile += "id" + t.str();
+    // _tmpFd =
+    //     open(_tmpFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_CLOEXEC,
+    //     00644);
+    // if (_tmpFd == -1) {
+    //   _statusCode = 500;
+    //   return;
+    // }
   }
 }
 
@@ -747,7 +728,14 @@ bool Client::parseBody(void) {
       _vBody.insert(_vBody.end(), _vBuffer.begin(), _vBuffer.begin() + min);
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + min);
       _bodyToRead -= min;
-      return (_bodyToRead == 0);
+      saveToTmpFile();
+      resetVector(_vBody);
+      if (_bodyToRead > 0) {
+        return (false);
+      }
+      _statusCode = 201;
+      close(_tmpFd);
+      return (true);
     }
   }
   return (_bodyToRead == 0);

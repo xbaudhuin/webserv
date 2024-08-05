@@ -62,8 +62,9 @@ void Client::buildListingDirectory(std::string &url) {
     _statusCode = 404;
     return;
   }
-  if(_location->hasAlias())
-    _sUri = "." + _location->getRootServer() + _sUri.substr(_location->myUri().size() - 1);
+  if (_location->hasAlias())
+    _sUri = "." + _location->getRootServer() +
+            _sUri.substr(_location->myUri().size() - 1);
   else
     _sUri = "." + _location->getRootServer() + _sUri;
   _response.setStatusCode(200);
@@ -148,16 +149,22 @@ void Client::buildListingDirectory(std::string &url) {
 void Client::findPages(const std::string &urlu) {
   (void)urlu;
   std::string url;
-  if(_location->hasAlias())
-  {
-	  std::string urli = _location->getRootServer();
-	  if (urli[urli.size() - 1] != '/')
-	  	urli += '/';
-    url = "." + urli + (_sUri.size() >= _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "");
-    std::cout << "s_Uri size: " << _sUri.size() << " && myUri size:" << _location->myUri().size() << std::endl;
-    std::cout << "HERE _sUri substr = " << (_sUri.size() >= _location->myUri().size() ? _sUri.substr(_location->myUri().size()) : "") << std::endl;
-  }
-  else
+  if (_location->hasAlias()) {
+    std::string urli = _location->getRootServer();
+    if (urli[urli.size() - 1] != '/')
+      urli += '/';
+    url = "." + urli +
+          (_sUri.size() >= _location->myUri().size()
+               ? _sUri.substr(_location->myUri().size())
+               : "");
+    std::cout << "s_Uri size: " << _sUri.size()
+              << " && myUri size:" << _location->myUri().size() << std::endl;
+    std::cout << "HERE _sUri substr = "
+              << (_sUri.size() >= _location->myUri().size()
+                      ? _sUri.substr(_location->myUri().size())
+                      : "")
+              << std::endl;
+  } else
     url = "." + _location->getRootServer() + _sUri;
   std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
   std::cout << RED << "url = " << url << RESET << std::endl;
@@ -188,15 +195,17 @@ void Client::findPages(const std::string &urlu) {
   std::cout << GREEN
             << "Client::findPages: AFTER searching location: _statusCode = "
             << _statusCode << "; url = " << url << std::endl;
+  errno = 0;
   if (stat(url.c_str(), &st) == -1) {
-    std::cout << RED << "Clent::findPages: stat(" << url << ") = -1" << RESET
-              << std::endl;
-    if (errno == ENOENT)
+    // perror("FAIL ERRNO: ");
+    if (errno == ENOENT || errno == ENOTDIR)
       _statusCode = 404;
     else if (errno == EACCES)
       _statusCode = 403;
     else
       _statusCode = 500;
+    std::cout << RED << "Client::findPages: stat(" << url << ") = -1"
+              << "; errno = " << errno << RESET << std::endl;
     return;
   }
   if ((st.st_mode & S_IFMT) != S_IFREG) {
@@ -334,7 +343,7 @@ void Client::defaultHTMLResponse(void) {
   _response.setStatusCode(_statusCode);
   _response.setDate();
   _response.setHeader("Content-Type", "text/html");
-  const std::vector<char> &ref = findErrorPage(_statusCode, *_server);
+  const std::vector<char> ref = findErrorPage(_statusCode, *_server);
   _response.setBody(ref, ref.size());
 }
 
@@ -453,13 +462,9 @@ void Client::handleDelete(void) {
       _statusCode = 404;
     else
       _statusCode = 500;
-    return (handleError());
   }
   _statusCode = 204;
-  defaultHTMLResponse();
-  _keepConnectionAlive = false;
-  addConnectionHeader();
-  _response.BuildResponse();
+  handleError();
   return;
 }
 
@@ -516,7 +521,7 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
       return;
     }
     _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
-    _uploadFd = open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND);
+    _uploadFd = open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND, 00644);
     if (_tmpFd == -1 || _uploadFd == -1) {
       _statusCode = 500;
       return;
@@ -542,6 +547,11 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
 }
 
 void Client::handleChunk(void) {
+  std::cout << YELLOW << "tmpfile = " << _tmpFile << "\n"
+    << "_tmpFd = " << _tmpFd << "\n";
+  struct stat st;
+  stat(_tmpFile.c_str(), &st);
+  std::cout << "_tmpfile.size() = " << st.st_size << RESET << std::endl;
   if (_diffFileSystem == false &&
       rename(_tmpFile.c_str(), _sPathUpload.c_str()) != 0) {
     switch (errno) {
@@ -571,8 +581,12 @@ void Client::handleUpload(void) {
     _statusCode = 409;
     return;
   }
-  _uploadFd = open(_sPathUpload.c_str(), O_CLOEXEC | O_CREAT | O_RDWR);
+  _uploadFd = open(_sPathUpload.c_str(), O_CLOEXEC | O_CREAT | O_RDWR, 00644);
   if (_uploadFd == -1) {
+    perror("FAIL TO OPEN: ");
+    std::cout << RED
+              << "Client::handleUpload: Fail to open uploadFd: " << _sPathUpload
+              << RESET << std::endl;
     _statusCode = 501;
     return;
   }
@@ -592,7 +606,7 @@ void Client::handlePOST() {
   } else if (_chunkRequest == true) {
     handleChunk();
   } else {
-    handleUpload();
+    handleChunk();
   }
   handleError();
 }
@@ -610,6 +624,7 @@ bool Client::getResponse(std::vector<char> &response) {
               << std::endl;
     handleDelete();
     response = _response.getResponse();
+    return (false);
   } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
               << std::endl;
