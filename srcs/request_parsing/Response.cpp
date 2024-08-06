@@ -1,6 +1,7 @@
 #include "Response.hpp"
 #include "Utils.hpp"
 #include <fstream>
+#include <stdexcept>
 
 static std::map<size_t, std::string> initializeStatusMap() {
   std::map<size_t, std::string> m;
@@ -110,9 +111,9 @@ void Response::setDate(void) {
 bool Response::isReady() const { return (_ready); }
 
 void Response::setStatusCode(size_t statusCode) {
-  if (_mapReasonPhrase.count(statusCode) != 1)
-    return;
-
+  if (_mapReasonPhrase.count(statusCode) != 1){
+    statusCode = 500;
+  }
   std::ostringstream ss;
   ss << statusCode;
   _responseLine = "HTTP/1.1 ";
