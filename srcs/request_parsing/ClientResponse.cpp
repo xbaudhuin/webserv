@@ -594,31 +594,31 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
 }
 
 void Client::handleChunk(void) {
-  // std::cout << YELLOW << "tmpfile = " << _tmpFile << "\n"
-  //           << "_tmpFd = " << _tmpFd << "\n";
-  // struct stat st;
-  // stat(_tmpFile.c_str(), &st);
-  // std::cout << "_tmpfile.size() = " << st.st_size << RESET << std::endl;
-  // if (_diffFileSystem == false &&
-  //     rename(_tmpFile.c_str(), _sPathUpload.c_str()) != 0) {
-  //   switch (errno) {
-  //   case EXDEV:
-  //     errno = 0;
-  //     _diffFileSystem = true;
-  //     break;
-  //   case EACCES:
-  //     _statusCode = 403;
-  //     break;
-  //   case EEXIST:
-  //     _statusCode = 409;
-  //     break;
-  //   default:
-  //     _statusCode = 500;
-  //   }
-  // }
-  // if (_diffFileSystem == true) {
-  uploadTmpFileDifferentFileSystem(_tmpFile, _sPathUpload);
-  // }
+  std::cout << YELLOW << "tmpfile = " << _tmpFile << "\n"
+            << "_tmpFd = " << _tmpFd << "\n";
+  struct stat st;
+  stat(_tmpFile.c_str(), &st);
+  std::cout << "_tmpfile.size() = " << st.st_size << RESET << std::endl;
+  if (_diffFileSystem == false &&
+      rename(_tmpFile.c_str(), _sPathUpload.c_str()) != 0) {
+    switch (errno) {
+    case EXDEV:
+      errno = 0;
+      _diffFileSystem = true;
+      break;
+    case EACCES:
+      _statusCode = 403;
+      break;
+    case EEXIST:
+      _statusCode = 409;
+      break;
+    default:
+      _statusCode = 500;
+    }
+  }
+  if (_diffFileSystem == true) {
+    uploadTmpFileDifferentFileSystem(_tmpFile, _sPathUpload);
+  }
 }
 
 void Client::handleUpload(void) {
