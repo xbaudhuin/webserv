@@ -109,7 +109,7 @@ void Client::buildListingDirectory(std::string &url) {
     std::string tmp = _sUri + ent->d_name;
     if (stat(tmp.c_str(), &file) == -1) {
       int err = errno;
-      perror("ListtingDirectory");
+      perror("ListingDirectory");
       errno = err;
       std::cout << RED << "buildListingDirectory: stat = -1; ent->d_name ="
                 << ent->d_name << RESET << std::endl;
@@ -146,9 +146,7 @@ void Client::buildListingDirectory(std::string &url) {
   _response.BuildResponse();
 }
 
-void Client::findPages(const std::string &urlu) {
-  (void)urlu;
-  std::string url;
+void Client::getUrlFromLocation(std::string &url) const {
   if (_location->hasAlias()) {
     std::string urli = _location->getRootServer();
     if (urli[urli.size() - 1] != '/')
@@ -164,10 +162,34 @@ void Client::findPages(const std::string &urlu) {
                       ? _sUri.substr(_location->myUri().size())
                       : "")
               << std::endl;
+  } else if (_location->hasAlias()) {
+    std::string urli = _location->getRootServer();
+    if (urli[urli.size() - 1] != '/')
+      urli += '/';
+    url = "." + urli +
+          (_sUri.size() > _location->myUri().size()
+               ? _sUri.substr(_location->myUri().size())
+               : "");
+    std::cout << "MY URI AND MY URI SIZE: " << _location->myUri() << " && "
+              << _location->myUri().size() << std::endl;
+    std::cout << "s_Uri size: " << _sUri.size()
+              << " && myUri size:" << _location->myUri().size() << std::endl;
+    std::cout << "HERE _sUri substr = "
+              << (_sUri.size() >= _location->myUri().size()
+                      ? _sUri.substr(_location->myUri().size())
+                      : "")
+              << std::endl;
   } else
     url = "." + _location->getRootServer() + _sUri;
+  std::cout << std::endl << *_location << std::endl;
   std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
   std::cout << RED << "url = " << url << RESET << std::endl;
+}
+
+void Client::findPages(const std::string &urlu) {
+  (void)urlu;
+  std::string url;
+  getUrlFromLocation(url);
   if (_location->isADir() == true) {
     std::cout << RED << "Location is a Dir" << RESET << std::endl;
     if (url[url.size() - 1] == '/') {
@@ -463,7 +485,8 @@ void Client::handleDelete(void) {
     else
       _statusCode = 500;
   }
-  _statusCode = 204;
+  else
+    _statusCode = 204;
   handleError();
   return;
 }
@@ -474,6 +497,11 @@ void Client::handleMultipart(void) {
             << "; tmpfilename = " << _multipart[_currentMultipart].tmpFilename
             << "; file = " << _multipart[_currentMultipart].file << RESET
             << std::endl;
+  struct stat st;
+  if (stat(_multipart[_currentMultipart].file.c_str(), &st) != -1) {
+    _statusCode = 409;
+    return;
+  }
   if (_diffFileSystem == false &&
       rename(_multipart[_currentMultipart].tmpFilename.c_str(),
              _multipart[_currentMultipart].file.c_str()) != 0) {
@@ -521,7 +549,8 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
       return;
     }
     _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
-    _uploadFd = open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND, 00644);
+    _uploadFd =
+        open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND, 00644);
     if (_tmpFd == -1 || _uploadFd == -1) {
       _statusCode = 500;
       return;
@@ -548,7 +577,7 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
 
 void Client::handleChunk(void) {
   std::cout << YELLOW << "tmpfile = " << _tmpFile << "\n"
-    << "_tmpFd = " << _tmpFd << "\n";
+            << "_tmpFd = " << _tmpFd << "\n";
   struct stat st;
   stat(_tmpFile.c_str(), &st);
   std::cout << "_tmpfile.size() = " << st.st_size << RESET << std::endl;

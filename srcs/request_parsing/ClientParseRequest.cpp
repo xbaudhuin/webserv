@@ -376,8 +376,8 @@ void Client::removeReturnCarriageNewLine(std::string &line) {
   }
 }
 
-bool Client::saveToTmpFile(int fd, std::vector<char> body) {
-  ssize_t writeBytes = write(fd, &(body)[0], body.size());
+bool Client::saveToTmpFile(std::vector<char> &body) {
+  ssize_t writeBytes = write(_tmpFd, &(body)[0], body.size());
   if (writeBytes == -1 || static_cast<size_t>(writeBytes) < body.size()) {
     std::cout << RED << "Client::saveToTmpFile: fail to write to tmpfile"
               << RESET << std::endl;
@@ -414,26 +414,26 @@ bool Client::saveToTmpFile(void) {
   return (true);
 }
 
-bool Client::saveMultiToTmpfile(void) {
-  multipartRequest &multi = _multipart.back();
-  std::stringstream ss;
-  ss << _multipart.size();
-  multi.tmpFilename = "webserv_tmpmulti" + ss.str();
-  ss.clear();
-  ss << getTime();
-  multi.tmpFilename += "id" + ss.str();
-  std::cout << "saving to " << multi.tmpFilename << std::endl;
-  std::cout << "for file = " << multi.file << std::endl;
-  int fd = open(multi.tmpFilename.c_str(),
-                O_RDWR | O_CLOEXEC | O_CREAT | O_TRUNC, 00644);
-  if (fd == -1) {
-    std::cout << RED << "Client::saveMultiToTmpfile: fail to open: "
-              << multi.tmpFilename << RESET << std::endl;
-    _statusCode = 500;
-    return (false);
+bool Client::saveMultiToTmpfile(multipartRequest &multi) {
+  if (multi.tmpFilename == "") {
+    std::stringstream ss;
+    ss << _multipart.size();
+    multi.tmpFilename = "webserv_tmpmulti" + ss.str();
+    ss.clear();
+    ss << getTime();
+    multi.tmpFilename += "id" + ss.str();
+    std::cout << "saving to " << multi.tmpFilename << std::endl;
+    std::cout << "for file = " << multi.file << std::endl;
+    _tmpFd = open(multi.tmpFilename.c_str(),
+                  O_RDWR | O_CLOEXEC | O_CREAT | O_TRUNC, 00644);
+    if (_tmpFd == -1) {
+      std::cout << RED << "Client::saveMultiToTmpfile: fail to open: "
+                << multi.tmpFilename << RESET << std::endl;
+      _statusCode = 500;
+      return (false);
+    }
   }
-  bool ret = saveToTmpFile(fd, multi.body);
-  close(fd);
+  bool ret = saveToTmpFile(multi.body);
   resetVector(multi.body);
   return (ret);
 }
@@ -459,20 +459,38 @@ void Client::checkBodyHeader(multipartRequest &multi, std::vector<char> &body) {
 bool Client::checkBoundary(void) {
   if (_vBuffer.size() < _boundary.size())
     return (false);
-  std::string tmp(_vBuffer.begin(), _vBuffer.end());
-  if (tmp.find(_boundary) != 0) {
-    std::cout << RED << "Client::checkBoundary: boundary not found" << RESET
-              << std::endl;
-    _statusCode = 400;
+  std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
+  std::cout << YELLOW << "Client::checkBoundary: tmp = " << tmp << RESET
+            << std::endl;
+  if (tmp.compare(_boundary) == 0)
     return (true);
-  }
-  if (tmp.find(_boundary, _boundary.size()) == tmp.npos) {
+  return (false);
+}
+
+bool Client::checkEndBoundary(multipartRequest &multi) {
+  if (_vBuffer.size() < _boundary.size() + 2)
     return (false);
+  std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _boundary.size() + 2);
+  std::cout << PURP << "Client::checkBoundary: tmp = " << tmp << RESET
+            << std::endl;
+  if (tmp.compare(0, _boundary.size(), _boundary) == 0) {
+    multi.isDone = true;
+    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
+    std::cout << PURP << "Client::checkBoundary: tmp.sub = "
+              << tmp.substr(_boundary.size(), 2) << RESET << std::endl;
+    if (tmp.substr(_boundary.size(), 2) == "--") {
+      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + 2);
+      removeTrailingLineFromBuffer();
+      return (true);
+    }
+    removeTrailingLineFromBuffer();
   }
-  return (true);
+  return (false);
 }
 
 bool Client::checkHeaderMulti(multipartRequest &multi) {
+  if (_statusCode >= 400)
+    return (false);
   std::map<std::string, std::string>::iterator it;
   it = multi.header.find("content-type");
   if (it == multi.header.end()) {
@@ -526,92 +544,176 @@ bool Client::checkBodyMultipartCgi(std::string &boundary) {
   return (false);
 }
 
-bool Client::parseMultipartRequest(std::string &boundary, bool check) {
-  if (_location && _location->isCgi(_sUri) == true)
-    return (checkBodyMultipartCgi(boundary));
-  std::cout << YELLOW
-            << "Client::parseMultipartRequest starting: boundary = " << boundary
-            << RESET << std::endl;
-  if (_vBuffer.size() < boundary.size() && _vBuffer.size() > 0) {
-    return (false);
-  }
-  if (check == false) {
-    if (checkBoundary() == false)
-      return (false);
-    if (_statusCode >= 400)
-      return (true);
-    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + boundary.size());
-    removeTrailingLineFromBuffer();
-  }
-  multipartRequest multi;
+bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
     std::cout << BLUE << "New line header: " << line << RESET << std::endl;
-    if (line == "")
+    if (line == "" || _vBuffer.size() < _boundary.size())
       break;
     insertInMap(line, multi.header);
+    if (_vBuffer.size() < _boundary.size())
+      return (true);
     line = getLineFromBuffer();
   }
-  if (checkHeaderMulti(multi) == false)
-    return (true);
-  if (_statusCode >= 400) {
-    std::cout << RED
-              << "Client::parseMultipartRequest: afterHeader insertion: "
-                 "statusCode = 400"
-              << RESET << std::endl;
-    return (true);
-  }
-  line = getLineFromBuffer();
-  std::cout << BLUE << "New line check: " << line << RESET;
-  while (true) {
-    if (line.compare(0, boundary.size(), boundary) == 0) {
-      if (line.compare(boundary.size(), 2, "--") == 0) {
-        std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
-                  << std::endl;
-        _statusCode = 200;
-        // removeTrailingLineFromBuffer();
-      }
-      break;
-    }
-    if (_vBuffer.size() < boundary.size()) {
-      std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
-                << RESET << std::endl;
-      return (false);
-    }
-    std::cout << BLUE << "New line check: " << line << RESET;
-    getMultipartBody(multi, line);
-  }
-  _multipart.push_back(multi);
-  if (saveMultiToTmpfile() == false)
-    return (true);
-  if (_statusCode == 200)
-    return (true);
-  return (parseMultipartRequest(boundary, true));
+  return (checkHeaderMulti(multi));
 }
 
-bool Client::getMultipartBody(multipartRequest &multi, std::string &line) {
+bool Client::parseMultipartRequest() {
+  if (_location && _location->isCgi(_sUri) == true)
+    return (checkBodyMultipartCgi(_boundary));
+  if (_vBuffer.size() < _boundary.size())
+    return (false);
+  if (_checkMulti == false) {
+    if (checkBoundary() == false) {
+      _statusCode = 400;
+    }
+    if (_statusCode >= 400)
+      return (true);
+    _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
+    removeTrailingLineFromBuffer();
+    _checkMulti = true;
+  }
+  if (_multipart.size() == 0 || _multipart.back().isDone == true) {
+    multipartRequest ref;
+    ref.isDone = false;
+    ref.headerDone = false;
+    _multipart.push_back(ref);
+  }
+  multipartRequest &multi = _multipart.back();
+  if (multi.headerDone == false && getHeaderMulti(multi) == false)
+    return (true);
+  if (_vBuffer.size() < _boundary.size())
+    return (false);
+  if (getMultipartBody(multi) == true)
+    return (true);
+  return (parseMultipartRequest());
+}
+
+bool Client::getMultipartBody(multipartRequest &multi) {
+  std::string line;
+  std::string next;
   while (true) {
-    std::cout << BLUE << "New line body : " << line << RESET << std::endl;
-    if (line.compare(0, _boundary.size(), _boundary) == 0 &&
-        line.size() >= _boundary.size() + 1) {
-      if (line.compare(_boundary.size(), 2, "--") == 0) {
-        std::cout << GREEN << "Client::multipartRequest: compare = end" << RESET
-                  << std::endl;
-        _statusCode = 200;
-        return (true);
-        removeTrailingLineFromBuffer();
-      }
+    if (_vBuffer.size() < _boundary.size()) {
+
       break;
-    } else {
-      multi.body.insert(multi.body.end(), line.begin(), line.end());
     }
     line = getLineFromBuffer();
+    if (line == "\r\n" || line == "\n") {
+      if (checkBoundary() == true) {
+        multi.isDone = true;
+        break;
+      }
+    } else
+      multi.body.insert(multi.body.end(), line.begin(), line.end());
   }
-  std::vector<char> tmp;
-  checkBodyHeader(multi, tmp);
+  checkBodyHeader(multi, multi.body);
+  saveMultiToTmpfile(multi);
+  if (multi.isDone == true)
+    close(_tmpFd);
+  if (checkEndBoundary(multi) == true) {
+    if (_vBuffer.size() > 0)
+      _statusCode = 400;
+    else
+      _statusCode = 201;
+    return (true);
+  }
   return (false);
 }
+
+// bool Client::parseMultipartRequest(std::string &boundary, bool check) {
+//   if (_location && _location->isCgi(_sUri) == true)
+//     return (checkBodyMultipartCgi(boundary));
+//   std::cout << YELLOW
+//             << "Client::parseMultipartRequest starting: boundary = " <<
+//             boundary
+//             << RESET << std::endl;
+//   if (_vBuffer.size() < boundary.size() && _vBuffer.size() > 0) {
+//     return (false);
+//   }
+//   if (check == false) {
+//     if (checkBoundary() == false)
+//       return (false);
+//     if (_statusCode >= 400)
+//       return (true);
+//     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + boundary.size());
+//     removeTrailingLineFromBuffer();
+//   }
+//   multipartRequest multi;
+//   std::string line = getLineFromBuffer();
+//   while (line.empty() == false && _statusCode < 400) {
+//     removeReturnCarriageNewLine(line);
+//     std::cout << BLUE << "New line header: " << line << RESET << std::endl;
+//     if (line == "")
+//       break;
+//     insertInMap(line, multi.header);
+//     line = getLineFromBuffer();
+//   }
+//   if (checkHeaderMulti(multi) == false)
+//     return (true);
+//   if (_statusCode >= 400) {
+//     std::cout << RED
+//               << "Client::parseMultipartRequest: afterHeader insertion: "
+//                  "statusCode = 400"
+//               << RESET << std::endl;
+//     return (true);
+//   }
+//   line = getLineFromBuffer();
+//   std::cout << BLUE << "New line check: " << line << RESET;
+//   while (true) {
+//     // if (line.compare(0, boundary.size(), boundary) == 0) {
+//     //   if (line.compare(boundary.size(), 2, "--") == 0) {
+//     //     std::cout << GREEN << "Client::multipartRequest: compare = end"
+//     <<
+//     //     RESET
+//     //               << std::endl;
+//     //     _statusCode = 200;
+//     //     // removeTrailingLineFromBuffer();
+//     //   }
+//     //   break;
+//     // }
+//     // if (_vBuffer.size() < boundary.size()) {
+//     //   std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
+//     //             << RESET << std::endl;
+//     //   return (false);
+//     // }
+//     // std::cout << BLUE << "New line check: " << line << RESET;
+//     if (getMultipartBody(multi, line) == false)
+//       break;
+//   }
+//   _multipart.push_back(multi);
+//   if (saveMultiToTmpfile() == false)
+//     return (true);
+//   if (_statusCode == 200)
+//     return (true);
+//   return (parseMultipartRequest(boundary, true));
+// }
+
+// bool Client::getMultipartBody(multipartRequest &multi, std::string &line) {
+//   while (true) {
+//     std::cout << BLUE << "New line body : " << line << RESET << std::endl;
+//     if (line == "\n" || line == "\r\n") {
+//       if
+//         if (line.compare(0, _boundary.size(), _boundary) == 0 &&
+//             line.size() >= _boundary.size() + 1) {
+//           if (line.compare(_boundary.size(), 2, "--") == 0) {
+//             std::cout << GREEN << "Client::multipartRequest: compare = end"
+//                       << RESET << std::endl;
+//             removeTrailingLineFromBuffer();
+//             _statusCode = 200;
+//             break;
+//           }
+//           break;
+//         } else {
+//           multi.body.insert(multi.body.end(), line.begin(), line.end());
+//         }
+//       line = getLineFromBuffer();
+//     }
+//   }
+//   std::vector<char> tmp;
+//   checkBodyHeader(multi, tmp);
+//   return (false);
+// }
 
 std::string Client::getBoundaryString(std::string &boundaryHeader) {
   size_t pos;
@@ -718,7 +820,7 @@ bool Client::parseBody(void) {
   if (_vBuffer.size() == 0)
     return (_bodyToRead == 0);
   if (_multipartRequest == true)
-    return (parseMultipartRequest(_boundary, false));
+    return (parseMultipartRequest());
   else if (_chunkRequest == true)
     return (parseChunkRequest());
   else {
@@ -1018,7 +1120,8 @@ bool Client::parseBuffer(const std::vector<char> &buffer) {
   parseRequest(request);
   std::cout << RED << "End after parseRequest; StatusCode = " << _statusCode
             << RESET << std::endl;
-
+  if (_statusCode >= 400)
+    return (true);
   if (_vBuffer.empty() == false) {
     if (_bodyToRead > 0) {
       _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());

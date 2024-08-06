@@ -67,11 +67,12 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
             std::cout << PURP "HERE IDIOT: " << s1 << " && pos: " << pos2 << std::endl;
             for (size_t i = 0; i < size; i++)
             {
-                std::cout << this->_locations[i].myUri() << RESET << std::endl;
-                if(!this->_locations[i].isExactMatch() && !this->_locations[i].isADir() && this->_locations[i].myUri() == s1)
+                std::cout << this->_locations[i].myUri()  << " && " << s1 << RESET << std::endl;
+                if(!this->_locations[i].isExactMatch() && !this->_locations[i].isADir() && this->_locations[i].myUri() == url)
                 {
                     std::string uri = this->_locations[i].getIndexFile()[0];
                     std::string file = uri.substr(uri.find_last_of("/", uri.size()), uri.size());
+                    std::cout << uri << " && " << file << std::endl;
                     if(file == s2)
                     {
 #if PRINT == 2

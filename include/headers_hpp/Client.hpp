@@ -27,6 +27,8 @@ typedef struct multipartRequest {
   std::vector<char> body;
   std::string tmpFilename;
   std::string file;
+  bool isDone;
+  bool headerDone;
 } multipartRequest;
 
 class Client {
@@ -85,6 +87,7 @@ private:
   bool _chunkRequest;
   bool _requestIsDone;
   std::string _boundary;
+  bool _checkMulti;
   bool _multipartRequest;
   std::string _tmpFile;
   int _tmpFd;
@@ -124,6 +127,7 @@ private:
   bool checkMethod(void);
   void getPathUpload(void);
   bool requestValidByLocation(void);
+  void getUrlFromLocation(std::string &url) const;
   // void removeReturnCarriage(std::vector<char> &vec);
   size_t hasNewLine(void) const;
   bool earlyParsing(int newLine);
@@ -148,9 +152,12 @@ private:
   bool checkBodyMultipartCgi(std::string &boundary);
   std::string getBoundaryString(std::string &boundaryHeader);
   bool checkBoundary(void);
-  bool getMultipartBody(multipartRequest &multi, std::string &line);
-  bool parseMultipartRequest(std::string &boundary, bool check);
-  bool saveMultiToTmpfile(void);
+  bool checkEndBoundary(multipartRequest &multi);
+  bool getHeaderMulti(multipartRequest &multi);
+  bool getMultipartBody(multipartRequest &multi);
+  bool parseMultipartRequest();
+  bool saveToTmpFile(std::vector<char> &body);
+  bool saveMultiToTmpfile(multipartRequest &multi);
   // chunked method
   bool parseChunkRequest(void);
   bool getTrailingHeader(void);
@@ -193,7 +200,6 @@ private:
   void setupChild(std::string &cgiPathScript);
   void setupCgi();
   // utils Method
-  bool saveToTmpFile(int fd, std::vector<char> body);
   void removeTrailingLineFromBuffer(void);
   void removeReturnCarriageNewLine(std::string &line);
   bool isCgi(void);

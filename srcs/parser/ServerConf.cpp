@@ -263,7 +263,7 @@ void ServerConf::addLimitBodySize(const std::string &limit)
     // std::cout << "limit body size: " << this->limit_body_size << std::endl; 
 }
 
-void ServerConf::addLocation(const Location &loc)
+void ServerConf::addLocation(Location &loc)
 {
     if(loc.isADir())
     {
@@ -279,7 +279,6 @@ void ServerConf::addLocation(const Location &loc)
             // std::cout << RED << this->_locations[i] << RESET << std::endl;
         }
     }
-    this->_locations.push_back(loc);
     if(!loc.isADir() && !loc.isExactMatch())
     {
         std::string url = loc.getIndexFile()[0] + "/";
@@ -290,8 +289,10 @@ void ServerConf::addLocation(const Location &loc)
         }
         Location lc(loc, 1);
         this->_locations.push_back(lc);
-        // std::cout << YELLOW << lc << " && " << lc.getUrl() << RESET << std::endl;
     }
+    if(loc.hasAlias())
+        loc.fixFileLocationAlias();
+    this->_locations.push_back(loc);
 }
 
 void ServerConf::addRoot(const std::string &dir)

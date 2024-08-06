@@ -3,7 +3,7 @@
 Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
       _location(NULL), _statusCode(0), _version(1), _requestSize(0),
-      _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true),
+      _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true), _checkMulti(false),
       _multipartRequest(false), _tmpFd(-1), _sizeChunk(0), _currentMultipart(0),
       _response(), _keepConnectionAlive(true), _diffFileSystem(false),
       _epollIn(false), _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
@@ -71,6 +71,7 @@ Client &Client::operator=(Client const &rhs) {
     _chunkRequest = rhs._chunkRequest;
     _requestIsDone = rhs._requestIsDone;
     _boundary = rhs._boundary;
+    _checkMulti = rhs._checkMulti;
     _multipartRequest = rhs._multipartRequest;
     if (_tmpFile.empty() == false) {
       unlink(_tmpFile.c_str());
@@ -139,6 +140,7 @@ void Client::resetClient(void) {
   _chunkRequest = false;
   _requestIsDone = true;
   _boundary = "";
+  _checkMulti = false;
   _multipartRequest = false;
   if (_tmpFile.empty() == false) {
     std::cerr << "unlink: " << _tmpFile << std::endl;

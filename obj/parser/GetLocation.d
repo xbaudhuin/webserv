@@ -1,4 +1,4 @@
-obj/error_logs/Security_error.o: srcs/error_logs/Security_error.cpp \
+obj/parser/GetLocation.o: srcs/parser/GetLocation.cpp \
   include/headers_hpp/ServerConf.hpp include/headers_hpp/Location.hpp \
   include/headers_hpp/Utils.hpp include/headers_hpp/Colors.hpp \
   include/headers_hpp/Typedef.hpp include/headers_hpp/bad_key_error.hpp \
