@@ -48,7 +48,7 @@ public:
   int getBodyToRead(void) const;
 
   // method
-  bool addBuffer(const std::vector<char> &buffer);
+  bool addBuffer(std::vector<char> &buffer);
   const std::vector<char> &getBuffer(void) const;
   bool sendResponse(std::vector<char> &response);
   void setStatusCode(size_t code);
@@ -123,7 +123,7 @@ private:
   static const std::map<std::string, char> _uriEncoding;
 
   // Parsing Method
-  bool parseBuffer(const std::vector<char> &buffer);
+  bool parseBuffer(std::vector<char> &buffer);
   bool checkMethod(void);
   void getPathUpload(void);
   bool requestValidByLocation(void);

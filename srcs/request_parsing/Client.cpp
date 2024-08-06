@@ -124,7 +124,6 @@ void Client::resetClient(void) {
   std::cout << YELLOW << "reset client + response" << RESET << std::endl;
   _server = NULL;
   _location = NULL;
-  _time = getTime();
   _statusCode = 0;
   _sMethod = "";
   _sUri = "";
