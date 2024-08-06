@@ -46,7 +46,7 @@ public:
   void addHost(const std::string &str);
   void addServerName(const std::string &name);
   void addLimitBodySize(const std::string &limit);
-  void addLocation(const Location &loc);
+  void addLocation(Location &loc);
   void setMainServerName(void);
   void setRank(size_t rank);
   void addRoot(const std::string &dir);

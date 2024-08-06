@@ -86,6 +86,7 @@ class Location
         void fixUrl(const std::string &url);
         void fixCgi();
         void fixIndexFile();
+        void fixFileLocationAlias();
         void setBaseUri();
 };
 

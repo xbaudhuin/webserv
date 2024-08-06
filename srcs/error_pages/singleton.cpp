@@ -813,21 +813,23 @@ std::vector<char> findErrorPage(int error_code, ServerConf &map) {
     std::cout << "coucou: " << error_code << std::endl;
     if(m.find(error_code) == m.end())
         throw bad_key_error("");
-    std::cout << "coucou2: " << error_code << std::endl;
     Location loc = map.getPreciseLocation(
         m[error_code].substr(map.getRoot().size(), m[error_code].size()));
     if (loc.isExactMatch() != 1)
       throw std::logic_error("");
     for (size_t i = 0; i < loc.getIndexFile().size(); i++) {
       string str = "." + loc.getIndexFile()[i];
+      std::cout << "ERROR PAGE FILE[" << i << "] ="<< str << std::endl;
       std::ifstream strm;
       struct stat st;
-      if (stat(s.c_str(), &st) == -1){
+      if (stat(str.c_str(), &st) == -1){
+        std::cout << "stat = -1" << std::endl;
+
         throw (std::logic_error(""));
             }
     std::cout << GREEN << "singleton: first try opened" << RESET << std::endl;
       std::vector<char> buf(st.st_size);
-      strm.open(s.c_str());
+      strm.open(str.c_str());
       if (strm.is_open()) {
         strm.read(&buf[0], st.st_size);
         return (buf);

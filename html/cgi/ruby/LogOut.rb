@@ -39,6 +39,6 @@ def log_out
   puts body
 end
 
-if __FILE__ == $0
-  log_out
-end
+# if __FILE__ == $0
+#   log_out
+# end
