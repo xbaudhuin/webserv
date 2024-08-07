@@ -35,6 +35,7 @@ class Client {
 public:
   // Constructor
   Client(int fd, mapConfs &map, ServerConf *defaultServer);
+  Client(int fd, mapConfs &map, ServerConf *defaultServer, in_addr_t IpClient);
   Client(Client const &copy);
 
   // Destructor
