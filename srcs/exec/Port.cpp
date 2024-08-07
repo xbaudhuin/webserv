@@ -52,7 +52,7 @@ int	Port::acceptNewConnection(void) {
 		return BAD_FD;
 	}
 	try {
-		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main, ntohl(clientAddress.sin_addr.s_addr))));
+		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main, clientAddress.sin_addr.s_addr)));
 	}
 	catch(const std::exception& e) {
 		protectedClose(clientSocket);
