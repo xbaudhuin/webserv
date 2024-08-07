@@ -484,8 +484,7 @@ void Client::handleDelete(void) {
       _statusCode = 404;
     else
       _statusCode = 500;
-  }
-  else
+  } else
     _statusCode = 204;
   handleError();
   return;
@@ -541,6 +540,11 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
   if (_bodyToRead == 0) {
     struct stat st;
     if (stat(tmp.c_str(), &st) == -1) {
+      perror("Client::uploadTmpFileDifferentFileSystem: ");
+      std::cout << RED
+                << "Client::uploadTmpFileDifferentFileSystem: file: " << tmp
+                << " doesnt exist; _tmpfile = " << _tmpFile << RESET
+                << std::endl;
       _statusCode = 500;
       return;
     }
@@ -550,20 +554,34 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
     }
     _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
     _uploadFd =
-        open(outfile.c_str(), O_CLOEXEC, O_RDWR | O_CREAT | O_APPEND, 00644);
+        open(outfile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_APPEND, 00644);
     if (_tmpFd == -1 || _uploadFd == -1) {
+      perror("Perror: Client::uploadTmpFileDifferentFileSystem: ");
+      std::cout << RED
+                << "Client::uploadTmpFileDifferentFileSystem: fail to open "
+                   "uploadFile or tmpfile\n ";
+      std::cout << "uploadfd = " << _uploadFd << "; outfile = " << outfile
+                << "\n"
+                << "tmpfd = " << _tmpFd << "; _tmpfile = " << "tmp" << RESET
+                << std::endl;
       _statusCode = 500;
       return;
     }
     _bodyToRead = st.st_size;
+    _leftToRead = _bodyToRead;
   }
   readFile(body);
   if (_statusCode == 500) {
     return;
   }
   ssize_t writeByte = write(_uploadFd, &body[0], body.size());
-  if (writeByte == -1 || static_cast<size_t>(writeByte) < body.size())
+  if (writeByte == -1 || static_cast<size_t>(writeByte) < body.size()) {
+    std::cout << RED
+              << "Client::uploadTmpFileDifferentFileSystem: fail to write "
+              << writeByte << " to file" << RESET << std::endl;
     _statusCode = 500;
+  }
+  _bodyToRead -= writeByte;
   if (_bodyToRead == 0) {
     close(_tmpFd);
     _tmpFd = -1;
@@ -637,7 +655,8 @@ void Client::handlePOST() {
   } else {
     handleChunk();
   }
-  handleError();
+  if (_bodyToRead == 0)
+    handleError();
 }
 
 bool Client::getResponse(std::vector<char> &response) {
@@ -645,8 +664,6 @@ bool Client::getResponse(std::vector<char> &response) {
     std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
               << std::endl;
     handleCgi(response);
-    if (_leftToRead == 0)
-      resetClient();
     return (_leftToRead != 0);
   } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
     std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
@@ -658,7 +675,12 @@ bool Client::getResponse(std::vector<char> &response) {
     std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
               << std::endl;
     handlePOST();
-    response = _response.getResponse();
+    if (_bodyToRead == 0) {
+      response = _response.getResponse();
+    }
+    std::cout << GREEN << "_bodyToRead = " << _bodyToRead
+              << ";_leftToRead = " << _leftToRead << RESET << std::endl;
+    return (_bodyToRead != 0);
   }
   // std::cout << PURP2 << "_vbody = " << _vBody << RESET << std::endl;
   else if (_response.isReady() == false) {
@@ -668,8 +690,6 @@ bool Client::getResponse(std::vector<char> &response) {
     std::cout << BLUE << "response for _sUri:\n"
               << _sUri << "; of size : " << response.size() << RESET
               << std::endl;
-    if (_leftToRead == 0)
-      resetClient();
     return (_leftToRead != 0);
   }
   bool ret = _leftToRead != 0;
@@ -682,8 +702,6 @@ bool Client::getResponse(std::vector<char> &response) {
     }
   }
   // std::cout << RED << "response.isNotDone() = " << ret << RESET << std::endl;
-  if (_leftToRead == 0)
-    resetClient();
   std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   return (_leftToRead != 0);
 }
@@ -695,6 +713,8 @@ bool Client::sendResponse(std::vector<char> &response) {
     std::cout << RED << "FAIL NO LOCATION OSKOUR" << RESET << std::endl;
   }
   bool ret = getResponse(response);
+  if (ret == false)
+    resetClient();
   _time = getTime();
   return (ret);
 }

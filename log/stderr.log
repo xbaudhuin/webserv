@@ -1,2 +1,6 @@
 Client::addBuffer: end: _statusCode = 0
+unlink: webserv_tmpfile_1722963636
+Client::addBuffer: end: _statusCode = 0
+unlink: webserv_tmpfile_1722963644
+unlink: webserv_tmpfile_1722963644
 webserv: Webserv::start: epoll_wait: Interrupted system call

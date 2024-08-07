@@ -134,8 +134,8 @@ size_t Client::insertInMap(std::string &line,
     return (400);
   }
   trimWhitespace(value, _whiteSpaces);
-  // std::cout << "KEY = " << key << std::endl;
-  // std::cout << "VALUE = " << value << std::endl;
+  std::cout << "KEY = " << key;
+  std::cout << "; VALUE = " << value << std::endl;
 
   std::map<std::string, std::string>::iterator it;
   if (pos != line.npos) {
@@ -359,7 +359,7 @@ std::string Client::getLineFromBuffer() {
     if (_vBuffer[i + carriage] == '\n')
       break;
   }
-  if (i + carriage < _vBuffer.size())
+  if ((i + carriage) != 0 && i + carriage < _vBuffer.size())
     i++;
   std::string line(_vBuffer.begin(), _vBuffer.begin() + i + carriage);
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i + carriage);
@@ -531,6 +531,7 @@ bool Client::checkHeaderMulti(multipartRequest &multi) {
   else
     multi.file = "." + _location->getUploadLocation();
   multi.file += tmp.substr(pos, end - pos);
+  multi.headerDone = true;
   return (true);
 }
 
@@ -548,7 +549,8 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
-    std::cout << BLUE << "New line header: " << line << RESET << std::endl;
+    std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
+              << std::endl;
     if (line == "" || _vBuffer.size() < _boundary.size())
       break;
     insertInMap(line, multi.header);
@@ -556,6 +558,7 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
       return (true);
     line = getLineFromBuffer();
   }
+  removeTrailingLineFromBuffer();
   return (checkHeaderMulti(multi));
 }
 
@@ -595,16 +598,28 @@ bool Client::getMultipartBody(multipartRequest &multi) {
   std::string next;
   while (true) {
     if (_vBuffer.size() < _boundary.size()) {
-
+      std::cout
+          << PURP2
+          << "Client::getMultipartBody: break cause buffer.size(): _vbuffer = "
+          << _vBuffer << RESET << std::endl;
       break;
     }
     line = getLineFromBuffer();
-    if (line == "\r\n" || line == "\n") {
-      if (checkBoundary() == true) {
-        multi.isDone = true;
-        break;
-      }
-    } else
+    if (line == "") {
+      multi.body.insert(multi.body.end(), _vBuffer.begin(),
+                        _vBuffer.begin() + 1);
+      _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + 1);
+    }
+    std::cout << BLUE << "New line body: " << line << RESET << std::endl;
+    if (checkBoundary() == true) {
+      multi.isDone = true;
+      std::cout << PURP2
+                << "Client::getMultipartBody: break cause checkBoundary == true"
+                << RESET << std::endl;
+      break;
+    }
+    // }
+    else
       multi.body.insert(multi.body.end(), line.begin(), line.end());
   }
   checkBodyHeader(multi, multi.body);
@@ -746,6 +761,7 @@ std::string Client::getBoundaryString(std::string &boundaryHeader) {
 }
 
 void Client::setupBodyParsing(void) {
+  std::cout << GREEN << "Client::setupBodyParsing: " << RESET << std::endl;
   std::map<std::string, std::string>::iterator multipart;
   multipart = _headers.find("content-type");
   if (_statusCode < 400 && multipart != _headers.end() &&
@@ -769,6 +785,9 @@ void Client::setupBodyParsing(void) {
   }
   if (itLength != _headers.end()) {
     _bodyToRead = std::strtol(((*itLength).second).c_str(), NULL, 10);
+    std::cout << GREEN
+              << "Client::setupBodyParsing: _bodyToRead = " << _bodyToRead
+              << "; header =" << (*itLength).second << RESET << std::endl;
     if (errno == ERANGE || _bodyToRead < 0 ||
         (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
          _server->getLimitBodySize() != 0)) {
@@ -817,6 +836,9 @@ bool Client::isCgi(void) {
 }
 
 bool Client::parseBody(void) {
+  std::cout << GREEN
+            << "Client::parseBody: _vBuffer.size() = " << _vBuffer.size()
+            << "; _bodyToRead = " << _bodyToRead << RESET << std::endl;
   if (_vBuffer.size() == 0)
     return (_bodyToRead == 0);
   if (_multipartRequest == true)
@@ -1090,14 +1112,16 @@ void Client::parseRequest(std::string &buffer) {
   return;
 }
 
-bool Client::parseBuffer(const std::vector<char> &buffer) {
+bool Client::parseBuffer(std::vector<char> &buffer) {
   // std::cout << YELLOW << "Client::parseBuffer: " << buffer << RESET
   // << std::endl;
   if (_bodyToRead > 0 || _requestIsDone == false) {
     _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
+
     return (parseBody());
   }
   fillBufferWithoutReturnCarriage(buffer);
+  buffer.erase(buffer.begin(), buffer.begin() + _vBuffer.size());
   int newLine = hasNewLine();
   if (newLine == 0) {
     return (false);
@@ -1136,7 +1160,7 @@ bool Client::parseBuffer(const std::vector<char> &buffer) {
             << std::endl;
   return (false);
 }
-bool Client::addBuffer(const std::vector<char> &buffer) {
+bool Client::addBuffer(std::vector<char> &buffer) {
   // std::cout << YELLOW << "buffer = " << buffer << RESET << std::endl;
   bool ret = parseBuffer(buffer);
   std::cout << YELLOW << "ret = " << ret << ";statusCode = " << _statusCode
