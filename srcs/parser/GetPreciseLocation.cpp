@@ -64,21 +64,29 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
         {   
             pos2 = s.find_last_of("/", pos2);
             std::string s1 = s.substr(0, pos2 + 1);
+#if PRINT == 2
             std::cout << PURP "HERE IDIOT: " << s1 << " && pos: " << pos2 << std::endl;
+#endif
             for (size_t i = 0; i < size; i++)
             {
+#if PRINT == 3
                 std::cout << this->_locations[i].myUri()  << " && " << s1 << RESET << std::endl;
+#endif
                 if(!this->_locations[i].isExactMatch() && !this->_locations[i].isADir() && this->_locations[i].myUri() == url)
                 {
                     std::string uri = this->_locations[i].getIndexFile()[0];
                     std::string file = uri.substr(uri.find_last_of("/", uri.size()), uri.size());
+#if PRINT == 3
                     std::cout << uri << " && " << file << std::endl;
+#endif
                     if(file == s2)
                     {
 #if PRINT == 2
                         std::cout << PURP << "NICE, FOUND IN FILE LOCATION!" << std::endl;
 #endif
+#if PRINT == 3
                         std::cout <<RED "HERE MATE: " << this->_locations[i].getRootServer() + safe << RESET<< std::endl;
+#endif
                         check_if_safe(this->_locations[i].getRootServer() + url, is_file);
                         return(this->_locations[i]);
                     }
@@ -91,7 +99,9 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
 #if PRINT == 2
                             std::cout << PURP << "NICE, FOUND IN FILE CGI LOCATION!" << std::endl;
 #endif
+#if PRINT == 3
                             std::cout <<RED "HERE MATE: " << this->_locations[i].getRootServer() + safe << RESET<< std::endl;
+#endif
                             check_if_safe(this->_locations[i].getRootServer() + url, is_file);
                             return(this->_locations[i]);
                         }
@@ -107,17 +117,20 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     {   
         pos = s.find_last_of("/", pos);
         std::string s1 = s.substr(0, pos + 1);
+#if PRINT == 3
         std::cout << YELLOW "HERE IDIOT 2: " << s1 << " && pos: " << pos << std::endl;
+#endif
         for (size_t i = 0; i < size; i++)
         {
-            std::cout << this->_locations[i].myUri() << RESET << std::endl;
             if(!this->_locations[i].isExactMatch() && this->_locations[i].isADir() && this->_locations[i].myUri() == s1)
             {
 #if PRINT == 2
                 std::cout << RED << "FOUND IN NORMAL LOCATION" << std::endl;
                 std::cout << s1 << RESET << std::endl;
 #endif
+#if PRINT == 3
                 std::cout <<RED "HERE MATE: " << this->_locations[i].getRootServer() + safe << RESET<< std::endl;
+#endif
                 check_if_safe(this->_locations[i].getRootServer() + url, is_file);
                 return(this->_locations[i]);
             }
