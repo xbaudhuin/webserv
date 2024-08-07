@@ -1,4 +1,5 @@
 #include "Webserv.hpp"
+#include <ostream>
 
 void errorParsing(const std::string &message)
 {

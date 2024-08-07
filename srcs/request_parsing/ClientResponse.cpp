@@ -1,15 +1,4 @@
 #include "Client.hpp"
-#include "Error.hpp"
-#include "Utils.hpp"
-#include <asm-generic/errno.h>
-#include <cerrno>
-#include <cstring>
-#include <dirent.h>
-#include <fcntl.h>
-#include <ostream>
-#include <stdexcept>
-#include <stdio.h>
-#include <sys/stat.h>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -18,20 +7,19 @@ bool Client::findIndex(std::string &url) {
   size_t it = 0;
   for (; it < vector.size(); it++) {
     tmp = "." + vector[it];
-    std::cout << PURP << "vectorIndex[" << it << "] = " << tmp << RESET;
     if (stat(tmp.c_str(), &statbuf) == 0) {
-      std::cout << " found" << std::endl;
       break;
     }
-    std::cout << " not found" << std::endl;
-    if (errno == EACCES)
+    if (errno == EACCES) {
       _statusCode = 403;
-    else if (_statusCode != 403 && errno == ENOENT) {
+    } else if (_statusCode != 403 && errno == ENOENT) {
       continue;
     }
   }
-  if (_statusCode >= 400)
-    return (true);
+  if (_statusCode >= 400) {
+    logErrorClient("Client::findIndex: fail to access index: " + url);
+  }
+  return (true);
   if (it == vector.size())
     return (false);
   url = tmp;
@@ -41,11 +29,9 @@ bool Client::findIndex(std::string &url) {
 void Client::addContentTypeHeader(void) {
   size_t dot = _sUri.find_last_of('.');
   if (_sUri.size() > 5 && _sUri.size() - dot < 5 && dot < _sUri.size()) {
-    std::cout << PURP << "inside dot file " << RESET << std::endl;
     std::string extension = _sUri.substr(dot);
     if (extension == ".ico") {
       _response.setHeader("Content-Type", "image/vnd.microsoft.icon");
-      // _response.setHeader("Content-encoding", "gzip");
     } else if (extension == ".png") {
       std::cout << PURP << "found .png" << RESET << std::endl;
       _response.setHeader("Content-Type", "image/png");
@@ -59,6 +45,9 @@ void Client::addContentTypeHeader(void) {
 
 void Client::buildListingDirectory(std::string &url) {
   if (_location->getAutoIndex() == 0) {
+    logErrorClient(
+        "Client::buildListingDirectory: no index or ListingDirectory: " +
+        _sUri);
     _statusCode = 404;
     return;
   }
@@ -83,14 +72,13 @@ void Client::buildListingDirectory(std::string &url) {
   DIR *dir;
   dir = opendir(_sUri.c_str());
   if (dir == NULL) {
-    std::cout << RED << "buildListingDirectory: dir = NULL; _sUri = " << _sUri
-              << RESET << std::endl;
     if (errno == EACCES)
       _statusCode = 403;
     else if (errno == ENONET)
       _statusCode = 404;
     else
       _statusCode = 500;
+    logErrorClient("Client::buildListingDirectory: fail to opendir: " + _sUri);
     return;
   }
   struct dirent *ent;
@@ -104,23 +92,17 @@ void Client::buildListingDirectory(std::string &url) {
     }
     if (ent == NULL)
       break;
-    std::cout << YELLOW << "ent: " << ent->d_name << RESET << std::endl;
     struct stat file;
     std::string tmp = _sUri + ent->d_name;
     if (stat(tmp.c_str(), &file) == -1) {
-      int err = errno;
-      perror("ListingDirectory");
-      errno = err;
-      std::cout << RED << "buildListingDirectory: stat = -1; ent->d_name ="
-                << ent->d_name << RESET << std::endl;
       if (errno == EACCES) {
         _statusCode = 403;
       } else
         _statusCode = 500;
+      logErrorClient("Client::buildListingDirectory: fail to get stat info");
       closedir(dir);
       return;
     }
-
     std::string time = body += "<a href=\"";
     body += ent->d_name;
     if (ent->d_type == DT_DIR)

@@ -1,10 +1,10 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#include "Error.hpp"
 #include "Response.hpp"
 #include "ServerConf.hpp"
 #include "Utils.hpp"
-// #include <cstdint>
 #include <ctime>
 #include <ctype.h>
 #include <dirent.h>
@@ -198,8 +198,11 @@ private:
   void buildArguments(std::vector<char *> &argument);
   void freeVector(std::vector<char *> &vEnv, std::vector<char *> &argument);
   void setupChild(std::string &cgiPathScript);
+  void logErrorChild(const std::string &str) const;
   void setupCgi();
   // utils Method
+  std::string prepareLogMessage() const;
+  void logErrorClient(const std::string &str) const;
   void removeTrailingLineFromBuffer(void);
   void removeReturnCarriageNewLine(std::string &line);
   bool isCgi(void);
@@ -208,7 +211,7 @@ private:
   // bool isHexadecimal(char c);
   std::string getDateOfFile(time_t rawtime) const;
   std::string getDate(void);
-  time_t getTime(void);
+  time_t getTime(void) const;
   void resetClient(void);
 };
 
