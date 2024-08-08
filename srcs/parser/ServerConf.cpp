@@ -3,7 +3,6 @@
 ServerConf::ServerConf()
 {
     port = 4243;
-    // host = 0;
     addHost("127.0.0.1");
     limit_body_size = 0;
     rank = -1;
@@ -71,8 +70,6 @@ ServerConf::ServerConf()
     err_pages[508] = "/error_pages/508.html";
     err_pages[510] = "/error_pages/510.html";
     err_pages[511] = "/error_pages/511.html";
-
-    // err_pages[code] = "/html/code.html";
 }
 
 ServerConf::ServerConf(const ServerConf &rhs)
@@ -234,7 +231,6 @@ void ServerConf::addLimitBodySize(const std::string &limit)
     pos = limit.find_first_of("kmgKMG", 0);
     if(pos != std::string::npos)
     {
-        // std::cerr<< pos << " && " << check[0].size() << std::endl;
         if(pos == 0 || pos + 1 < check[0].size())
             throw std::logic_error("Error:\nIncorrect client_limit_body_size passed as parameter3");
         c = limit[pos];
@@ -260,7 +256,6 @@ void ServerConf::addLimitBodySize(const std::string &limit)
             break;
     }
     this->limit_body_size = static_cast<uint64_t>(std::strtoull(value.c_str(), NULL, 10)) * to_multiply;
-    // std::cout << "limit body size: " << this->limit_body_size << std::endl; 
 }
 
 void ServerConf::addLocation(Location &loc)
@@ -276,7 +271,6 @@ void ServerConf::addLocation(Location &loc)
                 this->_locations.erase(_locations.begin() + i, _locations.begin() + i + 1);
                 i = 0;
             }
-            // std::cout << RED << this->_locations[i] << RESET << std::endl;
         }
     }
     if(!loc.isADir() && !loc.isExactMatch())
@@ -298,59 +292,15 @@ void ServerConf::addLocation(Location &loc)
 void ServerConf::addRoot(const std::string &dir)
 {
     std::string check = dir;
-    // if(check[0] != '.')
-    //     check.insert(0, ".");
     std::string save = check;
     vec_string s = tokenizer(check, " ", "/");
     check = save;
-    // if(s[0] != ".")
-    //     throw std::logic_error("Error:\nRoot directive parameter is missing '/' at the beginning");
-    // if(check[check.size() - 1] == '/')
-    //     check.erase(check.end() - 1);
     if(check[0] != '.' && check[1] && check[1] != '/')
         throw std::logic_error("Webserv: Error:\nRoot directive parameter is missing './' at the beginning");
     check.erase(0, 1);
     if(check[check.size() - 1] == '/')
         check.erase(check.size() - 1);
     this->root = check;
-}
-
-std::ostream& operator<<(std::ostream& out, const ServerConf& cf)
-{
-    ServerConf serv = cf;
-    for (size_t i = 0; i < serv.getServerNames().size(); i++)
-    {
-        out << BLUE << "Server Name n["<< i << "]: " << serv.getServerNames()[i] << RESET << std::endl;
-    }
-    out << YELLOW << "Root: " << serv.getRoot() << std::endl;
-#if PRINT == 4
-    map_err_pages err = serv.getErrPages();
-    map_err_pages::iterator err_it = err.begin();
-    out << PURP2 << "Error pages: " << RESET << std::endl;
-    while (err_it != err.end())
-    {
-      out << PURP2 << "Code Error: " << err_it->first << " && url: " << err_it->second << RESET << std::endl;
-      err_it++;
-    }
-#endif
-    out << GREEN << "Max body size: " << serv.getLimitBodySize() << RESET << std::endl;
-    uint32_t ip = ntohl(serv.getHost());
-    out << ORANGE << "IP: " 
-              << ((ip >> 24) & 0xFF) << "."
-              << ((ip >> 16) & 0xFF) << "."
-              << ((ip >> 8) & 0xFF) << "."
-              << (ip & 0xFF) << std::endl;
-    out << "Port: " << serv.getPort() << RESET <<std::endl;
-    vec_location loc = serv.getLocations();
-    size_t size_loc = loc.size();
-    out << YELLOW << "Now printing locations:" << std::endl;
-    for (size_t i = 0; i < size_loc; i++)
-    {
-        out << "Loc[" << i << "]:\n\t";
-        out << loc[i] << std::endl;
-    }
-    out << RESET << "\t\tRank: " << serv.getRank() << "\n"<< std::endl;       
-    return(out);
 }
 
 void ServerConf::setRootToErrorPages(){
