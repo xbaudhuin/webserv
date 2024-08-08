@@ -35,7 +35,9 @@ Port &Port::operator=(const Port &otherPort) {
 }
 
 int	Port::acceptNewConnection(void) {
-	int clientSocket = accept4(this->_serverSocket, NULL, NULL, (SOCK_NONBLOCK | SOCK_CLOEXEC));
+	struct sockaddr_in	clientAddress;
+	socklen_t			addressLen = sizeof (clientAddress);
+	int clientSocket = accept4(this->_serverSocket, (struct sockaddr *)&clientAddress, &addressLen, (SOCK_NONBLOCK | SOCK_CLOEXEC));
 
 	if (clientSocket == BAD_FD) {
 		std::cerr << "webserv: Port::acceptNewConncetion: accept4: " << strerror(errno) << std::endl;
@@ -50,7 +52,7 @@ int	Port::acceptNewConnection(void) {
 		return BAD_FD;
 	}
 	try {
-		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main)));
+		this->_clientRequests.insert(std::make_pair(clientSocket, Client(clientSocket, this->_portConfs, this->_main, clientAddress.sin_addr.s_addr)));
 	}
 	catch(const std::exception& e) {
 		protectedClose(clientSocket);

@@ -14,6 +14,21 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
   return;
 }
 
+Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf, in_addr_t IpClient)
+    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
+      _location(NULL), _statusCode(0), _version(1), _requestSize(0),
+      _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true), _checkMulti(false),
+      _multipartRequest(false), _tmpFd(-1), _sizeChunk(0), _currentMultipart(0),
+      _response(), _keepConnectionAlive(true), _diffFileSystem(false),
+      _epollIn(false), _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
+
+	(void)IpClient;
+  _time = getTime();
+  if (defaultConf == NULL)
+    throw(std::logic_error("Default server is NULL"));
+  return;
+}
+
 Client::~Client(void) {
   for (size_t i = 0; i < _multipart.size(); i++) {
     if (_multipart[i].tmpFilename.empty() == false) {
