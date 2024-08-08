@@ -1,5 +1,30 @@
 #include "Utils.hpp"
 
+std::string getFile(const std::string &uri)
+{
+    size_t pos = uri.size();
+    pos = uri.find_last_of("/", pos);
+    if(pos == std::string::npos)
+        return(std::string(uri));
+    std::string s1 = uri.substr(0, pos + 1);
+    if(s1 == uri)
+        throw std::logic_error("not a file");
+    std::string s2 = uri.substr(pos, uri.size());
+    s2.erase(0, 1);
+    return(s2);
+}
+
+std::string getDirectory(const std::string &uri)
+{
+    size_t pos = uri.size();
+    pos = uri.find_last_of("/", pos);
+    if(pos == std::string::npos)
+        return("./");
+    std::string s1 = uri.substr(0, pos + 1);
+    s1.insert(0, 1, '.');
+    return(s1);
+}
+
 void goToNextIndex(const vec_string &split, size_t &i) {
   size_t pos = 0;
   while (1) {
@@ -29,9 +54,7 @@ void addErrorPagesNumber(std::vector<int> &vec, const vec_string &split,
           "Webserv: Error:\nError_page directive found invalid "
           "because of misuse of '{}'");
     }
-    if (split[i][0] == '=')
-      ;
-    else if ((pos = split[i].find_first_not_of("0123456789", 0)) !=
+    if ((pos = split[i].find_first_not_of("0123456789", 0)) !=
              std::string::npos) {
       throw std::logic_error("Webserv: Error:\nError_page directive found "
                              "invalid because we found non "

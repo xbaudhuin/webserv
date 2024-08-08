@@ -129,8 +129,6 @@ ServerConf parser(const vec_string &split, size_t &i, const size_t &size){
     else if (( pos = split[i].find("}")) != std::string::npos)
         throw std::logic_error("Webserv: Error:\nMisconfigured server block, issue comes from '}'");
     i++;
-    // if(split[i].find_first_of("{};") != std::string::npos)
-    //     throw std::logic_error("Webserv: Error:\nMisconfigured server block, found \"{\" again");
     try
     {    
         while(i < size)
@@ -200,7 +198,6 @@ void isSameVec_string(const vec_string &v, const vec_string &v1)
                 throw std::logic_error("Webserv: Error:\nServer Config with same name and port found");
         }
     }
-    
 }
 
 void Webserv::checkConfigs(void)
@@ -217,7 +214,5 @@ void Webserv::checkConfigs(void)
                 isSameVec_string(v, this->_confs[j].first);
             }
         }
-        
     }
-    
 }

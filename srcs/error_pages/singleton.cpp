@@ -781,28 +781,6 @@ std::string getErrorPageFromSingleton(int error_code) {
   return (singleton_err_pages()[error_code]);
 }
 
-// std::string findErrorPage(int error_code, const map_err_pages& map)
-// {
-//     std::ifstream strm;
-//     std::string file;
-//     std::string s = "." + map.find(error_code)->second;
-//     strm.open(s.c_str());
-//     if(strm.is_open())
-//     {
-//         std::stringstream str;
-//         str << strm.rdbuf();
-//         file = str.str();
-//         strm.close();
-//         return(file);
-//     }
-//     else
-//     {
-//         file = getErrorPageFromSingleton(error_code);
-//         return(file);
-//     }
-//     return(file);
-// }
-
 #include "ServerConf.hpp"
 using std::string;
 
