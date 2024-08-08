@@ -44,10 +44,9 @@ void Client::addContentTypeHeader(void) {
 
 void Client::buildListingDirectory(std::string &url) {
   if (_location->getAutoIndex() == 0) {
-    logErrorClient(
-        "Client::buildListingDirectory: no index or ListingDirectory: " +
-        _sUri);
     _statusCode = 404;
+    logErrorClient(
+        "Client::buildListingDirectory: no index or ListingDirectory");
     return;
   }
   if (_location->hasAlias())
@@ -77,7 +76,7 @@ void Client::buildListingDirectory(std::string &url) {
       _statusCode = 404;
     else
       _statusCode = 500;
-    logErrorClient("Client::buildListingDirectory: fail to opendir: " + _sUri);
+    logErrorClient("Client::buildListingDirectory: fail to opendir");
     return;
   }
   struct dirent *ent;
@@ -174,8 +173,8 @@ void Client::findPages(void) {
     if (url[url.size() - 1] == '/') {
       struct stat st;
       if (stat(url.c_str(), &st) == -1) {
-        logErrorClient("Client::findPages: no such file or directory: " + url);
         _statusCode = 404;
+        logErrorClient("Client::findPages: no such file or directory: " + url);
         return;
       }
       if (findIndex(url) == false) {
@@ -185,6 +184,7 @@ void Client::findPages(void) {
   } else if (_location->isExactMatch() == false) {
     if (findIndex(url) == false) {
       _statusCode = 404;
+      logErrorClient("Client::findPages: no such file or directory: " + url);
       return;
     }
   }
@@ -205,17 +205,17 @@ void Client::findPages(void) {
     return;
   }
   if ((st.st_mode & S_IFMT) != S_IFREG) {
-    logErrorClient("Client::findPages: not a file: " + url);
     _statusCode = 403;
+    logErrorClient("Client::findPages: not a file: " + url);
     return;
   }
   _tmpFd = open(url.c_str(), O_RDONLY | O_CLOEXEC);
   if (_tmpFd == -1) {
-    logErrorClient("Client::findPages: failed to open file: " + url);
     if (access(url.c_str(), F_OK) == -1)
       _statusCode = 404;
     else
       _statusCode = 403;
+    logErrorClient("Client::findPages: failed to open file: " + url);
     return;
   }
   _leftToRead = st.st_size;
@@ -234,8 +234,8 @@ void Client::readFile(void) {
   ssize_t readBytes = read(_tmpFd, &buf[0], toRead);
 
   if (readBytes < 0) {
-    logErrorClient("Client::readFile: fail to read");
     _statusCode = 500;
+    logErrorClient("Client::readFile: fail to read");
     return;
   }
   _response.setBody(buf);
@@ -254,8 +254,8 @@ void Client::readFile(std::vector<char> &vec) {
   ssize_t readBytes = read(_tmpFd, &buf[0], toRead);
 
   if (readBytes < 0) {
-    logErrorClient("Client::readFile: fail to read");
     _statusCode = 500;
+    logErrorClient("Client::readFile: fail to read");
     return;
   }
   vec.swap(buf);
@@ -364,9 +364,9 @@ void Client::handleCgi(std::vector<char> &response) {
     return;
   }
   struct stat st;
-  if (stat(_outfileCgi.c_str(), &st) != -1) {
-    logErrorClient("Client::handleCgi: fail to stat: " + _outfileCgi);
+  if (stat(_outfileCgi.c_str(), &st) == -1) {
     _statusCode = 500;
+    logErrorClient("Client::handleCgi: fail to stat: " + _outfileCgi);
     handleError();
     response = _response.getResponse();
     return;
@@ -374,8 +374,8 @@ void Client::handleCgi(std::vector<char> &response) {
   _leftToRead = st.st_size;
   _tmpFd = open(_outfileCgi.c_str(), O_RDONLY);
   if (_tmpFd == -1) {
-    logErrorClient("Client::handleCgi: fail to open: " + _outfileCgi);
     _statusCode = 500;
+    logErrorClient("Client::handleCgi: fail to open: " + _outfileCgi);
     handleError();
     response = _response.getResponse();
     return;
@@ -452,25 +452,25 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
   if (_bodyToRead == 0) {
     struct stat st;
     if (stat(tmp.c_str(), &st) == -1) {
+      _statusCode = 500;
       logErrorClient(
           "Client::uploadTmpFileDifferentFileSystem: fail to stat :" + tmp);
-      _statusCode = 500;
       return;
     }
     if (stat(outfile.c_str(), &st) != -1) {
+      _statusCode = 409;
       logErrorClient(
           "Client::uploadTmpFileDifferentFileSystem: file already exist: " +
           outfile);
-      _statusCode = 409;
       return;
     }
     _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
     _uploadFd =
         open(outfile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_APPEND, 00644);
     if (_tmpFd == -1 || _uploadFd == -1) {
+      _statusCode = 500;
       logErrorClient(
           "Client::uploadTmpFileDifferentFileSystem: fail to open both file");
-      _statusCode = 500;
       return;
     }
     _bodyToRead = st.st_size;
@@ -482,9 +482,9 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
   }
   ssize_t writeByte = write(_uploadFd, &body[0], body.size());
   if (writeByte == -1 || static_cast<size_t>(writeByte) < body.size()) {
+    _statusCode = 500;
     logErrorClient(
         "Client::uploadTmpFileDifferentFileSystem: fail to write all bytes");
-    _statusCode = 500;
   }
   _bodyToRead -= writeByte;
   if (_bodyToRead == 0) {
@@ -575,8 +575,11 @@ bool Client::sendResponse(std::vector<char> &response) {
   errno = 0;
   resetVector(response);
   bool ret = getResponse(response);
-  if (ret == false)
+  if (ret == false) {
+    if (_statusCode < 400)
+      logErrorClient(_sUri);
     resetClient();
+  }
   _time = getTime();
   return (ret);
 }

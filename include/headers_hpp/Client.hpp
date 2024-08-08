@@ -11,6 +11,7 @@
 #include <exception>
 #include <fstream>
 #include <map>
+#include <netinet/in.h>
 #include <signal.h>
 #include <sstream>
 #include <string.h>
@@ -35,6 +36,7 @@ class Client {
 public:
   // Constructor
   Client(int fd, mapConfs &map, ServerConf *defaultServer);
+  Client(int fd, mapConfs &map, ServerConf *defaultServer, in_addr_t IpClient);
   Client(Client const &copy);
 
   // Destructor
@@ -63,6 +65,7 @@ private:
   int _socket;
   mapConfs &_mapConf;
   ServerConf *_defaultConf;
+  in_addr_t _clientIp;
   ServerConf *_server;
   Location *_location;
   time_t _time;
@@ -189,6 +192,7 @@ private:
   void handleCgi(std::vector<char> &response);
   void cgiPOSTMethod(void);
   void cgiOutfile(void);
+  void buildContentLength(std::vector<char *> &vEnv);
   void addHeaderToEnv(std::vector<char *> &vEnv, const std::string &envVariable,
                       const std::string &headerKey);
   void addVariableToEnv(std::vector<char *> &vEnv,

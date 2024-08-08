@@ -1,2 +1,32 @@
-Fd: 5Port: 4243 08-08-24 12:01:58 GMT; Client::findPages: not a file: ./
-Fd: 5Port: 4243 08-08-24 12:01:58 GMT; Client::findPages: fail to stat: ./favicon.ico
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:04 GMT; Client::findPages: fail to stat: ./html/cgi_failure/favicon.ico; GET /favicon.ico; 404  Not Found
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:05 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:08 GMT; /python/cookie.py; POST /python/cookie.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:08 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:10 GMT; /python/welcome.py; GET /python/welcome.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:10 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:16 GMT; /python/LogOut.py; GET /python/LogOut.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:16 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:23 GMT; /python/welcome.py; GET /python/welcome.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:23 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:24 GMT; /python/connectionForm.html; GET /python/connectionForm.html; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:24 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:35 GMT; /python/cookie.py; POST /python/cookie.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:35 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:37 GMT; /python/welcome.py; GET /python/welcome.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:37 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:44 GMT; /python/LogOut.py; GET /python/LogOut.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:44 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:47 GMT; /python/welcome.py; GET /python/welcome.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:29:47 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:32:52 GMT; /python/connectionForm.html; GET /python/connectionForm.html; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:32:52 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:08 GMT; /python/cookie.py; POST /python/cookie.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:08 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:26 GMT; /python/welcome.py; GET /python/welcome.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:26 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:37 GMT; /python/ColorModifier.html; GET /python/ColorModifier.html; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:37 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:49 GMT; /python/ColorSetter.py; GET /python/ColorSetter.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:49 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:58 GMT; /python/welcome.py; GET /python/welcome.py; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4250; 08-08-24 16:33:58 GMT; /python/py.jpg; GET /python/py.jpg; 200  OK

@@ -17,9 +17,9 @@
 
 NAME					=	webserv
 
-CXX						=	clang++
+CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g
 
 debug 				= 	0
 
@@ -110,9 +110,11 @@ SRCS_MAIN		=	main/main.cpp \
 					parser/Parser.cpp \
 					parser/ServerConf.cpp \
 					parser/ServerConfGetter.cpp \
-					parser/GetLocation.cpp \
-					parser/UtilsParser.cpp \
 					parser/Location.cpp \
+					parser/LocationChecker.cpp \
+					parser/LocationGetter.cpp \
+					parser/GetPreciseLocation.cpp \
+					parser/UtilsParser.cpp \
 					parser/ParserLocation.cpp \
 					parser/Printer.cpp \
 					sockets/createServerSocket.cpp \

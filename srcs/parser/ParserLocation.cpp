@@ -137,7 +137,6 @@ int testIndex(const vec_string &split, size_t &i, const size_t &size, Location &
         {
             throw std::logic_error("Webserv: Error:\nSyntax error inside the index directive");
         }
-        // i++;
         while(split[i] != ";")
         {
             if(split[i].find_first_of("{}", 0) != std::string::npos)
@@ -237,8 +236,6 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
     if(split[i] == "{")
         return(errorParsing("Webserv: Error:\nSyntax error: Location directive missing the url"), goToNextIndex(split, i));
     Location loc;
-    /* add in case of modifier */
-    /* i++; */
     if(split[i] == "=")
     {
         loc.setExactMatch();
@@ -302,10 +299,9 @@ void ParserLocation(const vec_string &split, size_t &i,const size_t &size, Serve
     i++;
     if(loc.getIndexFile().size() == 0)
         loc.setIndexFile("/index.html");
-    if(loc.getCgi().size() == 0 && loc.getUploadLocation().size() > 0)
-        throw std::logic_error("Webserv: Error:\nupload_location set without any cgi specified");
+    if(loc.getPostStatus() == 0 && loc.getUploadLocation().size() > 0)
+        throw std::logic_error("Webserv: Error:\nupload_location set with POST off");
     if(!loc.getCgi().size() && loc.hasPathInfo())
         throw std::logic_error("Webserv: Error:\npath_info set without any cgi specified");
-    // std::cout << loc << std::endl;
     cf.addLocation(loc);
 }

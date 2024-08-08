@@ -143,6 +143,17 @@ void Response::setBody(const std::string &body, size_t size) {
   setHeader("Content-Length", size);
 }
 
+std::string Response::getStatusCodeAndReasonPhrase(size_t statusCode) const {
+  std::string str;
+  std::stringstream ss;
+  ss << statusCode;
+  str = ss.str() + " ";
+  if (_mapReasonPhrase.count(statusCode) != 1)
+    return (str);
+  str += _mapReasonPhrase.at(statusCode);
+  return (str);
+}
+
 void Response::setBody(const std::vector<char> &body, size_t size) {
   _body = body;
   setHeader("Content-Length", size);
