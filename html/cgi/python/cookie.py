@@ -37,6 +37,7 @@ if 'username' in form:
     print(f"Set-Cookie: user={user}")
     sys.stderr.write("found cookie username\n")
 else:
+    sys.stderr.write("did not found the cookie\n")
     print("Set-Cookie: user=toto")
 
 if 'BackGroundColor' in form:
@@ -44,6 +45,7 @@ if 'BackGroundColor' in form:
     print(f"Set-Cookie: bgcolor={bgcolor}")
     sys.stderr.write("found cookie bgcolor\n")
 else:
+    sys.stderr.write("did not found the cookie\n")
     print("Set-Cookie: bgcolor=PaleGreen")
 
 # Print the HTML body
