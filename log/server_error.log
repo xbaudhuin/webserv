@@ -1,0 +1,2 @@
+Fd: 5Port: 4243 08-08-24 12:01:58 GMT; Client::findPages: not a file: ./
+Fd: 5Port: 4243 08-08-24 12:01:58 GMT; Client::findPages: fail to stat: ./favicon.ico

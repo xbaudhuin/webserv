@@ -51,6 +51,21 @@ Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
   return;
 }
 
+void Client::copyMultipart(const std::vector<multipartRequest> &rhs) {
+  for (size_t i = 0; i < _multipart.size(); i++) {
+    if (_multipart[i].tmpFilename.empty() == false)
+      if (i >= rhs.size() || _multipart[i].tmpFilename != rhs[i].tmpFilename) {
+        unlink(_multipart[i].tmpFilename.c_str());
+      }
+    if (_multipart[i].file.empty() == false) {
+      if (i >= rhs.size() || _multipart[i].file != rhs[i].file) {
+        unlink(_multipart[i].file.c_str());
+      }
+    }
+  }
+  _multipart = rhs;
+}
+
 Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
     _socket = rhs._socket;
@@ -89,7 +104,7 @@ Client &Client::operator=(Client const &rhs) {
     } else
       _tmpFd = -1;
     _sizeChunk = rhs._sizeChunk;
-    _multipart = rhs._multipart;
+    copyMultipart(rhs._multipart);
     _currentMultipart = rhs._currentMultipart;
     _response = rhs._response;
     _keepConnectionAlive = rhs._keepConnectionAlive;
@@ -143,7 +158,6 @@ void Client::resetClient(void) {
   _checkMulti = false;
   _multipartRequest = false;
   if (_tmpFile.empty() == false) {
-    std::cerr << "unlink: " << _tmpFile << std::endl;
     unlink(_tmpFile.c_str());
   }
   _tmpFile = "";
@@ -163,12 +177,10 @@ void Client::resetClient(void) {
   _leftToRead = 0;
   _cgiPid = 0;
   if (_outfileCgi.size() > 0) {
-    std::cerr << "unlink: " << _outfileCgi << std::endl;
     unlink(_outfileCgi.c_str());
   }
   _outfileCgi = "";
   if (_infileCgi.size() > 0) {
-    std::cerr << "unlink: " << _infileCgi << std::endl;
     unlink(_infileCgi.c_str());
   }
   _infileCgi = "";
@@ -187,7 +199,8 @@ ServerConf *Client::getServerConf(const std::string &host) {
   return (_defaultConf);
 }
 
-// const std::vector<char> &Client::getBuffer(void) const { return (_vBuffer); }
+// const std::vector<char> &Client::getBuffer(void) const { return
+// (_vBuffer); }
 
 // int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
@@ -209,14 +222,16 @@ void Client::addCgiToMap(std::map<int, pid_t> &mapCgi) {
   } catch (std::exception &e) {
     if (_cgiPid > 0) {
       if (kill(_cgiPid, SIGKILL) == -1) {
-        logErrorChild(
-            "Client::addCgiToMap: fail to kill child when map.insert failed");
+        logErrorClient("Client::addCgiToMap: fail to kill child when "
+                       "map.insert failed");
         _statusCode = 500;
+        return;
       } else {
-        logErrorChild("Client::addCgiToMap: fail to map.insert pid child");
+        logErrorClient("Client::addCgiToMap: fail to map.insert pid child");
       }
     }
-    waitpid(_cgiPid, NULL, WNOHANG);
+    if (waitpid(_cgiPid, NULL, 0) == -1)
+      logErrorClient("Client::addCgiToMap: fail to waitpid after kill");
   }
 }
 

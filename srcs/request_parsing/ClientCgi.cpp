@@ -188,29 +188,21 @@ void Client::setupCgi() {
 
   std::string cgiPathExec = _location->getExecutePath(_sUri);
   std::string cgiPathScript = _location->getCgiPath(_sUri);
-  std::ostringstream ss;
+  std::stringstream ss;
   ss << _socket;
-  ss.str("");
-  ss.clear();
+  ss << "_host";
+  ss << _server->getHost();
+  ss << "_port";
+  ss << _server->getPort();
+  ss << "_t";
+  time_t time = getTime();
+  ss << time;
   _infileCgi = "webserv_in" + ss.str();
   _outfileCgi = "webserv_out" + ss.str();
-  ss << _server->getHost();
-  _infileCgi += "_host" + ss.str();
-  _outfileCgi += "_host" + ss.str();
-  ss.str("");
-  ss.clear();
-  ss << _server->getPort();
-  _infileCgi += "_port" + ss.str();
-  _outfileCgi += "_port" + ss.str();
-  time_t time = getTime();
-  ss.str("");
-  ss.clear();
-  ss << time;
-  _infileCgi += "t" + ss.str();
-  _outfileCgi += "t" + ss.str();
 
   pid_t pid = fork();
   if (pid < 0) {
+    logErrorClient("Client::setupCgi: fail to fork");
     _statusCode = 500;
     return;
   }

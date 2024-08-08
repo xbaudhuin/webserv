@@ -165,7 +165,7 @@ private:
 
   // Response Method
   bool getResponse(std::vector<char> &response);
-  void findPages(const std::string &url);
+  void findPages(void);
   bool findIndex(std::string &url);
   void buildListingDirectory(std::string &url);
   void buildResponse(void);
@@ -177,7 +177,6 @@ private:
   void handleMultipart(void);
   void uploadTmpFileDifferentFileSystem(void);
   void handleUpload(void);
-  void handleChunk(void);
   void handlePOST(void);
   void handleRedirection(void);
   void createResponseBody(void);
@@ -207,6 +206,7 @@ private:
   void removeReturnCarriageNewLine(std::string &line);
   bool isCgi(void);
   void fillBufferWithoutReturnCarriage(const std::vector<char> &vec);
+  void copyMultipart(const std::vector<multipartRequest> &rhs);
   int64_t hasEmptyLine(int newLine);
   // bool isHexadecimal(char c);
   std::string getDateOfFile(time_t rawtime) const;
