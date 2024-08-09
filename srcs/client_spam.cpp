@@ -20,8 +20,8 @@ int main(int argc, char **argv) {
 	// }
   struct sockaddr_in serv_adr;
 	// std::string request = argv[3];
-	std::string request = "DELETE /dumas/";
-	//request += "��@�*v����%��́�Y��L�'��(M�NSl�,��0�'엻;}myU��1��K�A �^����Fr���Z-��C�g�Ze�1xwi��՘'�0���o��Z���Ğ[aBR7���~�e��I�����ڠ@���� %�X�q�{vR��Te��G�n\\\\\\////@�Y�5�rSR";
+	std::string request = "GET /dumas/";
+	request += "��@�*v����%��́�Y��L�'��(M�NSl�,��0�'엻;}myU��1��K�A �^����Fr���Z-��C�g�Ze�1xwi��՘'�0���o��Z���Ğ[aBR7���~�e��I�����ڠ@���� %�X�q�{vR��Te��G�n\\\\\\////@�Y�5�rSR";
 	request += " HTTP/1.1\r\n";
 	request += "host: salut\r\n";
 	request += "\r\n";
