@@ -583,7 +583,7 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
-    std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
+    std::cout << BLUE << "New line header: " << line << RESET
               << std::endl;
     if (line == "" || _vBuffer.size() < _boundary.size())
       break;

@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include <cerrno>
 
 bool Client::findIndex(std::string &url) {
   vec_string vector = _location->getIndexFile();
@@ -405,201 +406,214 @@ void Client::handleDelete(void) {
     case ENOTDIR:
       _statusCode = 409;
       break;
+    case ENOTEMPTY:
+      _statusCode = 409;
+      break;
     default:
       _statusCode = 500;
-      logErrorClient("Client::handleDelete: fail to unlink: " + url);
     }
-    else _statusCode = 204;
-    handleError();
+    logErrorClient("Client::handleDelete: fail to unlink: " + url);
+  } else
+    _statusCode = 204;
+  handleError();
+  return;
+}
+
+void Client::handleMultipart(void) {
+  struct stat st;
+  if (stat(_multipart[_currentMultipart].file.c_str(), &st) != -1) {
+    _statusCode = 409;
+    logErrorClient("Client::handleMultipart: file already exist: " +
+                   _multipart[_currentMultipart].file);
     return;
   }
-
-  void Client::handleMultipart(void) {
-    struct stat st;
-    if (stat(_multipart[_currentMultipart].file.c_str(), &st) != -1) {
+  errno = 0;
+  if (_diffFileSystem == false &&
+      rename(_multipart[_currentMultipart].tmpFilename.c_str(),
+             _multipart[_currentMultipart].file.c_str()) != 0) {
+    switch (errno) {
+    case EXDEV:
+      errno = 0;
+      _diffFileSystem = true;
+      break;
+    case EACCES:
+      _statusCode = 403;
+      break;
+    case EEXIST:
       _statusCode = 409;
-      logErrorClient("Client::handleMultipart: fail to stat: " +
-                     _multipart[_currentMultipart].file);
-      return;
+      break;
+    default:
+      _statusCode = 500;
     }
-    errno = 0;
-    if (_diffFileSystem == false &&
-        rename(_multipart[_currentMultipart].tmpFilename.c_str(),
-               _multipart[_currentMultipart].file.c_str()) != 0) {
-      int err = errno;
-      perror("COUCOU:");
-      errno = err;
-      switch (errno) {
-      case EXDEV:
-        errno = 0;
-        _diffFileSystem = true;
-        break;
-      case EACCES:
-        _statusCode = 403;
-        break;
-      case EEXIST:
-        _statusCode = 409;
-        break;
-      default:
-        _statusCode = 500;
-      }
-      logErrorClient("Client::handleMultipart: fail to rename: " +
-                     _multipart[_currentMultipart].tmpFilename + " to " +
-                     _multipart[_currentMultipart].file);
-    }
-    if (_diffFileSystem == true) {
-      uploadTmpFileDifferentFileSystem(
-          _multipart[_currentMultipart].tmpFilename,
-          _multipart[_currentMultipart].file);
-    }
-    if (_diffFileSystem == false || _bodyToRead == 0)
-      _currentMultipart++;
-    if (_statusCode < 400 && _currentMultipart == _multipart.size()) {
-      _bodyToRead = 0;
-      _statusCode = 201;
-    }
-    if (_statusCode >= 201)
-      return;
-    handleMultipart();
+    logErrorClient("Client::handleMultipart: fail to rename: " +
+                   _multipart[_currentMultipart].tmpFilename + " to " +
+                   _multipart[_currentMultipart].file);
+  } else {
+    std::cout << "Client::handleMultipart: renamed: "
+              << _multipart[_currentMultipart].tmpFilename << std::endl;
+    _multipart[_currentMultipart].tmpFilename = "";
   }
+  if (_diffFileSystem == true) {
+    uploadTmpFileDifferentFileSystem(_multipart[_currentMultipart].tmpFilename,
+                                     _multipart[_currentMultipart].file);
+  }
+  if (_diffFileSystem == false || _bodyToRead == 0)
+    _currentMultipart++;
+  if (_statusCode < 400 && _currentMultipart == _multipart.size()) {
+    _bodyToRead = 0;
+    _statusCode = 201;
+  }
+  if (_statusCode >= 201)
+    return;
+  handleMultipart();
+}
 
-  void Client::uploadTmpFileDifferentFileSystem(std::string & tmp,
-                                                std::string & outfile) {
-    std::vector<char> body;
-    if (_bodyToRead == 0) {
-      struct stat st;
-      if (stat(tmp.c_str(), &st) == -1) {
-        _statusCode = 500;
-        logErrorClient(
-            "Client::uploadTmpFileDifferentFileSystem: fail to stat :" + tmp);
-        return;
-      }
-      if (stat(outfile.c_str(), &st) != -1) {
-        _statusCode = 409;
-        logErrorClient(
-            "Client::uploadTmpFileDifferentFileSystem: file already exist: " +
-            outfile);
-        return;
-      }
-      _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
-      _uploadFd =
-          open(outfile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_APPEND, 00644);
-      if (_tmpFd == -1 || _uploadFd == -1) {
-        _statusCode = 500;
-        logErrorClient(
-            "Client::uploadTmpFileDifferentFileSystem: fail to open both file");
-        return;
-      }
-      _bodyToRead = st.st_size;
-      _leftToRead = _bodyToRead;
-    }
-    readFile(body);
-    if (_statusCode == 500) {
-      return;
-    }
-    ssize_t writeByte = write(_uploadFd, &body[0], body.size());
-    if (writeByte == -1 || static_cast<size_t>(writeByte) < body.size()) {
+void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
+                                              std::string &outfile) {
+  std::vector<char> body;
+  if (_bodyToRead == 0) {
+    struct stat st;
+    if (stat(tmp.c_str(), &st) == -1) {
       _statusCode = 500;
       logErrorClient(
-          "Client::uploadTmpFileDifferentFileSystem: fail to write all bytes");
+          "Client::uploadTmpFileDifferentFileSystem: fail to stat :" + tmp);
+      return;
     }
-    _bodyToRead -= writeByte;
-    if (_bodyToRead == 0) {
-      close(_tmpFd);
-      _tmpFd = -1;
-      unlink(tmp.c_str());
-      close(_uploadFd);
-      _uploadFd = -1;
+    if (stat(outfile.c_str(), &st) != -1) {
+      _statusCode = 409;
+      logErrorClient(
+          "Client::uploadTmpFileDifferentFileSystem: file already exist: " +
+          outfile);
+      return;
     }
+    _tmpFd = open(tmp.c_str(), O_CLOEXEC, O_RDONLY);
+    _uploadFd =
+        open(outfile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT | O_APPEND, 00644);
+    if (_tmpFd == -1 || _uploadFd == -1) {
+      _statusCode = 500;
+      logErrorClient(
+          "Client::uploadTmpFileDifferentFileSystem: fail to open both file");
+      return;
+    }
+    _bodyToRead = st.st_size;
+    _leftToRead = _bodyToRead;
+  }
+  readFile(body);
+  if (_statusCode == 500) {
     return;
   }
-
-  void Client::handleUpload(void) {
-    struct stat st;
-    errno = 0;
-    stat(_tmpFile.c_str(), &st);
-    if (_diffFileSystem == false &&
-        rename(_tmpFile.c_str(), _sPathUpload.c_str()) != 0) {
-      switch (errno) {
-      case EXDEV:
-        errno = 0;
-        _diffFileSystem = true;
-        break;
-      case EACCES:
-        _statusCode = 403;
-        break;
-      case EEXIST:
-        _statusCode = 409;
-        break;
-      default:
-        _statusCode = 500;
-      }
-      logErrorClient("Client::handleUpload: fail to rename " + _tmpFile +
-                     " to " + _sPathUpload);
-    }
-    if (_diffFileSystem == true) {
-      uploadTmpFileDifferentFileSystem(_tmpFile, _sPathUpload);
-    }
+  ssize_t writeByte = write(_uploadFd, &body[0], body.size());
+  if (writeByte == -1 || static_cast<size_t>(writeByte) < body.size()) {
+    _statusCode = 500;
+    logErrorClient(
+        "Client::uploadTmpFileDifferentFileSystem: fail to write all bytes");
   }
-
-  void Client::handlePOST() {
-    std::cout << "HANDLEPOST: " << _multipart.size() << std::endl;
-    if (_multipart.size() >= 1) {
-      std::cout << "status code = " << _statusCode << std::endl;
-      handleMultipart();
-    } else
-      handleUpload();
-    std::cout << RED << "_bodyToRead = " << _bodyToRead << std::endl;
-    if (_bodyToRead == 0)
-      handleError();
+  _bodyToRead -= writeByte;
+  if (_bodyToRead == 0) {
+    close(_tmpFd);
+    _tmpFd = -1;
+    unlink(tmp.c_str());
+    std::cout << "Client::uploadTmpFileDifferentFileSystem: unlink: " << tmp
+              << std::endl;
+    tmp = "";
+    close(_uploadFd);
+    _uploadFd = -1;
   }
+  return;
+}
 
-  bool Client::getResponse(std::vector<char> & response) {
-    if (_cgiPid > 0) {
-      std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
-                << std::endl;
-      handleCgi(response);
-      return (_leftToRead != 0);
-    } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
-      std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
-                << std::endl;
-      handleDelete();
-      response = _response.getResponse();
-      return (false);
-    } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
-      std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
-                << std::endl;
-      handlePOST();
-      if (_bodyToRead == 0) {
-        response = _response.getResponse();
-      }
-      return (_bodyToRead != 0);
-    } else if (_response.isReady() == false) {
-      buildResponse();
-      response = _response.getResponse();
-      return (_leftToRead != 0);
+void Client::handleUpload(void) {
+  struct stat st;
+  if (stat(_sPathUpload.c_str(), &st) != -1) {
+    _statusCode = 409;
+    logErrorClient(
+        "Client::uploadTmpFileDifferentFileSystem: file already exist: " +
+        _sPathUpload);
+    return;
+  }
+  errno = 0;
+  if (_diffFileSystem == false &&
+      rename(_tmpFile.c_str(), _sPathUpload.c_str()) != 0) {
+    switch (errno) {
+    case EXDEV:
+      errno = 0;
+      _diffFileSystem = true;
+      break;
+    case EACCES:
+      _statusCode = 403;
+      break;
+    case EEXIST:
+      _statusCode = 409;
+      break;
+    default:
+      _statusCode = 500;
     }
-    bool ret = _leftToRead != 0;
-    if (_leftToRead > 0) {
-      readFile(response);
-      if (_statusCode == 500) {
-        addErrorResponse(500);
-        return (false);
-      }
+    logErrorClient("Client::handleUpload: fail to rename " + _tmpFile + " to " +
+                   _sPathUpload);
+  }
+  if (_diffFileSystem == true) {
+    uploadTmpFileDifferentFileSystem(_tmpFile, _sPathUpload);
+  }
+}
+
+void Client::handlePOST() {
+  std::cout << "HANDLEPOST: " << _multipart.size() << std::endl;
+  if (_multipart.size() >= 1) {
+    std::cout << "status code = " << _statusCode << std::endl;
+    handleMultipart();
+  } else
+    handleUpload();
+  std::cout << RED << "_bodyToRead = " << _bodyToRead << std::endl;
+  if (_bodyToRead == 0)
+    handleError();
+}
+
+bool Client::getResponse(std::vector<char> &response) {
+  if (_cgiPid > 0) {
+    std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
+              << std::endl;
+    handleCgi(response);
+    return (_leftToRead != 0);
+  } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
+              << std::endl;
+    handleDelete();
+    response = _response.getResponse();
+    return (false);
+  } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
+    std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
+              << std::endl;
+    handlePOST();
+    if (_bodyToRead == 0) {
+      response = _response.getResponse();
     }
-    std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
+    return (_bodyToRead != 0);
+  } else if (_response.isReady() == false) {
+    buildResponse();
+    response = _response.getResponse();
     return (_leftToRead != 0);
   }
-
-  bool Client::sendResponse(std::vector<char> & response) {
-    errno = 0;
-    resetVector(response);
-    bool ret = getResponse(response);
-    if (ret == false) {
-      if (_statusCode < 400)
-        logErrorClient(_sUri);
-      resetClient();
+  bool ret = _leftToRead != 0;
+  if (_leftToRead > 0) {
+    readFile(response);
+    if (_statusCode == 500) {
+      addErrorResponse(500);
+      return (false);
     }
-    _time = getTime();
-    return (ret);
   }
+  std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
+  return (_leftToRead != 0);
+}
+
+bool Client::sendResponse(std::vector<char> &response) {
+  errno = 0;
+  resetVector(response);
+  bool ret = getResponse(response);
+  if (ret == false) {
+    if (_statusCode < 400)
+      logErrorClient(_sUri);
+    resetClient();
+  }
+  _time = getTime();
+  return (ret);
+}
