@@ -1,4 +1,1 @@
-
-Webserv: Error:
-upload_location set without any cgi specified
-
+webserv: Webserv::start: epoll_wait: Interrupted system call

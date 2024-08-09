@@ -33,7 +33,7 @@ RUN mkdir -p /usr/share/nginx/bonjour
 # COPY index2.html /usr/share/nginx/html2/index.html
 
 
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY simple_nginx.conf /etc/nginx/nginx.conf
 
 # Copy your website content to the default Nginx public directory
 RUN chmod 000 /usr/share/nginx/html/html2/notfile.html
@@ -45,6 +45,7 @@ COPY 404.html /usr/share/nginx/html/404.html
 WORKDIR /
 
 # Expose port 80 to the host
+EXPOSE 4244
 EXPOSE 4247
 
 EXPOSE 4248
