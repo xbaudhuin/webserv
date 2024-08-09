@@ -17,6 +17,7 @@ class Location
         bool _is_a_dir;
         std::string _root_server;
         std::vector<std::string> available_extension;
+        std::vector<std::string> _use_extension;
         std::vector<std::pair<std::string, std::string> > cgi;
         bool _exact_match;
         std::string root;

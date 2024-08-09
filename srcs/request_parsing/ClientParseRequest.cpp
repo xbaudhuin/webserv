@@ -583,7 +583,7 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
-    std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
+    std::cout << BLUE << "New line header: " << line << RESET
               << std::endl;
     if (line == "" || _vBuffer.size() < _boundary.size())
       break;
@@ -745,7 +745,7 @@ void Client::setupBodyParsing(void) {
 }
 
 bool Client::isCgi(void) {
-  if (_location && _location->isCgi(_sUri) == true)
+  if (_sMethod != "DELETE" && _location && _location->isCgi(_sUri) == true)
     return (true);
   return (false);
 }
@@ -996,6 +996,7 @@ void Client::parseRequest(std::string &buffer) {
         "Client::parseRequest: body size different from body size given");
     return;
   }
+  std::cerr << "Client::parseRequest: bool _isCgi: " << _location->isCgi(_sUri) <<std::endl;
   if (_location && _location->isCgi(_sUri) == true) {
     setupCgi();
   }

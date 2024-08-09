@@ -159,6 +159,7 @@ private:
   bool getHeaderMulti(multipartRequest &multi);
   bool getMultipartBody(multipartRequest &multi);
   bool parseMultipartRequest();
+  void resetMultipart(void);
   bool saveToTmpFile(std::vector<char> &body);
   bool saveMultiToTmpfile(multipartRequest &multi);
   // chunked method

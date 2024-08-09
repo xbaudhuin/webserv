@@ -68,6 +68,7 @@ Location::Location(const Location &rhs, int i){
         this->_path_info = rhs._path_info;
         this->alias = rhs.alias;
         this->_base_uri = rhs._base_uri;
+        this->_use_extension = rhs._use_extension;
     }
 }
 
@@ -97,6 +98,7 @@ Location& Location::operator=(const Location &rhs){
         this->alias = rhs.alias;
         this->_is_generated = rhs._is_generated;
         this->_base_uri = rhs._base_uri;
+        this->_use_extension = rhs._use_extension;
     }
     return(*this);
 }
@@ -257,6 +259,14 @@ void Location::setCgi(const std::string &extension, const std::string &executabl
         throw std::logic_error("Error:\nUnknown extension found inside the cgi directive");
     if(executable.size() < extension.size() || executable.substr(executable.size() - extension.size()) != extension)
         throw std::logic_error("Error:\nIncorrect extension found inside the cgi directive");
+    size_t i = 0;
+    for (i = 0; i < this->_use_extension.size() ; i++)
+    {
+        if(this->_use_extension[i] == extension)
+            break;
+    }
+    if (i == this->_use_extension.size())
+        this->_use_extension.push_back(extension);
     this->cgi.push_back(std::make_pair(extension, executable));
 }
 

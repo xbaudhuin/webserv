@@ -36,14 +36,7 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf,
 // }
 
 Client::~Client(void) {
-  for (size_t i = 0; i < _multipart.size(); i++) {
-    if (_multipart[i].tmpFilename.empty() == false) {
-      unlink(_multipart[i].tmpFilename.c_str());
-    }
-    if (_multipart[i].file.empty() == false) {
-      unlink(_multipart[i].file.c_str());
-    }
-  }
+  resetMultipart();
   if (_tmpFd != -1)
     close(_tmpFd);
   if (_uploadFd != -1)
@@ -84,6 +77,14 @@ void Client::copyMultipart(const std::vector<multipartRequest> &rhs) {
     }
   }
   _multipart = rhs;
+}
+
+void Client::resetMultipart(void){
+for (size_t i = 0; i < _multipart.size(); i++) {
+    if (_multipart[i].tmpFilename.empty() == false) {
+      unlink(_multipart[i].tmpFilename.c_str());
+    }
+  }
 }
 
 Client &Client::operator=(Client const &rhs) {
@@ -190,6 +191,7 @@ void Client::resetClient(void) {
   }
   _tmpFd = -1;
   _sizeChunk = 0;
+  resetMultipart();
   resetVector(_multipart);
   _currentMultipart = 0;
   _response.reset();
