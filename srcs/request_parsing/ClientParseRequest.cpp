@@ -216,6 +216,12 @@ void Client::getPathUpload(void) {
     std::string path = _sUri.substr(_location->myUri().size());
     _sPathUpload += path;
   }
+  if (_sPathUpload[_sPathUpload.size() - 1] == '/') {
+    std::stringstream ss;
+    ss << getTime();
+    _sPathUpload += "/";
+    _sPathUpload += ss.str();
+  }
   std::cout << PURP << "uploadpath : " << _sPathUpload << RESET << std::endl;
 }
 
@@ -583,8 +589,7 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
-    std::cout << BLUE << "New line header: " << line << RESET
-              << std::endl;
+    std::cout << BLUE << "New line header: " << line << RESET << std::endl;
     if (line == "" || _vBuffer.size() < _boundary.size())
       break;
     insertInMap(line, multi.header);
@@ -668,17 +673,25 @@ bool Client::getMultipartBody(multipartRequest &multi) {
     else
       multi.body.insert(multi.body.end(), line.begin(), line.end());
   }
-  checkBodyHeader(multi, multi.body);
-  saveMultiToTmpfile(multi);
-  if (multi.isDone == true)
-    close(_tmpFd);
+  if (_vBuffer.size() > _boundary.size() && multi.body.size() != 0) {
+    checkBodyHeader(multi, multi.body);
+    saveMultiToTmpfile(multi);
+    if (multi.isDone == true)
+      close(_tmpFd);
+  }
   if (checkEndBoundary(multi) == true) {
+    if (multi.tmpFilename == "") {
+      _multipart.pop_back();
+    }
     if (_vBuffer.size() > 0) {
       _statusCode = 400;
       logErrorClient("Client::getMultipartBody: body after end boundary");
     } else
       _statusCode = 201;
     return (true);
+  }
+  if (_vBuffer.size() > _boundary.size() && multi.tmpFilename == "") {
+    _multipart.pop_back();
   }
   return (false);
 }
@@ -996,7 +1009,8 @@ void Client::parseRequest(std::string &buffer) {
         "Client::parseRequest: body size different from body size given");
     return;
   }
-  std::cerr << "Client::parseRequest: bool _isCgi: " << _location->isCgi(_sUri) <<std::endl;
+  std::cerr << "Client::parseRequest: bool _isCgi: " << _location->isCgi(_sUri)
+            << std::endl;
   if (_location && _location->isCgi(_sUri) == true) {
     setupCgi();
   }
@@ -1054,7 +1068,7 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
   return (false);
 }
 bool Client::addBuffer(std::vector<char> &buffer) {
-  std::cout << "buffer: " << buffer << std::endl;
+  // std::cout << "buffer: " << buffer << std::endl;
   bool ret = parseBuffer(buffer);
   std::cout << YELLOW << "ret = " << ret << ";statusCode = " << _statusCode
             << RESET << std::endl;
