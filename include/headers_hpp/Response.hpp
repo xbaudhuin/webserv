@@ -22,6 +22,7 @@ public:
 
   // method
   void setStatusCode(size_t statusCode);
+  std::string getStatusCodeAndReasonPhrase(size_t statusCode) const;
   void setDate(void);
   void setHeader(const std::string &headerName, int value);
   void setHeader(const std::string &headerName, const std::string &headerValue);

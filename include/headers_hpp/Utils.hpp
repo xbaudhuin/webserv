@@ -34,4 +34,7 @@ template <typename T> void resetVector(std::vector<T> &vec) {
   vec.clear();
   vec.swap(tmp);
 }
+std::string getFile(const std::string &uri);
+std::string getDirectory(const std::string &uri);
+
 #endif

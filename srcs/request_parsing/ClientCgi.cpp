@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include <iostream>
 
 extern char **environ;
 
@@ -12,19 +13,29 @@ bool Client::isTimedOutCgi(void) const {
 }
 
 void Client::cgiPOSTMethod(void) {
-  int fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
-  if (fd == -1) {
-    throw std::runtime_error("Client::cgiPOSTMethod: fail to open infileCgi");
-  }
-  ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
-  close(fd);
-  fd = -1;
-  if (writeBytes == -1)
-    throw std::runtime_error(
-        "Client::cgiPOSTMethod: fail to write to infileCgi");
-  if (static_cast<size_t>(writeBytes) < _vBody.size()) {
-    throw std::runtime_error(
-        "Client::cgiPOSTMethod: writeBytes < _body.size()");
+  int fd;
+  if (_vBody.size() > 0) {
+    fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
+    if (fd == -1) {
+      throw std::runtime_error("Client::cgiPOSTMethod: fail to open infileCgi");
+    }
+    ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
+    close(fd);
+    fd = -1;
+    if (writeBytes == -1)
+      throw std::runtime_error(
+          "Client::cgiPOSTMethod: fail to write to infileCgi");
+    if (static_cast<size_t>(writeBytes) < _vBody.size()) {
+      throw std::runtime_error(
+          "Client::cgiPOSTMethod: writeBytes < _body.size()");
+    }
+  } else {
+    struct stat st;
+    if (stat(_infileCgi.c_str(), &st) == -1) {
+      throw std::runtime_error("Client::cgiPOSTMethod: fail to stat infile: " +
+                               _infileCgi);
+    }
+    _sizeChunk = st.st_size;
   }
   fd = open(_infileCgi.c_str(), O_RDWR);
   if (fd == -1) {
@@ -94,6 +105,16 @@ void Client::addVariableToEnv(std::vector<char *> &vEnv,
   }
 }
 
+void Client::buildContentLength(std::vector<char *> &vEnv) {
+  std::stringstream ss;
+  if (_vBody.size() > 0) {
+    ss << _vBody.size();
+  } else {
+    ss << _sizeChunk;
+  }
+  addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
+}
+
 void Client::buildEnv(std::vector<char *> &vEnv) {
   for (size_t i = 0; environ[i]; i++) {
     addVariableToEnv(vEnv, environ[i]);
@@ -108,9 +129,8 @@ void Client::buildEnv(std::vector<char *> &vEnv) {
         _headers.find("content-type");
     if (it == _headers.end())
       throw std::runtime_error("Client::buildEnv: no content-type header");
-    std::stringstream ss;
-    ss << _vBody.size();
-    addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
+    buildContentLength(vEnv);
+    envType += (*it).second;
   }
   addVariableToEnv(vEnv, envType);
   addHeaderToEnv(vEnv, "HTTP_COOKIE", "cookie");
@@ -158,13 +178,14 @@ void Client::buildArguments(std::vector<char *> &arg) {
 void Client::setupChild(std::string &cgiPathScript) {
   std::vector<char *> vEnv;
   std::vector<char *> argument;
+
+  if (_sMethod == "POST") {
+    cgiPOSTMethod();
+  }
   try {
     if (chdir(cgiPathScript.c_str()) == -1) {
       std::string s = "Client::setupChild: fail to chdir to: " + cgiPathScript;
       throw std::runtime_error(s);
-    }
-    if (_sMethod == "POST") {
-      cgiPOSTMethod();
     }
     cgiOutfile();
     buildEnv(vEnv);
@@ -188,29 +209,25 @@ void Client::setupCgi() {
 
   std::string cgiPathExec = _location->getExecutePath(_sUri);
   std::string cgiPathScript = _location->getCgiPath(_sUri);
-  std::ostringstream ss;
+  std::stringstream ss;
   ss << _socket;
-  ss.str("");
-  ss.clear();
-  _infileCgi = "webserv_in" + ss.str();
-  _outfileCgi = "webserv_out" + ss.str();
+  ss << "_host";
   ss << _server->getHost();
-  _infileCgi += "_host" + ss.str();
-  _outfileCgi += "_host" + ss.str();
-  ss.str("");
-  ss.clear();
+  ss << "_port";
   ss << _server->getPort();
-  _infileCgi += "_port" + ss.str();
-  _outfileCgi += "_port" + ss.str();
+  ss << "_t";
   time_t time = getTime();
-  ss.str("");
-  ss.clear();
   ss << time;
-  _infileCgi += "t" + ss.str();
-  _outfileCgi += "t" + ss.str();
+  if (_vBody.size() != 0)
+    _infileCgi = cgiPathScript + "webserv_in" + ss.str();
+  else
+    _infileCgi = _tmpFile;
+  _outfileCgi = "webserv_out" + ss.str();
 
+  std::cout << YELLOW << "outfile: " << _outfileCgi << RESET << std::endl;
   pid_t pid = fork();
   if (pid < 0) {
+    logErrorClient("Client::setupCgi: fail to fork");
     _statusCode = 500;
     return;
   }
@@ -219,7 +236,6 @@ void Client::setupCgi() {
   }
   if (pid > 0) {
     _cgiPid = pid;
-    _infileCgi = cgiPathScript + _infileCgi;
     _outfileCgi = cgiPathScript + _outfileCgi;
     return;
   }

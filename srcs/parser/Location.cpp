@@ -1,5 +1,7 @@
 #include "Location.hpp"
 
+/* Constructors / Destructors */
+
 Location::Location(){
     this->url = "";
     this->_is_generated = 0;
@@ -16,7 +18,7 @@ Location::Location(){
     this->available_extension.push_back(".rb");
     this->available_extension.push_back(".pl");
     this->_get = 1;
-    this->_post = 0;
+    this->_post = 1;
     this->_delete = 1;
     this->_root_check = 0;
     this->_alias_check = 0;
@@ -103,69 +105,7 @@ Location::~Location(){
     
 }
 
-
-/* getters */
-
-const uint64_t& Location::getLimitBodySize(void) const{
-    return(this->limit_body_size);
-}
-
-const std::string& Location::getUrl(void) const{
-    return(this->url);
-}
-
-const std::string& Location::getRoot(void) const{
-    return(this->root);    
-}
-
-const std::string& Location::getRedirection(void) const{
-    return(this->redirection);
-}
-
-const vec_string& Location::getIndexFile(void) const{
-    return(this->index_file);
-}
-
-const int& Location::getRedirCode(void) const{
-    return(this->code_redirection);
-}
-
-const bool& Location::getAutoIndex(void) const{
-    return(this->_directory_listing);
-}
-
-const bool& Location::hasPathInfo(void) const{
-    return(this->_path_info);
-}
-
-const bool& Location::isGenerated() const{
-    return(this->_is_generated);
-}
-
-const bool& Location::isExactMatch(void) const{
-    return(this->_exact_match);
-}
-
-const bool& Location::getGetStatus(void) const{
-    return(this->_get);
-}
-
-const bool& Location::getPostStatus(void) const{
-    return(this->_post);
-}
-
-const bool& Location::getDeleteStatus(void) const{
-    return(this->_delete);
-}
-
-const std::vector<std::pair<std::string, std::string> >& Location::getCgi(void) const{
-    return(this->cgi);
-}
-
-const vec_string& Location::availableExtension() const{
-    return(this->available_extension);
-}
-/* setters */
+/* Setters */
 
 void Location::addLimitBodySize(const std::string &limit)
 {
@@ -182,7 +122,6 @@ void Location::addLimitBodySize(const std::string &limit)
     pos = limit.find_first_of("kmgKMG", 0);
     if(pos != std::string::npos)
     {
-        // std::cerr<< pos << " && " << check[0].size() << std::endl;
         if(pos == 0 || pos + 1 < check[0].size())
             throw std::logic_error("Error:\nIncorrect client_limit_body_size loc passed as parameter3");
         c = limit[pos];
@@ -335,60 +274,34 @@ void Location::setMethod(const std::string &method, const std::string &status){
     else throw std::logic_error("Error:\nUnknown method passed inside the set_method directive");
 }
 
-std::string getFile(const std::string &uri)
-{
-    size_t pos = uri.size();
-    pos = uri.find_last_of("/", pos);
-    if(pos == std::string::npos)
-        return(std::string(uri));
-    std::string s1 = uri.substr(0, pos + 1);
-    if(s1 == uri)
-        throw std::logic_error("not a file");
-    std::string s2 = uri.substr(pos, uri.size());
-    s2.erase(0, 1);
-    return(s2);
-}
-
 void Location::fixUrl(const std::string &url){
     std::string s;
-    // std::string uri = url;
     if(this->hasAlias())
     {
         this->_root_server = this->alias;
-        // std::cout << this->alias << std::endl;
     }
     else if(this->hasRoot())
     {
         this->_root_server = this->root;
-        // std::cout << this->root << std::endl;
     }
     else
         this->_root_server = url;
     this->_base_uri = this->url;
     if(!this->isADir() && !this->isExactMatch())
         this->_base_uri =this->index_file[0]; 
-    std::cout << "HERE MATE: " << this->_root_server << " && " << this->url << std::endl;
     if(this->_root_server[this->_root_server.size() - 1] == '/')
         s = this->_root_server.substr(0, this->_root_server.size() - 1);
     else
         s = this->_root_server;
-    // s = s.substr(s.find_last_of("/", s.size()), s.size() );
     if(this->hasAlias())
     {
-        // this->_root_server = this->_root_server;
-        // if(this->_root_server[this->_root_server.size() - 1] == '/')
-        //     this->url = this->_root_server + "/";
-        // else
         this->url = this->_root_server;
         this->_root_server = s;
-        std::cout << "HERE ALIAS: "<< this->url <<std::endl;
     }
     else
     {
         this->_root_server = s;
         this->url = s + this->url;
-        std::cout << "HERE NORMAL:" << this->url <<std::endl;
-        std::cout << "HERE NORMAL 2:" << s <<std::endl;
     }
     if(this->upload_location.size() > 0)
         this->upload_location.insert(0, s);
@@ -429,45 +342,10 @@ std::string Location::getUploadLocation() const{
 void Location::setUploadLocation(const std::string &check)
 {
     if (check[0] != '/')
-        throw std::logic_error("Webserv: Error:\nupload_location parameter isn't a correct path, missing /");
+        throw std::logic_error("Webserv: Error:\nupload_location parameter isn't a correct path, missing / at the begining");
     if (check[check.size() - 1] != '/')
-        throw std::logic_error("Webserv: Error:\nupload_location parameter isn't a correct path, missing /");
+        throw std::logic_error("Webserv: Error:\nupload_location parameter isn't a correct path, missing / at the end");
     this->upload_location = check;
-}
-
-std::ostream& operator<<(std::ostream& out, const Location& loc){
-    if(loc.getUrl().size() >  0)
-        out << "Url: " << loc.getUrl() << "\n\t";
-    out << "Server Root: " << loc.getRootServer() << "\n\t";
-    out << "Exact Match: " << (loc.isExactMatch() ? "YES" : "NO") << "\n\t";
-    out << "Base Uri: " << loc.myUri() << "\n\t";
-    if(loc.hasRoot())
-        out << "Root: " << loc.getRoot() << "\n\t";
-    if(loc.hasAlias())
-        out << "Alias: " << loc.getAlias() << "\n\t";
-    if(loc.getIndexFile().size() > 0)
-        for (size_t j = 0; j < loc.getIndexFile().size(); j++)
-        {
-            out << "Index File[" << j << "]: " << loc.getIndexFile()[j] << "\n\t";
-        }
-    if(loc.getCgi().size() > 0)
-    {
-        for (size_t j = 0; j < loc.getCgi().size(); j++)
-        {
-            out << "Cgi File: " << loc.getCgi()[j].second << "\n\t";
-        }
-    }
-    if(loc.getUploadLocation().size() > 0)
-        out << "Cgi Upload Location: " << loc.getUploadLocation() << "\n\t";
-    if(loc.getRedirection().size() > 0)
-        out << "Redirection URL and CODE: " << loc.getRedirection() << " && " << loc.getRedirCode() << "\n\t";
-    out << "Path info: " << (loc.hasPathInfo() ? "ON" : "OFF") << "\n\t";
-    out << "Limit body size: " << loc.getLimitBodySize() << "\n\t";
-    out << "Method GET status: " << (loc.getGetStatus() ? "on" : "off") << "\n\t";
-    out << "Method POST status: " << (loc.getPostStatus() ? "on" : "off") << "\n\t";
-    out << "Method DELETE status: " << (loc.getDeleteStatus() ? "on" : "off") << "\n\t";
-    out << "Directory Listing Status: " << loc.getAutoIndex() << std::endl;
-    return(out);
 }
 
 bool Location::isRedirected(void) const{
@@ -482,145 +360,6 @@ const bool& Location::isADir(void) const{
 
 const std::string& Location::getRootServer(void) const{
     return (this->_root_server);
-}
-
-std::string getDirectory(const std::string &uri)
-{
-    size_t pos = uri.size();
-    pos = uri.find_last_of("/", pos);
-    if(pos == std::string::npos)
-        return("./");
-    std::string s1 = uri.substr(0, pos + 1);
-    s1.insert(0, 1, '.');
-    return(s1);
-}
-
-std::string Location::getCgiPath(const std::string &uri) const{
-    try
-    {
-        std::string uri_file = getFile(uri);
-        std::string ext = getExtension(uri);
-        std::cerr << BLUE << "UriFile: " << uri_file << " && extension: " << ext << RESET << std::endl;
-        for (size_t i = 0; i < this->cgi.size(); i++)
-        {
-            if(this->cgi[i].first == ext)
-            {
-                std::string file = getFile(this->cgi[i].second);
-                if(uri_file == file)
-                    return(getDirectory(this->cgi[i].second));
-            }
-        }
-        std::string s = getDirectory(uri);
-        std::cerr << this->_root_server << " && " << s << std::endl;
-        s = s.erase(0, 1);
-        return("." + this->_root_server + s);
-    }
-    catch(const bad_key_error& e)
-    {
-        return(getDirectory(uri));
-    }
-    catch(const std::exception& e)
-    {
-        return(getDirectory(this->cgi[0].second));
-    }
-    
-    return("");
-}
-
-std::string Location::getCgiFile(const std::string& uri) const{
-    try
-    {
-        std::string uri_file = getFile(uri);
-        std::string ext = getExtension(uri);
-        std::cerr << BLUE << "UriFile: " << uri_file << " && extension: " << ext << RESET << std::endl;
-        for (size_t i = 0; i < this->cgi.size(); i++)
-        {
-            if(this->cgi[i].first == ext)
-            {
-                std::string file = getFile(this->cgi[i].second);
-                if(uri_file == file)
-                    return(file);
-            }
-        }
-        return(uri_file);
-    }
-    catch(const std::exception& e)
-    {
-        return(getFile(this->cgi[0].second));
-    }
-    
-    return("");
-}
-
-std::string Location::getExtension(const std::string& uri) const
-{
-    size_t pos = uri.size();
-    pos = uri.find_last_of("/", pos);
-    std::string s1 = uri.substr(0, pos + 1);
-    if(s1 == uri)
-        throw std::logic_error("not a file");
-    std::string s2 = uri.substr(pos, uri.size());
-    std::string extension;
-    for (size_t i = 0; i < this->available_extension.size(); i++)
-    {
-        if(s2.find(this->available_extension[i], 0) != std::string::npos)
-            return(this->available_extension[i]);
-    }
-    throw bad_key_error("not a file");
-    return(s2);
-}
-
-bool Location::isCgi(const std::string& uri) const{
-    try
-    {
-        std::string ex = this->getExtension(uri);
-        std::string uri_file = getFile(uri);
-        std::cerr << BLUE << "Extensions: " << ex << RESET << std::endl;
-        if(this->cgi.size() > 0)
-        {
-            for (size_t i = 0; i < this->available_extension.size(); i++)
-            {
-                if(ex == this->available_extension[i])
-                    return(1);
-            }        
-        }
-    }
-    catch(const bad_key_error& e)
-    {
-        return(0);
-    }
-    catch(const std::exception& e)
-    {
-        if(this->cgi.size() > 0)
-            return(1);
-    }
-    return(0);
-}
-
-const std::string& Location::getExecutePath(const std::string& uri){
-    try
-    {
-        std::string ex = this->getExtension(uri);
-        return(this->_exec_path[ex]);
-    }
-    catch(const std::exception& e)
-    {
-        std::string ex = this->cgi[0].first;
-        return(this->_exec_path[ex]);
-    }
-    return(uri);
-}
-
-const int &Location::hasAlias()const{
-    return(this->_alias_check);
-}
-
-const int &Location::hasRoot()const{
-    return(this->_root_check);
-}
-
-const std::string & Location::getAlias()const{
-    return(this->alias);
 }
 
 void Location::addAlias(const std::string &dir){
@@ -641,13 +380,6 @@ void Location::addAlias(const std::string &dir){
 
 void Location::setBaseUri() {
     this->_base_uri = this->url;
-}
-
-std::string Location::myUri() const{
-    // std::string s = this->_root_server;
-    // if(s[s.size() - 1] == '/')
-        // s = s.substr(0, s.size() - 1);
-    return(this->_base_uri);
 }
 
 void Location::fixFileLocationAlias(){

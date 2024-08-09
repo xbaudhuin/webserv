@@ -11,6 +11,7 @@
 #include <exception>
 #include <fstream>
 #include <map>
+#include <netinet/in.h>
 #include <signal.h>
 #include <sstream>
 #include <string.h>
@@ -35,6 +36,7 @@ class Client {
 public:
   // Constructor
   Client(int fd, mapConfs &map, ServerConf *defaultServer);
+  Client(int fd, mapConfs &map, ServerConf *defaultServer, in_addr_t IpClient);
   Client(Client const &copy);
 
   // Destructor
@@ -63,6 +65,7 @@ private:
   int _socket;
   mapConfs &_mapConf;
   ServerConf *_defaultConf;
+  in_addr_t _clientIp;
   ServerConf *_server;
   Location *_location;
   time_t _time;
@@ -165,7 +168,7 @@ private:
 
   // Response Method
   bool getResponse(std::vector<char> &response);
-  void findPages(const std::string &url);
+  void findPages(void);
   bool findIndex(std::string &url);
   void buildListingDirectory(std::string &url);
   void buildResponse(void);
@@ -177,7 +180,6 @@ private:
   void handleMultipart(void);
   void uploadTmpFileDifferentFileSystem(void);
   void handleUpload(void);
-  void handleChunk(void);
   void handlePOST(void);
   void handleRedirection(void);
   void createResponseBody(void);
@@ -190,6 +192,7 @@ private:
   void handleCgi(std::vector<char> &response);
   void cgiPOSTMethod(void);
   void cgiOutfile(void);
+  void buildContentLength(std::vector<char *> &vEnv);
   void addHeaderToEnv(std::vector<char *> &vEnv, const std::string &envVariable,
                       const std::string &headerKey);
   void addVariableToEnv(std::vector<char *> &vEnv,
@@ -207,6 +210,7 @@ private:
   void removeReturnCarriageNewLine(std::string &line);
   bool isCgi(void);
   void fillBufferWithoutReturnCarriage(const std::vector<char> &vec);
+  void copyMultipart(const std::vector<multipartRequest> &rhs);
   int64_t hasEmptyLine(int newLine);
   // bool isHexadecimal(char c);
   std::string getDateOfFile(time_t rawtime) const;
