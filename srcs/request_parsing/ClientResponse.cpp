@@ -5,6 +5,7 @@ bool Client::findIndex(std::string &url) {
   std::string tmp;
   struct stat statbuf;
   size_t it = 0;
+  std::cout << RED << "COUCOU BTCH" << std::endl;
   for (; it < vector.size(); it++) {
     tmp = "." + vector[it];
     if (stat(tmp.c_str(), &statbuf) == 0) {
@@ -16,10 +17,11 @@ bool Client::findIndex(std::string &url) {
       continue;
     }
   }
+    std::cout << "HERE: " << tmp << std::endl;
   if (_statusCode >= 400) {
     logErrorClient("Client::findIndex: fail to access index: " + url);
+    return (true);
   }
-  return (true);
   if (it == vector.size())
     return (false);
   url = tmp;
@@ -169,6 +171,7 @@ void Client::getUrlFromLocation(std::string &url) const {
 void Client::findPages(void) {
   std::string url;
   getUrlFromLocation(url);
+  std::cout << _location->isADir() << std::endl;
   if (_location->isADir() == true) {
     if (url[url.size() - 1] == '/') {
       struct stat st;
@@ -206,6 +209,7 @@ void Client::findPages(void) {
   }
   if ((st.st_mode & S_IFMT) != S_IFREG) {
     _statusCode = 403;
+    std::cout << YELLOW << "Client::findPages: st.st_mode = " << (st.st_mode & S_IFMT) <<"; on file: " << url << RESET << std::endl; 
     logErrorClient("Client::findPages: not a file: " + url);
     return;
   }
@@ -414,6 +418,9 @@ void Client::handleMultipart(void) {
   if (_diffFileSystem == false &&
       rename(_multipart[_currentMultipart].tmpFilename.c_str(),
              _multipart[_currentMultipart].file.c_str()) != 0) {
+              int err = errno;
+              perror("COUCOU:");
+              errno = err;
     switch (errno) {
     case EXDEV:
       errno = 0;
@@ -439,6 +446,7 @@ void Client::handleMultipart(void) {
   if (_diffFileSystem == false || _bodyToRead == 0)
     _currentMultipart++;
   if (_statusCode < 400 && _currentMultipart == _multipart.size()) {
+    _bodyToRead = 0;
     _statusCode = 201;
   }
   if (_statusCode >= 201)
@@ -526,10 +534,13 @@ void Client::handleUpload(void) {
 }
 
 void Client::handlePOST() {
+  std::cout << "HANDLEPOST: " <<_multipart.size() << std::endl;
   if (_multipart.size() >= 1) {
+    std::cout << "status code = " << _statusCode << std::endl;
     handleMultipart();
   } else
     handleUpload();
+  std::cout << RED << "_bodyToRead = " << _bodyToRead << std::endl;
   if (_bodyToRead == 0)
     handleError();
 }
