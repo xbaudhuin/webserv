@@ -463,6 +463,7 @@ bool Client::checkEndBoundary(multipartRequest &multi) {
     if (tmp.substr(_boundary.size(), 2) == "--") {
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + 2);
       removeTrailingLineFromBuffer();
+      _currentMultipart = 0;
       return (true);
     }
     removeTrailingLineFromBuffer();
@@ -928,6 +929,7 @@ void Client::fillBufferWithoutReturnCarriage(const std::vector<char> &vec) {
   // std::cout << PURP << "buffer: " << _vBuffer << RESET << std::endl;
   // return;
 
+  // bool newLine = false;
   _vBuffer.reserve(_vBuffer.size() + vec.size());
   for (size_t it = 0; it < vec.size(); it++) {
     if (vec[it] == '\r') {
@@ -939,6 +941,13 @@ void Client::fillBufferWithoutReturnCarriage(const std::vector<char> &vec) {
         _vBuffer.push_back(*(vec.begin() + tmp));
       }
     }
+    // if (vec[it] == '\n') {
+    // if (newLine == false) {
+    // newLine = true;
+    // } else
+    // break;
+    // } else
+    // newLine = false;
     _vBuffer.push_back(*(vec.begin() + it));
   }
   while (true) {

@@ -18,8 +18,8 @@ bool Client::findIndex(std::string &url) {
   }
   if (_statusCode >= 400) {
     logErrorClient("Client::findIndex: fail to access index: " + url);
+    return (true);
   }
-  return (true);
   if (it == vector.size())
     return (false);
   url = tmp;
