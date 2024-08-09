@@ -259,16 +259,14 @@ void Location::setCgi(const std::string &extension, const std::string &executabl
         throw std::logic_error("Error:\nUnknown extension found inside the cgi directive");
     if(executable.size() < extension.size() || executable.substr(executable.size() - extension.size()) != extension)
         throw std::logic_error("Error:\nIncorrect extension found inside the cgi directive");
-    for (size_t i = 0; i < this->_use_extension.size() ; i++)
+    size_t i = 0;
+    for (i = 0; i < this->_use_extension.size() ; i++)
     {
         if(this->_use_extension[i] == extension)
             break;
-        if(i + 1 == this->_use_extension.size())
-        {
-            this->_use_extension.push_back(extension);
-            break;
-        }
     }
+    if (i == this->_use_extension.size())
+        this->_use_extension.push_back(extension);
     this->cgi.push_back(std::make_pair(extension, executable));
 }
 

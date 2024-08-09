@@ -996,6 +996,7 @@ void Client::parseRequest(std::string &buffer) {
         "Client::parseRequest: body size different from body size given");
     return;
   }
+  std::cerr << "Client::parseRequest: bool _isCgi: " << _location->isCgi(_sUri) <<std::endl;
   if (_location && _location->isCgi(_sUri) == true) {
     setupCgi();
   }
