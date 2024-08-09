@@ -745,7 +745,7 @@ void Client::setupBodyParsing(void) {
 }
 
 bool Client::isCgi(void) {
-  if (_location && _location->isCgi(_sUri) == true)
+  if (_sMethod != "DELETE" && _location && _location->isCgi(_sUri) == true)
     return (true);
   return (false);
 }

@@ -141,9 +141,10 @@ bool Location::isCgi(const std::string& uri) const{
         std::cerr << BLUE << "Extensions: " << ex << RESET << std::endl;
         if(this->cgi.size() > 0)
         {
-            for (size_t i = 0; i < this->available_extension.size(); i++)
+            for (size_t i = 0; i < this->_use_extension.size(); i++)
             {
-                if(ex == this->available_extension[i])
+                std::cerr << "EXTENSIONS AVAILABLE :" << this->_use_extension[i] << std::endl;
+                if(ex == this->_use_extension[i])
                     return(1);
             }        
         }
