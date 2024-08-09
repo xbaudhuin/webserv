@@ -1,15 +1,4 @@
 #include "Client.hpp"
-#include "Error.hpp"
-#include "Utils.hpp"
-#include <fcntl.h>
-// #include "Colors.hpp"
-// #include "Error.hpp"
-// #include "Utils.hpp"
-// #include <algorithm>
-// #include <cstdint>
-// #include <fcntl.h>
-// #include <sstream>
-// #include <vector>
 
 void Client::uriDecoder(std::string &uri) {
   size_t pos = 0;
@@ -19,12 +8,14 @@ void Client::uriDecoder(std::string &uri) {
       break;
     if (pos + 2 > uri.size()) {
       _statusCode = 400;
+      logErrorClient("Client::uriDecoder: invalid uri");
       return;
     }
     std::string key = uri.substr(pos, 3);
     std::map<std::string, char>::const_iterator it = _uriEncoding.find(key);
     if (it == _uriEncoding.end()) {
       _statusCode = 400;
+      logErrorClient("Client::uriDecoder: invalid uri");
       return;
     }
     uri.replace(pos, 3, 1, (*it).second);
@@ -32,31 +23,30 @@ void Client::uriDecoder(std::string &uri) {
 }
 
 int Client::parseUri(const std::string &uri) {
-  if (uri[0] != '/')
+  if (uri[0] != '/') {
     return (400);
-  if (uri.size() > _uriMaxSize)
+  }
+  if (uri.size() > _uriMaxSize) {
     return (414);
+  }
   size_t pos = uri.find_first_of('?');
   _sUri = uri.substr(0, pos);
   uriDecoder(_sUri);
-  // pathINFO
-  if (_sUri.size() > 2048)
+  if (_sUri.size() > 2048) {
     return (414);
+  }
   if (pos != uri.npos) {
     _sQueryUri = uri.substr(pos + 1);
   }
-
   return (0);
 }
 
 size_t Client::parseRequestLine(const std::string &requestLine) {
-  std::cout << BLUE << "requestLine = " << requestLine << RESET << std::endl;
+  // std::cout << BLUE << "requestLine = " << requestLine << RESET << std::endl;
   vec_string split_request = split(requestLine, " ");
   if (split_request.size() != 3) {
-
-    std::cout << RED << "StatusCode(split.size()): " << split_request.size()
-              << RESET << std::endl;
-
+    logErrorClient(
+        "Client::parseRequestLine: invalid uri: invalid number of SP");
     return (400);
   }
   _sMethod = split_request[0];
@@ -64,52 +54,50 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   for (; i < _methodSize && _sMethod != _validMethods[i]; i++) {
   }
   if (i == _methodSize) {
+    logErrorClient("Client::parseRequestLine: invalid uri: unknown method");
     return (400);
   } else if (i > 2) {
+    logErrorClient(
+        "Client::parseRequestLine: invalid uri: method not supported");
     return (405);
   }
   _statusCode = parseUri(split_request[1]);
   if (_statusCode > 0) {
+    logErrorClient("Client::uriDecoder: invalid uri");
     return (_statusCode);
   }
   if (split_request[2].compare(0, 5, "HTTP/") != 0 ||
       split_request[2].size() < 8) {
-
-    std::cout << RED << "StatusCode(split_compare): " << "400" << RESET
-              << std::endl;
-
+    _statusCode = 400;
+    logErrorClient("Client::parseRequestLine: invalid uri: no HTTP/");
     return (400);
   }
   std::string version = split_request[2].substr(5);
   if (std::isdigit(version[0]) == false) {
-
-    std::cout << RED << "StatusCode(isdigit): " << "400" << RESET << std::endl;
-
+    _statusCode = 400;
+    logErrorClient("Client::parseRequestLine: invalid uri: invalid version");
     return (400);
   }
   for (i = 1; std::isdigit(version[i]); i++) {
   }
   if (i > 1) {
+    _statusCode = 405;
+    logErrorClient("Client::parseRequestLine: invalid uri: invalid version");
     return (405);
   }
   if (version[i] != '.') {
-
-    std::cout << RED << "StatusCode(i): " << "400" << RESET << std::endl;
-
+    _statusCode = 400;
+    logErrorClient("Client::parseRequestLine: invalid uri: invalid version");
     return (400);
   }
   i++;
   char *after = NULL;
   long int nb = std::strtol(version.c_str() + i, &after, 10);
   if (nb < 0 || nb > 999 || *after != '\0' || errno == ERANGE) {
-
-    std::cout << RED << "StatusCode(nb): " << "400" << RESET << std::endl;
-
+    _statusCode = 400;
+    logErrorClient("Client::parseRequestLine: invalid uri: invalid version");
     return (400);
   }
-
-  std::cout << "VERSION = " << nb << "\n";
-
   if (nb >= 1)
     _version = 1;
   else
@@ -119,36 +107,52 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
 
 size_t Client::insertInMap(std::string &line,
                            std::map<std::string, std::string> &map) {
-  if (line.size() > _headerMaxSize)
+  if (line.size() > _headerMaxSize) {
+    _statusCode = 431;
+    logErrorClient("Client::insertInMap: invalid header");
     return (431);
+  }
   std::transform(line.begin(), line.end(), line.begin(), toLower);
   size_t pos = line.find_first_of(':');
   if (pos == line.npos) {
+    _statusCode = 400;
+    logErrorClient("Client::insertInMap: invalid header: no ':'");
     return (400);
   }
   std::string key = line.substr(0, pos);
-  if (key.find_first_of(":\r\n\x1F") != key.npos)
+  if (key.find_first_of(":\r\n\x1F") != key.npos) {
+    _statusCode = 400;
+    logErrorClient("Client::insertInMap: invalid header: invalid char");
     return (400);
+  }
   std::string value = line.substr(pos + 1);
   if (value.size() > _headerMaxSize) {
+    _statusCode = 400;
+    logErrorClient("Client::insertInMap: invalid header: header too large");
     return (400);
   }
   trimWhitespace(value, _whiteSpaces);
-  std::cout << "KEY = " << key;
-  std::cout << "; VALUE = " << value << std::endl;
-
+  // std::cout << "KEY = " << key;
+  // std::cout << "; VALUE = " << value << std::endl;
   std::map<std::string, std::string>::iterator it;
   if (pos != line.npos) {
     it = map.find(key);
     if (it != map.end()) {
       if (key == "host" || "content-length" || "transfer-encoding" ||
-          "content-type")
+          "content-type") {
+        _statusCode = 400;
+        logErrorClient("Client::insertInMap: invalid header: unique header "
+                       "already filled");
         return (400);
+      }
       (*it).second += ",\n";
       (*it).second += value;
-    } else if (map.insert(std::make_pair(key, value)).second == false &&
-               key == "host")
-      return (400);
+    } else if (map.insert(std::make_pair(key, value)).second == false) {
+      _statusCode = 500;
+      logErrorClient(
+          "Client::insertInMap: invalid header: fail to insert in map");
+      return (500);
+    }
   }
   return (0);
 }
@@ -156,38 +160,37 @@ size_t Client::insertInMap(std::string &line,
 bool Client::checkMethod(void) {
 
   if (_sMethod == "GET" && _location->getGetStatus() == false) {
-    std::cout << RED << "GET not allowed" << RESET << std::endl;
     _statusCode = 405;
+    logErrorClient("Client::checkMethod: invalid method: GET not allowed");
   } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
-    std::cout << RED << "Client::checkMethod: invalid method on location: "
-              << _location->getUrl() << RESET << std::endl;
     _statusCode = 405;
+    logErrorClient("Client::checkMethod: invalid method: POST not allowed");
   } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false) {
-    std::cout << RED << "DELETE not allowed" << RESET << std::endl;
     _statusCode = 405;
+    logErrorClient("Client::checkMethod: invalid method: DELETE not allowed");
   }
   if (_statusCode < 400 && _sMethod != "POST") {
     if (_headers.count("content-length") != 0 ||
         _headers.count("transfer-encoding") != 0) {
-      std::cout << RED
-                << "Client::checkMethod: Invalid header with method not POST"
-                << RESET << std::endl;
       _statusCode = 413;
+      logErrorClient("Client::checkMethod: invalid method:" + _sMethod +
+                     " with body header");
     }
   }
-  if (_sMethod == "POST") {
+  if (_statusCode < 400 && _sMethod == "POST") {
     std::map<std::string, std::string>::iterator it =
         _headers.find("content-type");
     if (_headers.count("transfer-encoding") == 0) {
       if (it == _headers.end()) {
-        std::cout << RED << "no header content-type" << RESET << std::endl;
         _statusCode = 400;
+        logErrorClient("Client::checkMethod: invalid method:" + _sMethod +
+                       " without body header");
         return (false);
-      }
-      if ((*it).second.find("multipart") == (*it).second.npos &&
-          _headers.count("content-length") == 0) {
-        std::cout << RED << "Client::checkMethod: no multipart" << std::endl;
-        _statusCode = 413;
+      } else if ((*it).second.find("multipart") == (*it).second.npos &&
+                 _headers.count("content-length") == 0) {
+        _statusCode = 411;
+        logErrorClient("Client::checkMethod: invalid method:" + _sMethod +
+                       " without multipart or length");
       }
     }
   }
@@ -208,7 +211,6 @@ void Client::getPathUpload(void) {
     }
   } else {
     std::string path = _sUri.substr(_location->myUri().size());
-    std::cout << PURP << "added path : " << path << RESET << std::endl;
     _sPathUpload += path;
   }
   std::cout << PURP << "uploadpath : " << _sPathUpload << RESET << std::endl;
@@ -226,8 +228,8 @@ bool Client::requestValidByLocation(void) {
 
 int64_t Client::getSizeChunkFromBuffer(void) {
   size_t i = 0;
-  std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
-            << std::endl;
+  // std::cout << YELLOW << "CLIENT::GETSIZECHUNKFROMBUFFER " << RESET
+  // << std::endl;
 
   // std::cout << PURP << "Initial buffer: " << _vBuffer << RESET << std::endl;
   // std::cout << BLUE << "Initial body: " << _vBody << RESET << std::endl;
@@ -237,29 +239,20 @@ int64_t Client::getSizeChunkFromBuffer(void) {
          _vBuffer[i + 1] == '\n'))
       break;
     if (isHexadecimal(_vBuffer[i]) == false) {
-      std::cout << RED << "is not hexadecimal i(" << i
-                << "): " << static_cast<int>(_vBuffer[i]) << RESET << std::endl;
-      for (size_t i = 0; i < _vBuffer.size(); i++) {
-        std::cout << YELLOW << static_cast<int>(_vBuffer[i]) << ";";
-      }
-      std::cout << RESET << std::endl;
       _statusCode = 400;
+      logErrorClient("Client::getSizeChunkFromBuffer: invalid size of chunk");
       return (0);
     }
   }
   std::string tmp(_vBuffer.begin(), _vBuffer.begin() + i);
-  std::cout << YELLOW << "get nb string of size(" << i << ") = " << tmp << RESET
-            << std::endl;
   int64_t nb = std::strtoll(tmp.c_str(), NULL, 16);
   if (errno == ERANGE || nb < 0 ||
       (_bodyToRead > static_cast<int64_t>(_server->getLimitBodySize()) &&
        _server->getLimitBodySize() != 0)) {
-    std::cout << RED << "FAIL IN GET NB" << RESET << std::endl;
     _statusCode = 413;
+    logErrorClient("Client::getSizeChunkFromBuffer: invalid size of chunk");
     return (0);
   }
-  std::cout << "Client::getSizeChunkFromBuffer: " << "\n nb = " << nb
-            << "; i = " << i << "\n";
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
   removeTrailingLineFromBuffer();
   return (nb);
@@ -273,15 +266,12 @@ void Client::removeTrailingLineFromBuffer(void) {
     i++;
   else {
     // std::cout << GREEN << "_vbuffer: " << _vBuffer << RESET << std::endl;
-    std::cout << RED
-              << "Client:removeTrailingLineFromBuffer: failed to remove "
-                 "trailing line"
-              << RESET << std::endl;
     _statusCode = 400;
+    logErrorClient(
+        "Client::removeTrailingLineFromBuffer: fail to remove trailing line");
     return;
   }
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + i);
-  std::cout << "Removed trailing line buffer: i = " << i << std::endl;
 }
 
 bool Client::getTrailingHeader(void) {
@@ -325,7 +315,6 @@ bool Client::parseChunkRequest(void) {
               << std::endl;
     if (_vBody.size() > 0)
       saveToTmpFile();
-    std::cout << PURP << _bodyToRead << " = _bodyToRead" << RESET << std::endl;
     if (_bodyToRead == 0)
       removeTrailingLineFromBuffer();
   }
@@ -336,9 +325,8 @@ bool Client::parseChunkRequest(void) {
     _sizeChunk += _bodyToRead;
     if (_location->getLimitBodySize() != 0 &&
         static_cast<size_t>(_sizeChunk) > _location->getLimitBodySize()) {
-      std::cout << RED << "Client::parseChunkRequest: invalid body size "
-                << RESET << std::endl;
       _statusCode = 413;
+      logErrorClient("Client::parseChunkRequest: invalid size of body");
     }
   }
   if (_bodyToRead == 0) {
@@ -379,9 +367,8 @@ void Client::removeReturnCarriageNewLine(std::string &line) {
 bool Client::saveToTmpFile(std::vector<char> &body) {
   ssize_t writeBytes = write(_tmpFd, &(body)[0], body.size());
   if (writeBytes == -1 || static_cast<size_t>(writeBytes) < body.size()) {
-    std::cout << RED << "Client::saveToTmpFile: fail to write to tmpfile"
-              << RESET << std::endl;
     _statusCode = 500;
+    logErrorClient("Client::saveToTmpFile: fail to write all bytes");
     return (false);
   }
   return (true);
@@ -389,9 +376,10 @@ bool Client::saveToTmpFile(std::vector<char> &body) {
 
 bool Client::saveToTmpFile(void) {
   if (_tmpFd == -1) {
-    if (isCgi() == true)
+    if (isCgi() == true) {
       _tmpFile = _location->getCgiPath(_sUri) + "infileCgi_";
-    else
+      std::cout << GREEN << "TMPFILE = " << _tmpFile << RESET << std::endl;
+    } else
       _tmpFile = "webserv_tmpfile_";
     std::stringstream ss;
     ss << getTime();
@@ -399,17 +387,16 @@ bool Client::saveToTmpFile(void) {
     _tmpFd = open(_tmpFile.c_str(), O_CLOEXEC | O_RDWR | O_CREAT, 00644);
     if (_tmpFd == -1) {
       _statusCode = 500;
+      logErrorClient("Client::saveToTmpFile: fail to open: " + _tmpFile);
       return (false);
     }
   }
   ssize_t writeBytes = write(_tmpFd, &(_vBody)[0], _vBody.size());
   if (writeBytes == -1 || static_cast<size_t>(writeBytes) < _vBody.size()) {
     _statusCode = 500;
+    logErrorClient("Client::saveToTmpFile: fail to write all bytes");
     return (false);
   }
-  std::cout << YELLOW << "Client::saveToTmpFile: _tmpfile(" << _tmpFile
-            << ") on _tmpFd(" << _tmpFd << ") write: " << writeBytes << RESET
-            << std::endl;
   resetVector(_vBody);
   return (true);
 }
@@ -419,6 +406,7 @@ bool Client::saveMultiToTmpfile(multipartRequest &multi) {
     std::stringstream ss;
     ss << _multipart.size();
     multi.tmpFilename = "webserv_tmpmulti" + ss.str();
+    ss.str("");
     ss.clear();
     ss << getTime();
     multi.tmpFilename += "id" + ss.str();
@@ -427,9 +415,9 @@ bool Client::saveMultiToTmpfile(multipartRequest &multi) {
     _tmpFd = open(multi.tmpFilename.c_str(),
                   O_RDWR | O_CLOEXEC | O_CREAT | O_TRUNC, 00644);
     if (_tmpFd == -1) {
-      std::cout << RED << "Client::saveMultiToTmpfile: fail to open: "
-                << multi.tmpFilename << RESET << std::endl;
       _statusCode = 500;
+      logErrorClient("Client::saveMultiToTmpFile: fail to open: " +
+                     multi.tmpFilename);
       return (false);
     }
   }
@@ -460,8 +448,8 @@ bool Client::checkBoundary(void) {
   if (_vBuffer.size() < _boundary.size())
     return (false);
   std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
-  std::cout << YELLOW << "Client::checkBoundary: tmp = " << tmp << RESET
-            << std::endl;
+  // std::cout << YELLOW << "Client::checkBoundary: tmp = " << tmp << RESET
+  // << std::endl;
   if (tmp.compare(_boundary) == 0)
     return (true);
   return (false);
@@ -471,19 +459,22 @@ bool Client::checkEndBoundary(multipartRequest &multi) {
   if (_vBuffer.size() < _boundary.size() + 2)
     return (false);
   std::string tmp(_vBuffer.begin(), _vBuffer.begin() + _boundary.size() + 2);
-  std::cout << PURP << "Client::checkBoundary: tmp = " << tmp << RESET
-            << std::endl;
+  // std::cout << PURP << "Client::checkBoundary: tmp = " << tmp << RESET
+  // << std::endl;
   if (tmp.compare(0, _boundary.size(), _boundary) == 0) {
     multi.isDone = true;
     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
-    std::cout << PURP << "Client::checkBoundary: tmp.sub = "
-              << tmp.substr(_boundary.size(), 2) << RESET << std::endl;
+    // std::cout << PURP << "Client::checkBoundary: tmp.sub = "
+    // << tmp.substr(_boundary.size(), 2) << RESET << std::endl;
     if (tmp.substr(_boundary.size(), 2) == "--") {
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + 2);
       removeTrailingLineFromBuffer();
       return (true);
     }
     removeTrailingLineFromBuffer();
+  }
+  if (_statusCode >= 400) {
+    return (true);
   }
   return (false);
 }
@@ -495,16 +486,20 @@ bool Client::checkHeaderMulti(multipartRequest &multi) {
   it = multi.header.find("content-type");
   if (it == multi.header.end()) {
     _statusCode = 400;
+    logErrorClient("Client::checkHeaderMulti: no content-type header");
     return (false);
   }
   it = multi.header.find("content-disposition");
   if (it == multi.header.end()) {
     _statusCode = 400;
+    logErrorClient("Client::checkHeaderMulti: no content-disposition header");
     return (false);
   }
   std::string tmp = (*it).second;
   size_t pos = tmp.find("name=\"");
   if (pos == tmp.npos || pos + 7 >= tmp.size()) {
+    logErrorClient(
+        "Client::checkHeaderMulti: invalid content-disposition header");
     _statusCode = 422;
     return (false);
   }
@@ -512,11 +507,15 @@ bool Client::checkHeaderMulti(multipartRequest &multi) {
   pos = tmp.find_first_of('\"');
   if (pos == tmp.npos) {
     _statusCode = 422;
+    logErrorClient(
+        "Client::checkHeaderMulti: invalid content-disposition header");
     return (false);
   }
   pos = tmp.find("filename=\"", pos);
   if (pos == tmp.npos) {
     _statusCode = 422;
+    logErrorClient(
+        "Client::checkHeaderMulti: invalid content-disposition header");
     return (false);
   }
   pos += 10;
@@ -524,6 +523,8 @@ bool Client::checkHeaderMulti(multipartRequest &multi) {
   end = tmp.find_first_of('\"', end);
   if (end == tmp.npos) {
     _statusCode = 422;
+    logErrorClient(
+        "Client::checkHeaderMulti: invalid content-disposition header");
     return (false);
   }
   if (_location->getUploadLocation() == "")
@@ -549,8 +550,8 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
-    std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
-              << std::endl;
+    // std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
+    // << std::endl;
     if (line == "" || _vBuffer.size() < _boundary.size())
       break;
     insertInMap(line, multi.header);
@@ -570,11 +571,13 @@ bool Client::parseMultipartRequest() {
   if (_checkMulti == false) {
     if (checkBoundary() == false) {
       _statusCode = 400;
-    }
-    if (_statusCode >= 400)
+      logErrorClient("Client::parseMultipartRequest: no boundary string");
       return (true);
+    }
     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
     removeTrailingLineFromBuffer();
+    if (_statusCode >= 400)
+      return (true);
     _checkMulti = true;
   }
   if (_multipart.size() == 0 || _multipart.back().isDone == true) {
@@ -598,10 +601,11 @@ bool Client::getMultipartBody(multipartRequest &multi) {
   std::string next;
   while (true) {
     if (_vBuffer.size() < _boundary.size()) {
-      std::cout
-          << PURP2
-          << "Client::getMultipartBody: break cause buffer.size(): _vbuffer = "
-          << _vBuffer << RESET << std::endl;
+      // std::cout
+      //     << PURP2
+      //     << "Client::getMultipartBody: break cause buffer.size(): _vbuffer =
+      //     "
+      //     << _vBuffer << RESET << std::endl;
       break;
     }
     line = getLineFromBuffer();
@@ -610,12 +614,13 @@ bool Client::getMultipartBody(multipartRequest &multi) {
                         _vBuffer.begin() + 1);
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + 1);
     }
-    std::cout << BLUE << "New line body: " << line << RESET << std::endl;
+    // std::cout << BLUE << "New line body: " << line << RESET << std::endl;
     if (checkBoundary() == true) {
       multi.isDone = true;
-      std::cout << PURP2
-                << "Client::getMultipartBody: break cause checkBoundary == true"
-                << RESET << std::endl;
+      // std::cout << PURP2
+      //           << "Client::getMultipartBody: break cause checkBoundary ==
+      //           true"
+      //           << RESET << std::endl;
       break;
     }
     // }
@@ -627,108 +632,15 @@ bool Client::getMultipartBody(multipartRequest &multi) {
   if (multi.isDone == true)
     close(_tmpFd);
   if (checkEndBoundary(multi) == true) {
-    if (_vBuffer.size() > 0)
+    if (_vBuffer.size() > 0) {
+      logErrorClient("Client::getMultipartBody: body after end boundary");
       _statusCode = 400;
-    else
+    } else
       _statusCode = 201;
     return (true);
   }
   return (false);
 }
-
-// bool Client::parseMultipartRequest(std::string &boundary, bool check) {
-//   if (_location && _location->isCgi(_sUri) == true)
-//     return (checkBodyMultipartCgi(boundary));
-//   std::cout << YELLOW
-//             << "Client::parseMultipartRequest starting: boundary = " <<
-//             boundary
-//             << RESET << std::endl;
-//   if (_vBuffer.size() < boundary.size() && _vBuffer.size() > 0) {
-//     return (false);
-//   }
-//   if (check == false) {
-//     if (checkBoundary() == false)
-//       return (false);
-//     if (_statusCode >= 400)
-//       return (true);
-//     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + boundary.size());
-//     removeTrailingLineFromBuffer();
-//   }
-//   multipartRequest multi;
-//   std::string line = getLineFromBuffer();
-//   while (line.empty() == false && _statusCode < 400) {
-//     removeReturnCarriageNewLine(line);
-//     std::cout << BLUE << "New line header: " << line << RESET << std::endl;
-//     if (line == "")
-//       break;
-//     insertInMap(line, multi.header);
-//     line = getLineFromBuffer();
-//   }
-//   if (checkHeaderMulti(multi) == false)
-//     return (true);
-//   if (_statusCode >= 400) {
-//     std::cout << RED
-//               << "Client::parseMultipartRequest: afterHeader insertion: "
-//                  "statusCode = 400"
-//               << RESET << std::endl;
-//     return (true);
-//   }
-//   line = getLineFromBuffer();
-//   std::cout << BLUE << "New line check: " << line << RESET;
-//   while (true) {
-//     // if (line.compare(0, boundary.size(), boundary) == 0) {
-//     //   if (line.compare(boundary.size(), 2, "--") == 0) {
-//     //     std::cout << GREEN << "Client::multipartRequest: compare = end"
-//     <<
-//     //     RESET
-//     //               << std::endl;
-//     //     _statusCode = 200;
-//     //     // removeTrailingLineFromBuffer();
-//     //   }
-//     //   break;
-//     // }
-//     // if (_vBuffer.size() < boundary.size()) {
-//     //   std::cout << RED << "CLient::multipartRequest: _vBuffer too small"
-//     //             << RESET << std::endl;
-//     //   return (false);
-//     // }
-//     // std::cout << BLUE << "New line check: " << line << RESET;
-//     if (getMultipartBody(multi, line) == false)
-//       break;
-//   }
-//   _multipart.push_back(multi);
-//   if (saveMultiToTmpfile() == false)
-//     return (true);
-//   if (_statusCode == 200)
-//     return (true);
-//   return (parseMultipartRequest(boundary, true));
-// }
-
-// bool Client::getMultipartBody(multipartRequest &multi, std::string &line) {
-//   while (true) {
-//     std::cout << BLUE << "New line body : " << line << RESET << std::endl;
-//     if (line == "\n" || line == "\r\n") {
-//       if
-//         if (line.compare(0, _boundary.size(), _boundary) == 0 &&
-//             line.size() >= _boundary.size() + 1) {
-//           if (line.compare(_boundary.size(), 2, "--") == 0) {
-//             std::cout << GREEN << "Client::multipartRequest: compare = end"
-//                       << RESET << std::endl;
-//             removeTrailingLineFromBuffer();
-//             _statusCode = 200;
-//             break;
-//           }
-//           break;
-//         } else {
-//           multi.body.insert(multi.body.end(), line.begin(), line.end());
-//         }
-//       line = getLineFromBuffer();
-//     }
-//   }
-//   std::vector<char> tmp;
-//   checkBodyHeader(multi, tmp);
-//   return (false);
-// }
 
 std::string Client::getBoundaryString(std::string &boundaryHeader) {
   size_t pos;
@@ -737,9 +649,8 @@ std::string Client::getBoundaryString(std::string &boundaryHeader) {
             << boundaryHeader << RESET << std::endl;
   pos = boundaryHeader.find(';');
   if (pos == boundaryHeader.npos) {
-    std::cout << RED << "Client::getBoundaryString: pos = npos " << RESET
-              << std::endl;
     _statusCode = 400;
+    logErrorClient("Client::getBoundaryString: invalid boundary header");
     return ("");
   }
   pos++;
@@ -747,21 +658,14 @@ std::string Client::getBoundaryString(std::string &boundaryHeader) {
     pos++;
   if (pos + 11 >= boundaryHeader.size() ||
       boundaryHeader.substr(pos, 11) != "boundary=--") {
-    std::cout << RED << "Client::getBoundaryString: pos(" << pos
-              << ") + 11 > boundaryHeader.size(" << boundaryHeader.size()
-              << ") " << RESET << std::endl;
-    std::cout << RED << "boundaryHeader.substr(pos, pos +11) != boundary=-- :"
-              << boundaryHeader.substr(pos, 11) << RESET << std::endl;
     _statusCode = 400;
+    logErrorClient("Client::getBoundaryString: invalid boundary header");
     return ("");
   }
-  std::cout << YELLOW << "Client::getBoundaryString: BOUNDARY = " << "----"
-            << boundaryHeader.substr(pos + 11) << RESET << std::endl;
   return ("----" + boundaryHeader.substr(pos + 11));
 }
 
 void Client::setupBodyParsing(void) {
-  std::cout << GREEN << "Client::setupBodyParsing: " << RESET << std::endl;
   std::map<std::string, std::string>::iterator multipart;
   multipart = _headers.find("content-type");
   if (_statusCode < 400 && multipart != _headers.end() &&
@@ -778,54 +682,22 @@ void Client::setupBodyParsing(void) {
   if ((itChunked != _headers.end() && itLength != _headers.end()) ||
       (_multipartRequest == true && itChunked != _headers.end())) {
     _statusCode = 400;
-    std::cout << RED
-              << "both content-length and transfer-encoding headers found"
-              << RESET << std::endl;
+    logErrorClient("Client::setupBodyParsing: both content-length and "
+                   "transfer-encoding header");
     return;
   }
   if (itLength != _headers.end()) {
     _bodyToRead = std::strtol(((*itLength).second).c_str(), NULL, 10);
-    std::cout << GREEN
-              << "Client::setupBodyParsing: _bodyToRead = " << _bodyToRead
-              << "; header =" << (*itLength).second << RESET << std::endl;
     if (errno == ERANGE || _bodyToRead < 0 ||
         (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
          _server->getLimitBodySize() != 0)) {
       _statusCode = 413;
-
-      std::cout << RED
-                << "changin statusCode because (_bodyToRead > "
-                   "static_cast<int>(_server->getLimitBodySize()) to "
-                << _statusCode << RESET << std::endl;
-      std::cout << PURP << "exit limitBdySize: " << _server->getLimitBodySize()
-                << RESET << std::endl;
-      std::cout << PURP << "errno = " << errno
-                << "; _bodyToRead = " << _bodyToRead
-                << "; _serverLimit = " << _server->getLimitBodySize()
-                << "; cast = " << static_cast<int>(_server->getLimitBodySize())
-                << RESET << std::endl;
+      logErrorClient(
+          "Client::setupBodyParsing: invalid size of content-length");
       return;
     }
   } else if (itChunked != _headers.end()) {
     _chunkRequest = true;
-    // if (isCgi() == true)
-    //   _tmpFile = _location->getCgiPath(_sUri);
-    // else
-    //   _tmpFile = "webserv_tmpfile_";
-    // std::stringstream ss;
-    // ss << _socket;
-    // _tmpFile = "." + ss.str() + "fd";
-    // time_t time = getTime();
-    // std::stringstream t;
-    // t << time;
-    // _tmpFile += "id" + t.str();
-    // _tmpFd =
-    //     open(_tmpFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_CLOEXEC,
-    //     00644);
-    // if (_tmpFd == -1) {
-    //   _statusCode = 500;
-    //   return;
-    // }
   }
 }
 
@@ -870,12 +742,7 @@ void Client::vectorToHeadersMap(std::vector<std::string> &request) {
     _requestSize += request[it].size();
     if (_requestSize > _headersMaxBuffer) {
       _statusCode = 413;
-
-      std::cout << RED
-                << "changin statusCode because if (_requestSize > "
-                   "_headersMaxBuffer) to "
-                << _statusCode << RESET << std::endl;
-
+      logErrorClient("Client::vectorToHeadersMap: invalid size of request");
       return;
     }
     _statusCode = insertInMap(request[it], _headers);
@@ -888,17 +755,12 @@ void Client::checkPathInfo(void) {
   if (_location->hasPathInfo() == false)
     return;
   size_t locator = _location->getUrl().size();
-  std::cout << YELLOW << "_sUri = " << _sUri
-            << "; _location.uri().size() = " << _location->getUrl().size()
-            << RESET << std::endl;
   vec_string extension = _location->availableExtension();
   size_t i = 0;
   size_t pos = _sUri.npos;
   for (; i < extension.size(); i++) {
     pos = _sUri.find(extension[i], locator);
     if (pos != _sUri.npos) {
-      std::cout << GREEN << "found pos: extension[i] = " << extension[i] << ";"
-                << RESET << std::endl;
       break;
     }
   }
@@ -906,22 +768,11 @@ void Client::checkPathInfo(void) {
     return;
   _sPathInfo = _sUri.substr(pos + extension[i].size(), _sUri.npos);
   _sUri.erase(pos + extension[i].size());
-  std::cout << YELLOW << "_sPathinfo = " << _sPathInfo << "; _sUri = " << _sUri
-            << RESET << std::endl;
 }
 
 bool Client::earlyParsing(int newLine) {
-
-  std::cout << PURP << "EARLY PARSING: _vBuffer.size() = " << _vBuffer.size()
-            << RESET << std::endl;
-
   if (newLine) {
-
-    std::cout << PURP << "earlyPARSING: NEWLINE" << RESET << std::endl;
-
     std::string early(&_vBuffer[0], &_vBuffer[newLine]);
-    std::cout << BLUE << "earlyParsing: early = " << early << RESET
-              << std::endl;
     size_t tmpStatusCode = parseRequestLine(early);
     _sMethod = "";
     _sUri = "";
@@ -932,7 +783,6 @@ bool Client::earlyParsing(int newLine) {
     }
   } else {
     std::string early(&_vBuffer[0], &_vBuffer[_vBuffer.size()]);
-
     size_t pos = early.find_first_of(' ');
     if (pos == early.npos && early.size() > 8) {
       return (false);
@@ -1032,12 +882,9 @@ int64_t Client::hasEmptyLine(int newLine) {
   for (size_t i = newLine; i + 1 < _vBuffer.size(); i++) {
     if (_vBuffer[i] == '\n' && _vBuffer[i + 1] == '\n') {
       pos = i;
-      std::cout << GREEN << "FOUND EMPTY LINE at " << i << RESET << std::endl;
       break;
     }
   }
-  if (pos == -1)
-    std::cout << RED << "No empty line in buffer" << RESET << std::endl;
   return (pos);
 }
 
@@ -1048,24 +895,14 @@ bool Client::getLocation(void) {
   } catch (security_error &e) {
     _location = NULL;
     _statusCode = 400;
-
-    std::cout << RED << "caught security_error" << RESET << std::endl;
-
+    logErrorClient("Client::getLocation: security alert: tried to go before "
+                   "server root");
     return (false);
   } catch (std::exception &e) {
     _location = NULL;
     _statusCode = 404;
-
-    std::cout << RED << "changin statusCode because caught exception to "
-              << _statusCode << RESET << std::endl;
-
+    logErrorClient("Client::getLocation: No location found");
     return (false);
-  }
-  if (_location == NULL) {
-    std::cout << RED << "THOMAS EST NULL" << RESET << std::endl;
-  } else {
-    std::cout << RED << "location = " << _location->getUrl() << RESET
-              << std::endl;
   }
   return (true);
 }
@@ -1073,12 +910,10 @@ bool Client::getLocation(void) {
 void Client::parseRequest(std::string &buffer) {
   if (buffer.empty() == true)
     return;
-  std::cout << "Client::parseRequest: starting" << buffer << std::endl;
   vec_string request = split(buffer, "\n");
   if (request.size() < 2) {
     _statusCode = 400;
-    std::cout << RED << "changin statusCode because if (request.size() < 2) to "
-              << _statusCode << RESET << std::endl;
+    logErrorClient("Client::parseRequest: invalid number of header");
     return;
   }
   _requestSize = request[0].size();
@@ -1102,6 +937,8 @@ void Client::parseRequest(std::string &buffer) {
   }
   if (_vBuffer.size() != 0 && _bodyToRead == 0) {
     _statusCode = 400;
+    logErrorClient(
+        "Client::parseRequest: body size different from body size given");
     return;
   }
   if (_location && _location->isCgi(_sUri) == true) {
@@ -1113,11 +950,8 @@ void Client::parseRequest(std::string &buffer) {
 }
 
 bool Client::parseBuffer(std::vector<char> &buffer) {
-  // std::cout << YELLOW << "Client::parseBuffer: " << buffer << RESET
-  // << std::endl;
   if (_bodyToRead > 0 || _requestIsDone == false) {
     _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
-
     return (parseBody());
   }
   fillBufferWithoutReturnCarriage(buffer);
@@ -1138,8 +972,6 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
     return (false);
   }
   std::string request(&_vBuffer[0], &_vBuffer[pos]);
-  // std::cout << YELLOW << "request = " << request << RESET << std::endl;
-  // std::cout << BLUE << "_vBuffer = " << _vBuffer << RESET << std::endl;
   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + pos + 2);
   parseRequest(request);
   std::cout << RED << "End after parseRequest; StatusCode = " << _statusCode
@@ -1156,309 +988,15 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
   if (_statusCode != 0 && _cgiPid == 0) {
     return (true);
   }
-  std::cerr << "Client::addBuffer: end: _statusCode = " << _statusCode
+  std::cout << "Client::addBuffer: end: _statusCode = " << _statusCode
             << std::endl;
   return (false);
 }
 bool Client::addBuffer(std::vector<char> &buffer) {
-  // std::cout << YELLOW << "buffer = " << buffer << RESET << std::endl;
+  std::cout << "buffer: " << buffer << std::endl;
   bool ret = parseBuffer(buffer);
   std::cout << YELLOW << "ret = " << ret << ";statusCode = " << _statusCode
             << RESET << std::endl;
   _time = getTime();
   return (ret);
 }
-
-// bool Client::saveToTmpFile(void) {
-//   multipartRequest &multi = _multipart.back();
-//   std::stringstream ss;
-//   ss << _multipart.size();
-//   multi.tmpFilename = "tmpmulti" + ss.str();
-//   ss.clear();
-//   ss << _socket;
-//   multi.tmpFilename += ss.str() + "socket";
-//   ss.clear();
-//   ss << getTime();
-//   multi.tmpFilename += "id" + ss.str();
-//   int fd = open(multi.tmpFilename.c_str(), O_RDWR | O_CLOEXEC);
-//   if (fd == -1) {
-//     _statusCode = 500;
-//     return (false);
-//   }
-//   ssize_t writeBytes = write(fd, &(multi.body)[0], multi.body.size());
-//   if (writeBytes == -1 || writeBytes < multi.body.size()) {
-//     _statusCode = 500;
-//     return (false);
-//   }
-//   close(fd);
-//   resetVector(multi.body);
-//   return (true);
-// }
-// void Client::getMultipartBody(multipartRequest &multi) {
-//   std::string line;
-//   while (true) {
-//     line = getLineFromBuffer();
-//     break;
-//   }
-//   else {
-//     getMultipartBody(multi);
-//     multi._vBody.insert(multi._vBody.end(), line.begin(), line.end());
-//   }
-// }
-
-// bool Client::checkMethod(void) {
-//   if (_sMethod == "GET" && _location->getGetStatus() == false) {
-//     _statusCode = 405;
-//     return (false);
-//   } else if (_sMethod == "POST" && _location->getPostStatus() == false) {
-//     std::cout << RED << "Client::checkMethod: invalid method on location: "
-//               << _location->getUrl() << RESET << std::endl;
-//     _statusCode = 405;
-//     return (false);
-//   } else if (_sMethod == "DELETE" && _location->getDeleteStatus() == false)
-//   {
-//     _statusCode = 405;
-//     return (false);
-//   }
-//   return (true);
-// }
-
-// void Client::parseRequest(std::string &buffer) {
-//   if (buffer.empty() == true)
-//     return;
-//   vec_string request = split(buffer, "\n");
-//
-//   std::cout << YELLOW << "vec_string request.size() = " << request.size()
-//             << RESET << std::endl;
-//
-//   if (request.size() < 2) {
-//     _statusCode = 400;
-//
-//     std::cout << RED << "changin statusCode because if (request.size() < 2)
-//     to "
-//               << _statusCode << RESET << std::endl;
-//
-//     return;
-//   }
-//   _requestSize = request[0].size();
-//   _statusCode = parseRequestLine(request[0]);
-//   if (_statusCode >= 400)
-//     return;
-//   request.erase(request.begin(), request.begin() + 1);
-//   vectorToHeadersMap(request);
-//   if (_statusCode != 0)
-//     return;
-//   if (_headers.count("host") == 0) {
-//     _statusCode = 400;
-//
-//     std::cout << RED
-//               << "changin statusCode because if (_headers.count(\"host\") "
-//                  "== 0) to "
-//               << _statusCode << RESET << std::endl;
-//
-//     return;
-//   }
-//
-//   std::cout << RED << "Before at" << RESET << std::endl;
-//
-//   _sHost = _headers.at("host");
-//
-//   std::cout << YELLOW << "HERE: " << "host : " << _headers.at("host") <<
-//   RESET
-//             << std::endl;
-//
-//   _server = getServerConf();
-//
-//   std::cout << YELLOW << "serverName = " << _server->getMainServerName()
-//             << " on port: " << _server->getPort() << RESET << std::endl;
-//
-//   try {
-//     _location = &(_server->getPreciseLocation(_sUri));
-//     checkPathInfo();
-//     std::cout << YELLOW << "location = " << _location->getUrl() << RESET
-//               << std::endl;
-//
-//   } catch (security_error &e) {
-//     _location = NULL;
-//     _statusCode = 400;
-//
-//     std::cout << RED << "caught security_error" << RESET << std::endl;
-//
-//     return;
-//   } catch (std::exception &e) {
-//     _location = NULL;
-//     _statusCode = 404;
-//
-//     std::cout << RED << "changin statusCode because caught exception to "
-//               << _statusCode << RESET << std::endl;
-//
-//     return;
-//   }
-//   if (_location == NULL) {
-//
-//     std::cout << RED << "THOMAS EST NULL" << RESET << std::endl;
-//
-//   } else {
-//
-//     std::cout << RED << "location = " << _location->getUrl() << RESET
-//               << std::endl;
-//   }
-//   if (checkIfValid() == false)
-//     return;
-//   setupBodyParsing();
-//   if (_statusCode != 0)
-//     return;
-//   if (parseBody() == false) {
-//     _requestIsDone = false;
-//     return;
-//   }
-//   if (_vBuffer.size() != 0 && _bodyToRead == 0) {
-//     _statusCode = 400;
-//     std::cout << GREEN << "body = " << _vBody << RESET << std::endl;
-//     std::cout << RED << "buffer != 0, buffer.size() = " << _vBuffer.size()
-//               << "; buffer : " << _vBuffer << RESET << std::endl;
-//     std::cout << RED
-//               << "changin statusCode because if (_vBuffer.size() != 0) to "
-//               << _statusCode << RESET << std::endl;
-//   }
-//   if (_location && _location->isCgi(_sUri) == true) {
-//     setupCgi();
-//   }
-//   if (_statusCode == 0)
-//     _statusCode = 200;
-//   return;
-// }
-
-// void Client::removeReturnCarriage(std::vector<char> &vec) {
-//
-//   _vBuffer.reserve(_vBuffer.size() + vec.size());
-//   for (size_t it = 0; it < vec.size(); it++) {
-//     if (vec[it] == '\r') {
-//       size_t tmp = it;
-//       it++;
-//       if (it == vec.size())
-//         break;
-//       if (vec[it] != '\n') {
-//         _vBuffer.push_back(*(vec.begin() + tmp));
-//       }
-//     }
-//     _vBuffer.push_back(*(vec.begin() + it));
-//   }
-//   while (true) {
-//     if (_vBuffer.size() == 0)
-//       break;
-//     std::vector<char>::iterator it = _vBuffer.begin();
-//     if (*it == '\n') {
-//       _vBuffer.erase(it);
-//     } else {
-//       break;
-//     }
-//   }
-//
-//   // std::cout << BLUE << "vec: " << vec << RESET << std::endl;
-//   // std::cout << PURP << "buffer: " << _vBuffer << RESET << std::endl;
-//
-//   return;
-// }
-//
-
-// bool Client::checkBodyToRead(std::vector<char> buffer) {
-//
-//   std::cout << RED << "_bodyToRead > 0" << RESET << std::endl;
-//
-//   _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
-//   bool ret = parseBody();
-//   return (ret);
-// }
-
-// bool Client::addBuffer(std::vector<char> &buffer) {
-//
-//   std::cout << BLUE << "Client::addBuffer: " << buffer << RESET <<
-//   std::endl; if (_bodyToRead > 0 || _requestIsDone == false) {
-//     return (checkBodyToRead(buffer));
-//   }
-//   // std::cout << YELLOW << "buffer:\n" << _vBuffer << RESET << std::endl;
-//   // size_t pos = _vBuffer.find("\n\n", _requestSize);
-//   // if (pos == _vBuffer.npos) {
-//   //   std::cout << RED << "No empty line in buffer" << RESET << std::endl;
-//   //   _time = getTime();
-//   //   return (false);
-//   // }
-//
-//   removeReturnCarriage(buffer);
-//   int newLine = hasNewLine();
-//
-//   std::cout << PURP << "earlyPARSING: NEWLINE = " << newLine << RESET
-//             << std::endl;
-//
-//   if (_vBuffer.size() < 20 || newLine > 0) {
-//     if (earlyParsing(newLine) == false) {
-//       _statusCode = 400;
-//       _server = _defaultConf;
-//       _time = getTime();
-//       return (true);
-//     }
-//   }
-//   if (newLine == 0) {
-//     _time = getTime();
-//     return (false);
-//   }
-//   int pos = -1;
-//   for (size_t i = newLine; i + 1 < _vBuffer.size(); i++) {
-//     if (_vBuffer[i] == '\n' && _vBuffer[i + 1] == '\n') {
-//       pos = i;
-//
-//       std::cout << GREEN << "FOUND EMPTY LINE" << RESET << std::endl;
-//
-//       break;
-//     }
-//   }
-//   if (pos == -1) {
-//
-//     std::cout << RED << "No empty line in buffer" << RESET << std::endl;
-//
-//     _time = getTime();
-//     return (false);
-//   }
-//
-//   std::string request(&_vBuffer[0], &_vBuffer[pos]);
-//
-//   std::cout << RED << "_vbuffer[pos] = " << _vBuffer[pos] << "\n";
-//   std::cout << RED << "_vbuffer[pos + 1] = " << _vBuffer[pos + 1] << "\n";
-//   // std::cout << RED << "_vbuffer[pos + 2] = " << _vBuffer[pos + 2] <<
-//   // "\n";
-//   //
-//   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + pos + 2);
-//
-//   std::cout << YELLOW << "buffer after request: " << _vBuffer << RESET
-//             << std::endl;
-//   std::cout << PURP << "requestLine: " << request << RESET << std::endl;
-//
-//   // _vBuffer = _vBuffer.substr(pos, _vBuffer.size() - pos);
-//   // std::cout << RED << "separating request from buffer\n" << RESET;
-//   // std::cout << GREEN << "request:\n" << request << RESET;
-//   // std::cout << YELLOW << "buffer:\n" << _vBuffer << RESET << std::endl;
-//   std::cout << RED << "End before parseRequest; StatusCode = " <<
-//   _statusCode
-//             << RESET << std::endl;
-//
-//   parseRequest(request);
-//
-//   std::cout << RED << "End after parseRequest; StatusCode = " <<
-//   _statusCode
-//             << RESET << std::endl;
-//
-//   if (_vBuffer.empty() == false) {
-//     if (_bodyToRead > 0) {
-//       return (checkBodyToRead(_vBuffer));
-//     } else
-//       _statusCode = 400;
-//   }
-//   _time = getTime();
-//   if (_statusCode != 0 && _cgiPid == 0) {
-//     return (true);
-//   }
-//   std::cerr << "Client::addBuffer: end: _statusCode = " << _statusCode
-//             << std::endl;
-//   return (false);
-// }

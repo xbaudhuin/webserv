@@ -17,9 +17,9 @@
 
 NAME					=	webserv
 
-CXX						=	clang++
+CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g3
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g
 
 debug 				= 	0
 

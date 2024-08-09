@@ -1,13 +1,5 @@
 #include "Client.hpp"
-#include "cgiException.hpp"
-#include <complex>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <new>
-#include <sstream>
-#include <stdexcept>
-#include <unistd.h>
+#include <iostream>
 
 extern char **environ;
 
@@ -21,23 +13,32 @@ bool Client::isTimedOutCgi(void) const {
 }
 
 void Client::cgiPOSTMethod(void) {
-  int fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
-  if (fd == -1) {
-    throw std::runtime_error("Client::cgiPOSTMethod: fail to open infileCgi");
-  }
-  ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
-  close(fd);
-  fd = -1;
-  if (writeBytes == -1)
-    throw std::runtime_error(
-        "Client::cgiPOSTMethod: fail to write to infileCgi");
-  if (static_cast<size_t>(writeBytes) < _vBody.size()) {
-    throw std::runtime_error(
-        "Client::cgiPOSTMethod: writeBytes < _body.size()");
+  int fd;
+  if (_vBody.size() > 0) {
+    fd = open(_infileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
+    if (fd == -1) {
+      throw std::runtime_error("Client::cgiPOSTMethod: fail to open infileCgi");
+    }
+    ssize_t writeBytes = write(fd, &_vBody[0], _vBody.size());
+    close(fd);
+    fd = -1;
+    if (writeBytes == -1)
+      throw std::runtime_error(
+          "Client::cgiPOSTMethod: fail to write to infileCgi");
+    if (static_cast<size_t>(writeBytes) < _vBody.size()) {
+      throw std::runtime_error(
+          "Client::cgiPOSTMethod: writeBytes < _body.size()");
+    }
+  } else {
+    struct stat st;
+    if (stat(_infileCgi.c_str(), &st) == -1) {
+      throw std::runtime_error("Client::cgiPOSTMethod: fail to stat infile: " +
+                               _infileCgi);
+    }
+    _sizeChunk = st.st_size;
   }
   fd = open(_infileCgi.c_str(), O_RDWR);
   if (fd == -1) {
-    // unlink?
     throw std::runtime_error(
         "Client::cgiPOSTMethod: fail to re-open infileCgi");
   }
@@ -52,11 +53,8 @@ void Client::cgiPOSTMethod(void) {
 void Client::cgiOutfile(void) {
   char buf[1000];
   getcwd(buf, 1000);
-  std::cerr << "path = " << buf << " && outfile cgi= " << _outfileCgi
-            << std::endl;
   int fd = open(_outfileCgi.c_str(), O_RDWR | O_CREAT | O_TRUNC, 00644);
   if (fd == -1) {
-    perror("");
     std::string tmp = "Client::cgiOutfile: fail to create outfileCgi: ";
     tmp += _outfileCgi;
     throw std::runtime_error(tmp.c_str());
@@ -82,8 +80,6 @@ void Client::addHeaderToEnv(std::vector<char *> &vEnv,
   it = _headers.find(headerKey);
   if (it != _headers.end()) {
     std::string tmp = envVariable + "=" + (*it).second;
-    if (headerKey == "cookie")
-      std::cerr << "cookie= " << tmp.c_str() << std::endl;
     str = strdup(tmp.c_str());
     if (str == NULL)
       throw std::bad_alloc();
@@ -109,6 +105,16 @@ void Client::addVariableToEnv(std::vector<char *> &vEnv,
   }
 }
 
+void Client::buildContentLength(std::vector<char *> &vEnv) {
+  std::stringstream ss;
+  if (_vBody.size() > 0) {
+    ss << _vBody.size();
+  } else {
+    ss << _sizeChunk;
+  }
+  addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
+}
+
 void Client::buildEnv(std::vector<char *> &vEnv) {
   for (size_t i = 0; environ[i]; i++) {
     addVariableToEnv(vEnv, environ[i]);
@@ -123,9 +129,8 @@ void Client::buildEnv(std::vector<char *> &vEnv) {
         _headers.find("content-type");
     if (it == _headers.end())
       throw std::runtime_error("Client::buildEnv: no content-type header");
-    std::stringstream ss;
-    ss << _vBody.size();
-    addVariableToEnv(vEnv, "CONTENT_LENGTH=" + ss.str());
+    buildContentLength(vEnv);
+    envType += (*it).second;
   }
   addVariableToEnv(vEnv, envType);
   addHeaderToEnv(vEnv, "HTTP_COOKIE", "cookie");
@@ -165,34 +170,29 @@ void Client::freeVector(std::vector<char *> &vEnv,
 }
 
 void Client::buildArguments(std::vector<char *> &arg) {
-  // std::string path = _request.getExecutePath();
   addVariableToEnv(arg, _location->getExecutePath(_sUri).c_str());
-  // addVariableToEnv(arg, path.c_str());
-  // std::cerr << "getexecutepath = " << path << std::endl;
-  // path = _request.getCgiFile();
   addVariableToEnv(arg, _location->getCgiFile(_sUri));
-  // addVariableToEnv(arg, path);
-  std::cerr << "getcgifile = " << _location->getCgiFile(_sUri) << std::endl;
   arg.push_back(NULL);
 }
 
 void Client::setupChild(std::string &cgiPathScript) {
   std::vector<char *> vEnv;
   std::vector<char *> argument;
+
+  if (_sMethod == "POST") {
+    cgiPOSTMethod();
+  }
   try {
     if (chdir(cgiPathScript.c_str()) == -1) {
-      std::string s = "fail to chdir to: " + cgiPathScript;
+      std::string s = "Client::setupChild: fail to chdir to: " + cgiPathScript;
       throw std::runtime_error(s);
-    }
-    if (_sMethod == "POST") {
-      cgiPOSTMethod();
     }
     cgiOutfile();
     buildEnv(vEnv);
     buildArguments(argument);
-    std::cerr << "starting execve" << std::endl;
+    std::cerr << "Client::setupChild: starting execve" << std::endl;
     if (execve(argument[0], &argument[0], &vEnv[0]) == -1) {
-      std::string info = "fail to excve: ";
+      std::string info = "Client::setupChild: fail to excve: ";
       info += "arg[0] = ";
       info += argument[0];
       info += "; arg[1] = ";
@@ -201,9 +201,7 @@ void Client::setupChild(std::string &cgiPathScript) {
     }
   } catch (std::exception &e) {
     freeVector(vEnv, argument);
-    std::string tmp = "Client::setupChild: ";
-    tmp += e.what();
-    throw cgiException(tmp.c_str());
+    throw cgiException(e.what());
   }
 }
 
@@ -211,28 +209,25 @@ void Client::setupCgi() {
 
   std::string cgiPathExec = _location->getExecutePath(_sUri);
   std::string cgiPathScript = _location->getCgiPath(_sUri);
-  std::cout << "_sUri = " << _sUri << " && cgiPathExec= " << cgiPathExec
-            << " && cgiPathScript= " << cgiPathScript << std::endl;
-  std::ostringstream ss;
+  std::stringstream ss;
   ss << _socket;
-  ss.clear();
-  _infileCgi = "webserv_in" + ss.str();
-  _outfileCgi = "webserv_out" + ss.str();
+  ss << "_host";
   ss << _server->getHost();
-  _infileCgi += "_host" + ss.str();
-  _outfileCgi += "_host" + ss.str();
-  ss.clear();
+  ss << "_port";
   ss << _server->getPort();
-  _infileCgi += "_port" + ss.str();
-  _outfileCgi += "_port" + ss.str();
+  ss << "_t";
   time_t time = getTime();
-  ss.clear();
   ss << time;
-  _infileCgi += "t" + ss.str();
-  _outfileCgi += "t" + ss.str();
+  if (_vBody.size() != 0)
+    _infileCgi = cgiPathScript + "webserv_in" + ss.str();
+  else
+    _infileCgi = _tmpFile;
+  _outfileCgi = "webserv_out" + ss.str();
 
+  std::cout << YELLOW << "outfile: " << _outfileCgi << RESET << std::endl;
   pid_t pid = fork();
   if (pid < 0) {
+    logErrorClient("Client::setupCgi: fail to fork");
     _statusCode = 500;
     return;
   }
@@ -241,7 +236,6 @@ void Client::setupCgi() {
   }
   if (pid > 0) {
     _cgiPid = pid;
-    _infileCgi = cgiPathScript + _infileCgi;
     _outfileCgi = cgiPathScript + _outfileCgi;
     return;
   }

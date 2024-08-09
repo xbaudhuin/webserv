@@ -1,7 +1,5 @@
 #include "Response.hpp"
 #include "Utils.hpp"
-#include <fstream>
-#include <stdexcept>
 
 static std::map<size_t, std::string> initializeStatusMap() {
   std::map<size_t, std::string> m;
@@ -75,7 +73,7 @@ const std::map<size_t, std::string> Response::_mapReasonPhrase =
     initializeStatusMap();
 
 Response::Response(void) : _responseLine("HTTP/1.1 "), _ready(false) {
-  _headers.insert(std::make_pair("Server:", "Webserv/1.0.0"));
+  _headers.insert(std::make_pair("Server", "Webserv/1.0.0"));
   return;
 }
 
@@ -111,7 +109,7 @@ void Response::setDate(void) {
 bool Response::isReady() const { return (_ready); }
 
 void Response::setStatusCode(size_t statusCode) {
-  if (_mapReasonPhrase.count(statusCode) != 1){
+  if (_mapReasonPhrase.count(statusCode) != 1) {
     statusCode = 500;
   }
   std::ostringstream ss;
@@ -138,23 +136,26 @@ void Response::setHeader(const std::string &headerName,
   _headers.insert(std::make_pair(headerName, headerValue));
 }
 
-// void Response::addLineToBoddy(const std::string &line) {
-//   _body += line + "\r\n";
-// }
-
 std::vector<char> Response::getBody(void) { return (_body); }
 
 void Response::setBody(const std::string &body, size_t size) {
   _body.insert(_body.end(), body.begin(), body.end());
-  std::cout << YELLOW << "setting Content-Length: " << size
-            << "body.size() = " << body.size() << RESET << std::endl;
   setHeader("Content-Length", size);
+}
+
+std::string Response::getStatusCodeAndReasonPhrase(size_t statusCode) const {
+  std::string str;
+  std::stringstream ss;
+  ss << statusCode;
+  str = ss.str() + " ";
+  if (_mapReasonPhrase.count(statusCode) != 1)
+    return (str);
+  str += _mapReasonPhrase.at(statusCode);
+  return (str);
 }
 
 void Response::setBody(const std::vector<char> &body, size_t size) {
   _body = body;
-  std::cout << YELLOW << "setting Content-Length: " << size
-            << "body.size() = " << body.size() << RESET << std::endl;
   setHeader("Content-Length", size);
 }
 
@@ -165,9 +166,6 @@ void Response::setBody(const std::vector<char> &body) {
 void Response::addMapToVector(void) {
   std::map<std::string, std::string>::const_iterator it = _headers.begin();
   for (; it != _headers.end(); it++) {
-    // _response += (*it).first + ": " + (*it).second + "\r\n";
-    // insertStringInVector(_response, (*it).first + ": " + (*it).second +
-    // "\r\n");
     std::string tmp = (*it).first + ": " + (*it).second + "\r\n";
     _response.insert(_response.end(), &tmp[0], &tmp[tmp.size()]);
   }
@@ -176,16 +174,12 @@ void Response::addMapToVector(void) {
 }
 
 void Response::BuildResponse(void) {
-  // _response = _responseLine + "\r\n";
   resetVector(_response);
   _response.insert(_response.begin(), &_responseLine[0],
                    &_responseLine[_responseLine.size()]);
 
   addMapToVector();
   _response.insert(_response.end(), _body.begin(), _body.end());
-  std::cout << PURP
-            << "Response::BuildResponse: _body.size() = " << _body.size()
-            << std::endl;
   _ready = true;
   return;
 }
@@ -210,16 +204,10 @@ bool Response::isNotDone(void) const {
 }
 
 void Response::add400(const Response &error) {
-  // _response + "\r\n";
   _response.push_back('r');
   _response.push_back('\n');
   _response.insert(_response.end(), error._response.begin(),
                    error._response.end());
-  // _response += error._response;
 }
 
-std::vector<char> &Response::getResponse(void) {
-  std::cout << BLUE << "inside response: " << _response << RESET <<
-  std::endl;
-  return (_response);
-}
+std::vector<char> &Response::getResponse(void) { return (_response); }

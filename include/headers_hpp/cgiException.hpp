@@ -4,7 +4,7 @@
 #include <iostream>
 #include <exception>
 
-class cgiException : public std::exception
+class cgiException : private std::exception
 {
   private:
       std::string s;

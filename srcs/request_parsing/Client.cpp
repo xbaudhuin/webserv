@@ -1,12 +1,15 @@
 #include "Client.hpp"
+#include <netinet/in.h>
 
-Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
-    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _location(NULL), _statusCode(0), _version(1), _requestSize(0),
-      _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true), _checkMulti(false),
-      _multipartRequest(false), _tmpFd(-1), _sizeChunk(0), _currentMultipart(0),
-      _response(), _keepConnectionAlive(true), _diffFileSystem(false),
-      _epollIn(false), _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
+Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf,
+               in_addr_t clientIp)
+    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
+      _clientIp(clientIp), _server(NULL), _location(NULL), _statusCode(0),
+      _version(1), _requestSize(0), _bodyToRead(-1), _chunkRequest(false),
+      _requestIsDone(true), _checkMulti(false), _multipartRequest(false),
+      _tmpFd(-1), _sizeChunk(0), _currentMultipart(0), _response(),
+      _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
+      _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
 
   _time = getTime();
   if (defaultConf == NULL)
@@ -14,20 +17,23 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf)
   return;
 }
 
-Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf, in_addr_t IpClient)
-    : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf), _server(NULL),
-      _location(NULL), _statusCode(0), _version(1), _requestSize(0),
-      _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true), _checkMulti(false),
-      _multipartRequest(false), _tmpFd(-1), _sizeChunk(0), _currentMultipart(0),
-      _response(), _keepConnectionAlive(true), _diffFileSystem(false),
-      _epollIn(false), _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
-
-	(void)IpClient;
-  _time = getTime();
-  if (defaultConf == NULL)
-    throw(std::logic_error("Default server is NULL"));
-  return;
-}
+// Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf,
+//                in_addr_t IpClient)
+//     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
+//     _server(NULL),
+//       _location(NULL), _statusCode(0), _version(1), _requestSize(0),
+//       _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true),
+//       _checkMulti(false), _multipartRequest(false), _tmpFd(-1),
+//       _sizeChunk(0), _currentMultipart(0), _response(),
+//       _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
+//       _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
+//
+//   (void)IpClient;
+//   _time = getTime();
+//   if (defaultConf == NULL)
+//     throw(std::logic_error("Default server is NULL"));
+//   return;
+// }
 
 Client::~Client(void) {
   for (size_t i = 0; i < _multipart.size(); i++) {
@@ -65,10 +71,26 @@ Client::Client(Client const &copy) : _mapConf(copy._mapConf) {
   return;
 }
 
+void Client::copyMultipart(const std::vector<multipartRequest> &rhs) {
+  for (size_t i = 0; i < _multipart.size(); i++) {
+    if (_multipart[i].tmpFilename.empty() == false)
+      if (i >= rhs.size() || _multipart[i].tmpFilename != rhs[i].tmpFilename) {
+        unlink(_multipart[i].tmpFilename.c_str());
+      }
+    if (_multipart[i].file.empty() == false) {
+      if (i >= rhs.size() || _multipart[i].file != rhs[i].file) {
+        unlink(_multipart[i].file.c_str());
+      }
+    }
+  }
+  _multipart = rhs;
+}
+
 Client &Client::operator=(Client const &rhs) {
   if (this != &rhs) {
     _socket = rhs._socket;
     _defaultConf = rhs._defaultConf;
+    _clientIp = rhs._clientIp;
     _server = rhs._server;
     _location = rhs._location;
     _time = rhs._time;
@@ -103,7 +125,7 @@ Client &Client::operator=(Client const &rhs) {
     } else
       _tmpFd = -1;
     _sizeChunk = rhs._sizeChunk;
-    _multipart = rhs._multipart;
+    copyMultipart(rhs._multipart);
     _currentMultipart = rhs._currentMultipart;
     _response = rhs._response;
     _keepConnectionAlive = rhs._keepConnectionAlive;
@@ -124,7 +146,7 @@ Client &Client::operator=(Client const &rhs) {
   return (*this);
 }
 
-time_t Client::getTime(void) { return (std::time(0)); }
+time_t Client::getTime(void) const { return (std::time(0)); }
 
 bool Client::isTimedOut(void) const {
   time_t current;
@@ -157,7 +179,6 @@ void Client::resetClient(void) {
   _checkMulti = false;
   _multipartRequest = false;
   if (_tmpFile.empty() == false) {
-    std::cerr << "unlink: " << _tmpFile << std::endl;
     unlink(_tmpFile.c_str());
   }
   _tmpFile = "";
@@ -177,12 +198,10 @@ void Client::resetClient(void) {
   _leftToRead = 0;
   _cgiPid = 0;
   if (_outfileCgi.size() > 0) {
-    std::cerr << "unlink: " << _outfileCgi << std::endl;
     unlink(_outfileCgi.c_str());
   }
   _outfileCgi = "";
   if (_infileCgi.size() > 0) {
-    std::cerr << "unlink: " << _infileCgi << std::endl;
     unlink(_infileCgi.c_str());
   }
   _infileCgi = "";
@@ -196,16 +215,13 @@ ServerConf *Client::getServerConf(const std::string &host) {
   mapConfs::const_iterator it;
   it = _mapConf.find(host);
   if (it != _mapConf.end()) {
-    std::cout << YELLOW << "found via host: " << host
-              << "; server name: " << ((*it).second)->getMainServerName()
-              << RESET << std::endl;
     return ((*it).second);
   }
-  std::cout << YELLOW << "return default server" << RESET << std::endl;
   return (_defaultConf);
 }
 
-// const std::vector<char> &Client::getBuffer(void) const { return (_vBuffer); }
+// const std::vector<char> &Client::getBuffer(void) const { return
+// (_vBuffer); }
 
 // int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
@@ -215,7 +231,7 @@ std::string Client::getDateOfFile(time_t rawtime) const {
 
   tm *gmtTime = gmtime(&rawtime);
   char buffer[80] = {0};
-  std::strftime(buffer, 80, "%d-%m-%y %H:%M:%S GMT;", gmtTime);
+  std::strftime(buffer, 80, "%d-%m-%y %H:%M:%S GMT; ", gmtTime);
   return (buffer);
 }
 
@@ -226,18 +242,63 @@ void Client::addCgiToMap(std::map<int, pid_t> &mapCgi) {
     }
   } catch (std::exception &e) {
     if (_cgiPid > 0) {
-      if (kill(_cgiPid, SIGKILL) == -1)
-        std::cerr << "Client::addCgiToMap: Failed to kill pid: " << _cgiPid
-                  << std::endl;
       _statusCode = 500;
+      if (kill(_cgiPid, SIGKILL) == -1) {
+        logErrorClient("Client::addCgiToMap: fail to kill child when "
+                       "map.insert failed");
+        return;
+      } else {
+        logErrorClient("Client::addCgiToMap: fail to map.insert pid child");
+      }
     }
-    waitpid(_cgiPid, NULL, WNOHANG);
+    if (waitpid(_cgiPid, NULL, 0) == -1)
+      logErrorClient("Client::addCgiToMap: fail to waitpid after kill");
   }
 }
 
+std::string Client::prepareLogMessage() const {
+  std::string message = "ip: ";
+  struct in_addr addr;
+  addr.s_addr = _clientIp;
+  char strIp[INET_ADDRSTRLEN] = {0};
+  if (inet_ntop(AF_INET, &addr, strIp, sizeof(strIp)) == NULL) {
+    std::cerr << "fail to get ip of client on fd: " << _socket << std::endl;
+    message += "Unknown";
+  } else {
+    message += strIp;
+  }
+  std::stringstream ss;
+  ss << "; fd: ";
+  ss << _socket;
+  ss << "; Port: ";
+  ss << _defaultConf->getPort();
+  ss << "; ";
+  message += ss.str();
+  message += getDateOfFile(getTime());
+  return (message);
+}
+
+void Client::logErrorClient(const std::string &str) const {
+  std::string message = prepareLogMessage();
+  message += str;
+  if (_sMethod.empty() == false && _sUri.empty() == false) {
+    message += "; ";
+    message += _sMethod + " " + _sUri;
+  }
+  if (_statusCode != 0) {
+    message += "; ";
+    message += _response.getStatusCodeAndReasonPhrase(_statusCode);
+  }
+  errorServer(message);
+}
+
+void Client::logErrorChild(const std::string &str) const {
+  std::string message = prepareLogMessage();
+  message += str;
+  errorChild(message);
+}
+
 void Client::setStatusCode(size_t exitStatus) {
-  std::cerr << "Client::setStatusCode : begin:  exitStatus = " << exitStatus
-            << "; _statusCode = " << _statusCode << std::endl;
   switch (exitStatus) {
   case 0: {
     _statusCode = 200;
@@ -255,81 +316,7 @@ void Client::setStatusCode(size_t exitStatus) {
     _statusCode = 500;
   }
   }
-  std::cerr << "Client::setStatusCode : end:  exitStatus = " << exitStatus
-            << "; _statusCode = " << _statusCode << std::endl;
+  if (_statusCode >= 400) {
+    logErrorChild("Client::setStatusCode: exit status of cgi != 0");
+  }
 }
-
-// bool Request::addBuffer(const std::vector<char> buffer) {
-//   if (_bodyToRead > 0 || _requestIsDone == false) {
-//     _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
-//     return (parseBody());
-//   }
-//   fillBufferWithoutReturnCarriage(buffer);
-//   int newLine = hasNewLine();
-//   if (newLine == 0) {
-//     return (false);
-//   }
-//   if (_vBuffer.size() < 20 || newLine > 0) {
-//     if (earlyParsing(newLine) == false) {
-//       _statusCode = 400;
-//       _server = _defaultConf;
-//       return (true);
-//     }
-//   }
-//   int64_t pos = hasEmptyLine(newLine);
-//   if (pos == -1) {
-//     return (false);
-//   }
-//   std::string request(&_vBuffer[0], &_vBuffer[pos]);
-//   _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + pos + 2);
-//   parseRequest(request);
-//   std::cout << RED << "End after parseRequest; StatusCode = " << _statusCode
-//             << RESET << std::endl;
-//
-//   if (_vBuffer.empty() == false) {
-//     if (_bodyToRead > 0) {
-//       _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
-//       return (parseBody());
-//     } else
-//       _statusCode = 400;
-//   }
-//   if (_statusCode != 0) {
-//     return (true);
-//   }
-//   std::cerr << "Client::addBuffer: end: _statusCode = " << _statusCode
-//             << std::endl;
-//   return (false);
-// }
-
-// void Client::print() {
-//
-//   if (_server == NULL)
-//     std::cout << RED << "no server\n" << RESET;
-//   else
-//     std::cout << GREEN "server    = " << _server->getServerNames()[0] <<
-//     RESET
-//               << "\n";
-//   if (_location == NULL)
-//     std::cout << RED << "no location\n" << RESET;
-//   else
-//     std::cout << GREEN "location    = " << _location->getUrl() << RESET <<
-//     "\n";
-//   std::cout << "time        = " << _time << "\n";
-//   std::cout << "time out ?  = " << isTimedOut() << "\n";
-//
-//   std::cout << "_socket     = " << _socket << "\n";
-//   std::cout << "status code = " << _statusCode << "\n";
-//   std::cout << "method      = " << _sMethod << "\n";
-//   std::cout << "uri         = " << _sUri << "\n";
-//   std::cout << "queryUri    = " << _sQueryUri << "\n";
-//   std::cout << "_requestSize= " << _requestSize << "\n";
-//   std::cout << "_version    = " << _version << "\n";
-//   std::cout << "_sHost       = " << _sHost << "\n";
-//   std::cout << "_headers: key = value" << "\n";
-//   for (std::map<std::string, std::string>::iterator i = _headers.begin();
-//        i != _headers.end(); i++) {
-//     std::cout << (*i).first << " = " << (*i).second << "\n";
-//   }
-//   std::cout << "_bodyToRead    = " << _bodyToRead << "\n";
-//   std::cout << "remain buffer = " << _vBuffer << std::endl;
-// }
