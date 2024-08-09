@@ -45,6 +45,7 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   // std::cout << BLUE << "requestLine = " << requestLine << RESET << std::endl;
   vec_string split_request = split(requestLine, " ");
   if (split_request.size() != 3) {
+    _statusCode = 400;
     logErrorClient(
         "Client::parseRequestLine: invalid uri: invalid number of SP");
     return (400);
@@ -54,9 +55,11 @@ size_t Client::parseRequestLine(const std::string &requestLine) {
   for (; i < _methodSize && _sMethod != _validMethods[i]; i++) {
   }
   if (i == _methodSize) {
+    _statusCode = 400;
     logErrorClient("Client::parseRequestLine: invalid uri: unknown method");
     return (400);
   } else if (i > 2) {
+    _statusCode = 405;
     logErrorClient(
         "Client::parseRequestLine: invalid uri: method not supported");
     return (405);
@@ -266,6 +269,35 @@ void Client::removeTrailingLineFromBuffer(void) {
     i++;
   else {
     // std::cout << GREEN << "_vbuffer: " << _vBuffer << RESET << std::endl;
+    // std::cout << "Client::removeTrailingLineFromBuffer: i = " << i << "; ";
+    // if (i >= 2 && _vBuffer[i - 2] == '\r') {
+    //   std::cout << "_vBuffer[i - 2] == \\r; ";
+    // }
+    // if (i >= 2 && _vBuffer[i - 2] == '\n') {
+    //   std::cout << "_vBuffer[i - 2] == \\n; ";
+    // }
+    // if (i >= 1 && _vBuffer[i - 1] == '\r') {
+    //   std::cout << "_vBuffer[i - 1] == \\r; ";
+    // }
+    // if (i >= 1 && _vBuffer[i - 1] == '\n') {
+    //   std::cout << "_vBuffer[i - 1] == \\n; ";
+    // }
+    // if (_vBuffer[i] == '\r')
+    //   std::cout << "_vBuffer[i] == \\r; ";
+    // if (_vBuffer[i] == '\n')
+    //   std::cout << "_vBuffer[i] == \\n; ";
+    // if (i + 1 < _vBuffer.size() && _vBuffer[i + 1] == '\r') {
+    //   std::cout << "_vBuffer[i - 1] == \\r; ";
+    // }
+    // if (i + 1 < _vBuffer.size() && _vBuffer[i + 1] == '\n') {
+    //   std::cout << "_vBuffer[i - 1] == \\n; ";
+    // }
+    // if (i + 2 > _vBuffer.size() && _vBuffer[i + 2] == '\r') {
+    //   std::cout << "_vBuffer[i + 2] == \\r; ";
+    // }
+    // if (i + 2 > _vBuffer.size() && _vBuffer[i + 2] == '\n') {
+    //   std::cout << "_vBuffer[i + 2] == \\n; ";
+    // }
     _statusCode = 400;
     logErrorClient(
         "Client::removeTrailingLineFromBuffer: fail to remove trailing line");
@@ -499,9 +531,9 @@ bool Client::checkHeaderMulti(multipartRequest &multi) {
   std::string tmp = (*it).second;
   size_t pos = tmp.find("name=\"");
   if (pos == tmp.npos || pos + 7 >= tmp.size()) {
+    _statusCode = 422;
     logErrorClient(
         "Client::checkHeaderMulti: invalid content-disposition header");
-    _statusCode = 422;
     return (false);
   }
   pos += 7;
@@ -551,8 +583,8 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
   std::string line = getLineFromBuffer();
   while (line.empty() == false && _statusCode < 400) {
     removeReturnCarriageNewLine(line);
-    // std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
-    // << std::endl;
+    std::cout << BLUE << "New line header: " << line.substr(0, 20) << RESET
+              << std::endl;
     if (line == "" || _vBuffer.size() < _boundary.size())
       break;
     insertInMap(line, multi.header);
@@ -560,11 +592,17 @@ bool Client::getHeaderMulti(multipartRequest &multi) {
       return (true);
     line = getLineFromBuffer();
   }
-  removeTrailingLineFromBuffer();
+  // removeTrailingLineFromBuffer();
+  if (_statusCode >= 400) {
+    std::cout << "Client::getHeaderMulti fail" << std::endl;
+  }
   return (checkHeaderMulti(multi));
 }
 
 bool Client::parseMultipartRequest() {
+  std::cout << YELLOW
+            << "Client::parseMultipartRequest: _statusCode = " << _statusCode
+            << RESET << std::endl;
   if (_location && _location->isCgi(_sUri) == true)
     return (checkBodyMultipartCgi(_boundary));
   if (_vBuffer.size() < _boundary.size())
@@ -577,8 +615,10 @@ bool Client::parseMultipartRequest() {
     }
     _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + _boundary.size());
     removeTrailingLineFromBuffer();
-    if (_statusCode >= 400)
+    if (_statusCode >= 400) {
+      std::cout << "HERE: " << std::endl;
       return (true);
+    }
     _checkMulti = true;
   }
   if (_multipart.size() == 0 || _multipart.back().isDone == true) {
@@ -634,8 +674,8 @@ bool Client::getMultipartBody(multipartRequest &multi) {
     close(_tmpFd);
   if (checkEndBoundary(multi) == true) {
     if (_vBuffer.size() > 0) {
-      logErrorClient("Client::getMultipartBody: body after end boundary");
       _statusCode = 400;
+      logErrorClient("Client::getMultipartBody: body after end boundary");
     } else
       _statusCode = 201;
     return (true);
@@ -842,9 +882,10 @@ void Client::fillBufferWithoutReturnCarriage(const std::vector<char> &vec) {
   // std::cout << PURP << "buffer: " << _vBuffer << RESET << std::endl;
   // return;
 
-  // bool newLine = false;
+  bool newLine = false;
+  size_t it = 0;
   _vBuffer.reserve(_vBuffer.size() + vec.size());
-  for (size_t it = 0; it < vec.size(); it++) {
+  for (; it < vec.size(); it++) {
     if (vec[it] == '\r') {
       size_t tmp = it;
       it++;
@@ -854,14 +895,17 @@ void Client::fillBufferWithoutReturnCarriage(const std::vector<char> &vec) {
         _vBuffer.push_back(*(vec.begin() + tmp));
       }
     }
-    // if (vec[it] == '\n') {
-    // if (newLine == false) {
-    // newLine = true;
-    // } else
-    // break;
-    // } else
-    // newLine = false;
+    if (vec[it] == '\n') {
+      if (newLine == false) {
+        newLine = true;
+      } else
+        break;
+    } else
+      newLine = false;
     _vBuffer.push_back(*(vec.begin() + it));
+  }
+  if (it < vec.size()) {
+    _vBuffer.insert(_vBuffer.end(), vec.begin() + it, vec.end());
   }
   while (true) {
     if (_vBuffer.size() == 0)
@@ -973,7 +1017,10 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
   }
   if (_vBuffer.size() < 20 || newLine > 0) {
     if (earlyParsing(newLine) == false) {
-      _statusCode = 400;
+      if (_statusCode == 0) {
+        _statusCode = 400;
+        logErrorClient("Client::earlyParsing: fail in earlyParsing");
+      }
       _server = _defaultConf;
       return (true);
     }
@@ -993,8 +1040,10 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
     if (_bodyToRead > 0) {
       _vBuffer.insert(_vBuffer.end(), buffer.begin(), buffer.end());
       return (parseBody());
-    } else
+    } else {
+      logErrorClient("Client::parseBuffer: buffer not empty");
       _statusCode = 400;
+    }
   }
   if (_statusCode != 0 && _cgiPid == 0) {
     return (true);
