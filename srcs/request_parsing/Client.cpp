@@ -317,6 +317,6 @@ void Client::setStatusCode(size_t exitStatus) {
   }
   }
   if (_statusCode >= 400) {
-    logErrorChild("Client::setStatusCode: exit status of cgi != 0");
+    logErrorChild("Client::setStatusCode: statusCode set ");
   }
 }
