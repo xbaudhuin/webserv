@@ -421,6 +421,8 @@ void Client::handleDelete(void) {
 
 void Client::handleMultipart(void) {
   struct stat st;
+  std::cout << "client::handleMultipart: _currentMultipart = "
+            << _currentMultipart << std::endl;
   if (stat(_multipart[_currentMultipart].file.c_str(), &st) != -1) {
     _statusCode = 409;
     logErrorClient("Client::handleMultipart: file already exist: " +
