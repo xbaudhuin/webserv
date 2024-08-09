@@ -469,6 +469,7 @@ bool Client::checkEndBoundary(multipartRequest &multi) {
     if (tmp.substr(_boundary.size(), 2) == "--") {
       _vBuffer.erase(_vBuffer.begin(), _vBuffer.begin() + 2);
       removeTrailingLineFromBuffer();
+      _currentMultipart = 0;
       return (true);
     }
     removeTrailingLineFromBuffer();
@@ -688,10 +689,12 @@ void Client::setupBodyParsing(void) {
   }
   if (itLength != _headers.end()) {
     _bodyToRead = std::strtol(((*itLength).second).c_str(), NULL, 10);
-    if (errno == ERANGE || _bodyToRead < 0 ||
+    if (errno == ERANGE || _bodyToRead <= 0 ||
         (_bodyToRead > static_cast<int>(_server->getLimitBodySize()) &&
          _server->getLimitBodySize() != 0)) {
       _statusCode = 413;
+      if (_bodyToRead == 0)
+        _statusCode = 400;
       logErrorClient(
           "Client::setupBodyParsing: invalid size of content-length");
       return;
