@@ -1,0 +1,4 @@
+log/server_error.log
+log/stderr.log
+log/parsing_error.log
+log/child_error.log

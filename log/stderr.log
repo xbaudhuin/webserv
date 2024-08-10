@@ -1,1 +1,5 @@
+Client::parseRequest: bool _isCgi: 0
+Client::parseRequest: bool _isCgi: 0
+Client::parseRequest: bool _isCgi: 0
+Client::parseRequest: bool _isCgi: 0
 webserv: Webserv::start: epoll_wait: Interrupted system call

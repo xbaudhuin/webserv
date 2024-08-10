@@ -120,6 +120,7 @@ private:
   static const size_t _methodSize;
   static const char *_whiteSpaces;
   static const size_t _uriMaxSize;
+  static const size_t _boundaryMaxSize;
   static const size_t _sizeMaxResponse;
   static const size_t _headerMaxSize;
   static const size_t _headersMaxBuffer;
@@ -132,7 +133,7 @@ private:
   bool requestValidByLocation(void);
   void getUrlFromLocation(std::string &url) const;
   // void removeReturnCarriage(std::vector<char> &vec);
-  size_t hasNewLine(void) const;
+  int hasNewLine(void) const;
   bool earlyParsing(int newLine);
   void parseRequest(std::string &request);
   size_t parseRequestLine(const std::string &requestLine);
@@ -150,7 +151,7 @@ private:
   ServerConf *getServerConf(const std::string &host);
 
   // multipart method
-  std::string getLineFromBuffer();
+  bool getLineFromBuffer(std::string &line, bool headerDone);
   bool checkHeaderMulti(multipartRequest &multi);
   bool checkBodyMultipartCgi(std::string &boundary);
   std::string getBoundaryString(std::string &boundaryHeader);
@@ -159,6 +160,7 @@ private:
   bool getHeaderMulti(multipartRequest &multi);
   bool getMultipartBody(multipartRequest &multi);
   bool parseMultipartRequest();
+  void resetMultipart(void);
   bool saveToTmpFile(std::vector<char> &body);
   bool saveMultiToTmpfile(multipartRequest &multi);
   // chunked method

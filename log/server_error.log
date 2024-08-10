@@ -1,2 +1,5 @@
-ip: 127.0.0.1; fd: 5; Port: 4253; 09-08-24 14:50:48 GMT; /coucou/; GET /coucou/; 200  OK
-ip: 127.0.0.1; fd: 5; Port: 4253; 09-08-24 14:50:53 GMT; Client::handleMultipart: fail to stat: ./html/upload/; POST /upload; 409  Conflict
+ip: 127.0.0.1; fd: 5; Port: 4253; 10-08-24 13:58:57 GMT; /coucou/; GET /coucou/; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4253; 10-08-24 13:59:33 GMT; /upload; POST /upload; 201  Created
+ip: 127.0.0.1; fd: 5; Port: 4253; 10-08-24 13:59:58 GMT; /upload/makefile; GET /upload/makefile; 200  OK
+ip: 127.0.0.1; fd: 5; Port: 4253; 10-08-24 14:00:18 GMT; Client::findPages: fail to stat: ./html/upload/HotDog.png; GET /upload/HotDog.png; 404  Not Found
+ip: 127.0.0.1; fd: 5; Port: 4253; 10-08-24 14:00:26 GMT; /upload/hotdog.png; GET /upload/hotdog.png; 200  OK
