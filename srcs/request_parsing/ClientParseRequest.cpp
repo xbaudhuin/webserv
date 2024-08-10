@@ -354,8 +354,11 @@ bool Client::parseChunkRequest(void) {
               << std::endl;
     if (_vBody.size() > 0)
       saveToTmpFile();
-    if (_bodyToRead == 0)
+    if (_bodyToRead == 0) {
+      if (hasNewLine() == false)
+        return (false);
       removeTrailingLineFromBuffer();
+    }
   }
   if (hasNewLine() == false)
     return (false);
