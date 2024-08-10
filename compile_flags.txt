@@ -1,0 +1,3 @@
+-Iinclude/headers_hpp
+-I/include/headers_h
+-Wall -Werror -Wextra -std=c++98
