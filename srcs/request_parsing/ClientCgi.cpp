@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "Error.hpp"
 #include <fcntl.h>
 #include <iostream>
 #include <unistd.h>
@@ -181,13 +182,16 @@ void Client::setupChild(std::string &cgiPathScript) {
   std::vector<char *> vEnv;
   std::vector<char *> argument;
 
-  int fd = open("./log/stderr_child.log", O_APPEND | O_WRONLY);
+  int fd = open(childError, O_APPEND | O_WRONLY);
   if (fd == -1) {
-    logErrorClient("Client::setupChild: fail to open ./log/stderr_child.log");
+    std::string tmp = "Client::setupChild: fail to open ";
+    tmp += childError;
+    logErrorClient(tmp);
   } else {
     if (dup2(fd, STDERR_FILENO) == -1) {
-      logErrorClient("Client::setupChild: fail to dup2 std::err to "
-                     "./log/stderr_child.log");
+      std::string tmp = "Client::setupChild: fail to dup2 std::err to ";
+      tmp += childError;
+      logErrorClient(tmp);
     }
     close(fd);
   }
@@ -237,7 +241,6 @@ void Client::setupCgi() {
     _infileCgi = _tmpFile;
   _outfileCgi = "webserv_out" + ss.str();
 
-  std::cout << YELLOW << "outfile: " << _outfileCgi << RESET << std::endl;
   pid_t pid = fork();
   if (pid < 0) {
     logErrorClient("Client::setupCgi: fail to fork");
