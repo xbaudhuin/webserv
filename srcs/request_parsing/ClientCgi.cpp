@@ -1,5 +1,7 @@
 #include "Client.hpp"
+#include <fcntl.h>
 #include <iostream>
+#include <unistd.h>
 
 extern char **environ;
 
@@ -179,6 +181,16 @@ void Client::setupChild(std::string &cgiPathScript) {
   std::vector<char *> vEnv;
   std::vector<char *> argument;
 
+  int fd = open("./log/stderr_child.log", O_APPEND | O_WRONLY);
+  if (fd == -1) {
+    logErrorClient("Client::setupChild: fail to open ./log/stderr_child.log");
+  } else {
+    if (dup2(fd, STDERR_FILENO) == -1) {
+      logErrorClient("Client::setupChild: fail to dup2 std::err to "
+                     "./log/stderr_child.log");
+    }
+    close(fd);
+  }
   if (_sMethod == "POST") {
     cgiPOSTMethod();
   }
@@ -201,6 +213,7 @@ void Client::setupChild(std::string &cgiPathScript) {
     }
   } catch (std::exception &e) {
     freeVector(vEnv, argument);
+    logErrorChild(e.what());
     throw cgiException(e.what());
   }
 }

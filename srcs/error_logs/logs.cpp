@@ -1,14 +1,20 @@
+#include "Error.hpp"
 #include "Webserv.hpp"
 #include <ostream>
+
+const char *childLog = "./log/child_log.log";
+const char *parsingError = "./log/parsing_error.log";
+const char *serverLog = "./log/server_log.log";
+const char *error = "./log/stderr.log";
+const char *childError = "./log/child_stderr.log";
 
 void errorParsing(const std::string &message)
 {
     static size_t i = 0;
     std::ofstream os;
-    static const char *s = "./log/parsing_error.log";
     if(i == 0)
     {
-        os.open(s, std::ostream::trunc | std::ostream::out);
+        os.open(parsingError, std::ostream::trunc | std::ostream::out);
         if(os.is_open())
         {
             os << message << std::endl;
@@ -21,7 +27,7 @@ void errorParsing(const std::string &message)
     }
     else
     {
-        os.open(s, std::ostream::app | std::ostream::out);
+        os.open(parsingError, std::ostream::app | std::ostream::out);
         if(os.is_open())
         {
             os << message << std::endl;
@@ -37,10 +43,9 @@ void errorServer(const std::string &message)
 {
     static size_t i = 0;
     std::ofstream os;
-    static const char *s = "./log/server_error.log";
     if(i == 0)
     {
-        os.open(s, std::ostream::trunc | std::ostream::out);
+        os.open(serverLog, std::ostream::trunc | std::ostream::out);
         if(os.is_open())
         {
             os << message << std::endl;
@@ -53,7 +58,7 @@ void errorServer(const std::string &message)
     }
     else
     {
-        os.open(s, std::ostream::app | std::ostream::out);
+        os.open(serverLog, std::ostream::app | std::ostream::out);
         if(os.is_open())
         {
             os << message << std::endl;
@@ -69,10 +74,9 @@ void errorChild(const std::string &message)
 {
     static size_t i = 0;
     std::ofstream os;
-    static const char *s = "./log/child_error.log";
     if(i == 0)
     {
-        os.open(s, std::ostream::trunc | std::ostream::out);
+        os.open(childLog, std::ostream::trunc | std::ostream::out);
         if(os.is_open())
         {
             os << message << std::endl;
@@ -85,7 +89,7 @@ void errorChild(const std::string &message)
     }
     else
     {
-        os.open(s, std::ostream::app | std::ostream::out);
+        os.open(childLog, std::ostream::app | std::ostream::out);
         if(os.is_open())
         {
             os << message << std::endl;

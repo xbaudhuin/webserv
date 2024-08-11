@@ -7,6 +7,12 @@
 
 typedef std::vector<std::string> vec_string;
 
+extern const char *childLog;
+extern const char *parsingError;
+extern const char *serverLog;
+extern const char *error;
+extern const char *childError;
+
 template <typename F>
 void writeInsideLog(const std::exception &e, F f)
 {
