@@ -63,7 +63,6 @@ HEADER				=	-I./include/headers_hpp/ \
 								
 DEP_PATH			=	dep/
 
-
 HEADER_FILES	=	 Webserv.hpp \
 					 ServerConf.hpp \
 					 Error.hpp \
@@ -92,6 +91,8 @@ NEW						=	\r\033[K
 SRC_PATH			=	./srcs/
 
 OBJ_PATH			=	obj/
+
+LOG 					= log/
 
 RM						=	rm -rf
 
@@ -133,6 +134,7 @@ SRCS_MAIN		=	main/main.cpp \
 					request_parsing/Response.cpp \
 					request_parsing/ClientParseRequest.cpp \
 					request_parsing/ClientCgi.cpp \
+					request_parsing/ClientMultipart.cpp \
 
 REQUEST = requester
 
@@ -167,8 +169,6 @@ main/Webserv.cpp \
 					request_parsing/ClientParseRequest.cpp \
 					request_parsing/ClientCgi.cpp \
 	
-				
-
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 
 OBJS_REQUEST	=	$(addprefix ${OBJ_PATH}, ${SRCS_REQUEST:.cpp=.o}) \
@@ -201,18 +201,19 @@ OBJS_TESTS		=	$(addprefix ${OBJ_PATH}, ${SRCS_TESTS:.cpp=.o}) \
 					
 all:			${NAME}
 
-${NAME}:		${OBJS} ${TXT} Makefile
+${NAME}:		${OBJS} ${TXT} Makefile ${LOG} 
 		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS} ${HEADER}
 		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 
 request: ${REQUEST}
 
+${LOG}:
+		mkdir -p ${LOG}
+
 ${REQUEST}: ${OBJS_REQUEST} ${TXT} Makefile
 		@${CXX} ${CXXFLAGS} -o ${REQUEST} ${OBJS_REQUEST} ${HEADER}
 		@printf "${NEW}${YELLOW}${REQUEST}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 		
-		
-
 ${OBJ_PATH}%.o:	${SRC_PATH}%.cpp
 		@mkdir -p $(dir $@)
 		@${CXX} ${CXXFLAGS} ${HEADER} -c $< -o $@

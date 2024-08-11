@@ -11,10 +11,18 @@ static int initMain(int argc) {
   int fd = open("./log/stderr.log", O_WRONLY | O_CREAT | O_TRUNC, 0666);
   if (fd != BAD_FD) {
     if (dup2(fd, STDERR_FILENO) == BAD_FD) {
-      std::cerr << "webserv: dup2: " << strerror(errno) << std::endl;
+      int err = errno;
+      std::cerr << "webserv: dup2: " << strerror(err) << std::endl;
     }
     close(fd);
   }
+  fd = open("./log/stderr_child.log", O_CREAT | O_WRONLY | O_TRUNC, 00644);
+  if (fd == BAD_FD) {
+    int err = errno;
+    std::cerr << "webserv: fail to open ./log/stderr_child.log: "
+              << strerror(err) << std::endl;
+  } else
+    close(fd);
   if (handleSignal(SIGINT, STOP) != SUCCESS) {
     return FAILURE;
   }
