@@ -1,0 +1,104 @@
+.TH WEBSERV.MAN 1 "August 2024" "Version 1.0" "Webserv Usage Man Page"
+.SH NAME
+    ./webserv [CONF]
+
+.SH SYNOPSIS
+.B The program only take .conf files wherever it's located like this:
+.TP 5
+    {NAME}.conf \- Configuration file for webserv
+
+.SH DESCRIPTION
+The \fB.conf\fR file is used to configure the \fBwebserv\fR. This file contains all the necessary parameters to configure the web server. \fBAnything\fR that isn't a directive will be considered an \fBerror\fR and therefore be \fBrefused\fR
+
+.SH DIRECTIVES
+.TP
+Each directive \fBmust\fR end with a \fB';'\fR and each server block is \fBdelimited\fR by '{}' like this:
+
+\fBserver { ... }\fR
+
+.SH SERVER BLOCK DIRECTIVES
+.TP 5
+\fBlisten { [PORT]/[HOST]/[HOST:PORT] } ;\fR
+Defines the port on which the server listens for incoming connections and / or to which host we base the server. The host is IPv4 compliant \fBonly\fR. If \fBno\fR listen if \fBset\fR, the server listen to the port 4243 and host in localhost (127.0.0.1) by default.
+.TP 5
+\fBserver_name {PARAM}... ;\fR
+Specifies the \fBserver name(s)\fR for the server. If \fBno\fR server_name is set, the name of the server is :\fBwebserv\fR.
+.TP 5
+\fBroot {PATH} ;\fR
+Specifies the \fBroot directory\fR for the server. The current directory is used by default.
+.TP 5
+\fBerror_page {ERROR_CODE}... {URI} ;\fR
+Specifies the \fBerror page\fR for \fBerror codes\fR for the server.
+.TP 5
+\fBclient_max_body_size {VALUE}[SIZE] ;\fR
+Specifies the \fBbody size limit\fR for the server. It's interpreted in bytes, but adding \fB[k/K] or [m/M] or [g/G]\fR at the end of your limit will be interpreted and converted to bytes. \fBThere is no body size limit by default\fR. 
+.TP 5
+\fBlocation [OPTION '='] {FILE | DIRECTORY} { DIRECTIVES } \fR
+Specifies a \fBlocation\fR in which the "=" option can be used to specify an \fBexact match\fR, and it must be followed by a \fBFILE\fR or \fBDIRECTORY\fR. This is where we will look for the \fBURI\fR.
+
+.SH LOCATION BLOCK DIRECTIVES
+.TP 5
+\fBroot {PATH} ;\fR
+Specifies the \fBroot directory\fR for the location, it \fBreplaces\fR the server root for this \fBspecific\fR location. The root of the server is used by default.
+.TP 5
+\fBalias {PATH} ;\fR
+Specifies the \fBalias\fR for the location, where we will look for the files/directories instead of the \fBFILE\fR or \fBDIRECTORY\fR that was passed as parameter for the server block. Using \fBroot\fR instead of \fBalias\fR is prefered if the alias ends with the parameter passed to the \fBlocation\fR block.
+.TP 5
+\fBclient_max_body_size {VALUE}[SIZE] ;\fR
+Specifies the body size limit for the location. It's interpreted in bytes, but adding \fB[k/K] or [m/M] or [g/G]\fR at the end of your limit will be interpreted and converted to bytes. \fBThere is no body size limit by default\fR.
+.TP 5
+\fBautoindex {"on" | "off"} ;\fR
+Specifies whether the \fBdirectory listing\fR is \fBon\fR or \fBoff\fR. \fBIt's off by default\fR.
+.TP 5
+\fBindex {FILE}... ;\fR
+Specifies (a) file(s) to look for in particular in said location. If no index is set, an \fBindex.html\fR file will be looked for.
+.TP 5
+\fBreturn {CODE} {ADDRESS} ;\fR
+\fBRedirects\fR to a particular address.
+.TP 5
+\fBpath_info {"on" | "off"}\fR
+Indicates if we split the received uri to get the path info from it.
+.TP 5
+\fBcgi {EXTENSION} {FILE}\fR
+Specifies a cgi \fBto execute\fR. The supported extensions are : \fB[.py] [.rb] [.php] [.pl]\fR. It also enables the execution of other cgi of the \fBsame\fR extension.
+.TP 5
+\fBupload_location {PATH} ;\fR
+Specifies \fBwhere\fR the upload of a file will be done. If \fBno\fR upload path is set and the \fBPOST\fR method is \fBallowed\fR, the directory of the location will be \fBused\fR.
+.TP 5
+\fBset_method { "POST" | "GET" | "DELETE" } { "on" "off" } \fR
+Specifies whether the method(s) asked for are \fBon\fR or not. \fBEvery method\fR is on is no method is set otherwise.
+
+.SH EXAMPLES
+The following is an example configuration:
+
+.nf
+server {
+    server_name webserv;
+    listen 127.0.0.1:4243;
+    root ./html;
+    error_page 404 403 400 /418.html;
+	client_max_body_size 1g;
+
+    location / {
+        index site.html;
+		client_max_body_size 100k;
+    }
+
+    location = /418.html {
+    }
+
+    location /coucou {
+        alias ./tester/cgi/;
+    }
+
+    location /cgi/python/ {            
+        cgi .py welcome.py;        
+        upload_location /cookies/;
+        path_info on;
+        set_method POST DELETE GET on;
+    }
+}
+.fi
+
+.SH AUTHOR
+Written by thole.
