@@ -263,7 +263,9 @@ void ServerConf::addLocation(Location &loc)
     if(loc.isADir())
     {
         std::string url = loc.getUrl();
+#if PRINT == 2
         std::cout << RED << url << RESET << std::endl;
+#endif
         for (size_t i = 0; i < this->_locations.size(); i++)
         {
             if(url == this->_locations[i].getUrl() && this->_locations[i].isGenerated())

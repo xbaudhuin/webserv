@@ -15,22 +15,6 @@ Webserv::Webserv(const char* file) {
 		config = "./config/good_config/ultimate.conf";
 	}
     this->parseConfig(config);
-#if PRINT == 2
-    vec_string v;
-    v.push_back("/");
-    
-    for (size_t i = 0; i < v.size(); i++)
-    {
-        try
-        {
-            this->_confs[0].second.getPreciseLocation(v[i]);
-        }
-        catch(const std::exception& e)
-        {
-            std::cout << PURP2 << e.what() << RESET << '\n';
-        }
-    }
-#endif
 	this->_epollFd = epoll_create1(EPOLL_CLOEXEC);
 	if (this->_epollFd == -1) {
 		std::cerr << "webserv: Webserv::constructor: epoll_create1: " << strerror(errno) << std::endl;
@@ -128,14 +112,6 @@ void Webserv::parse(vec_string split) {
     if (!check) {
         throw std::invalid_argument("Webserv: Error:\nNo configuration found");
     }
-#if PRINT == 3
-    try {
-        std::cout << findErrorPage(600, this->_confs[0].second) << std::endl;
-    }
-    catch(const std::exception& e) {
-        std::cerr << e.what() << '\n';
-    }
-#endif
     this->checkConfigs();
     this->createMaps();
 }

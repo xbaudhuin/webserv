@@ -24,7 +24,9 @@ Location& ServerConf::getPreciseLocation(const std::string &url)
     bool is_file = 0;
     size_t size = this->_locations.size();
     std::string s = url;
+#if PRINT == 2
     std::cout << RED << "URI: " << s << " && root: " << this->root << " && param: " << url << RESET << std::endl;
+#endif
     for (size_t i = 0; i < size; i++)
     {
         if(this->_locations[i].isExactMatch() && this->_locations[i].myUri() == s)

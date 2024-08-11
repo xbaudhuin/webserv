@@ -788,7 +788,6 @@ std::vector<char> findErrorPage(int error_code, ServerConf &map) {
   string s = "";
   try {
     map_err_pages m = map.getErrPages();
-    std::cout << "coucou: " << error_code << std::endl;
     if(m.find(error_code) == m.end())
         throw bad_key_error("");
     Location loc = map.getPreciseLocation(
@@ -823,7 +822,6 @@ std::vector<char> findErrorPage(int error_code, ServerConf &map) {
     ret.insert(ret.begin(), file.begin(), file.end());
     return (ret);
   } catch (const std::logic_error &e) {
-    std::cout << PURP2 << "coucou idiot"<< RESET << std::endl;
     ;
   }
   
