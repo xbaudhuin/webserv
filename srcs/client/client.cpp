@@ -8,218 +8,114 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <vector>
+#include <algorithm>
+
+# define RED "\033[1;31m"
+# define RESET "\033[0m"
+# define PURP "\033[1;95m"
+# define PURP2 "\033[1;35m"
+# define ORANGE "\033[1;91m"
+# define LIGHTB "\033[1;36m"
+# define BLUE "\033[1;94m"
+# define GREEN "\033[1;92m"
+# define YELLOW "\033[1;93m"
+
+using namespace std;
+
+typedef vector<string> vs;
 
 #define PORT 4243
 
+vs split(const std::string &str, const std::string &charset)
+{
+    vs split;
+    size_t pos = 0;
+    size_t posend = 0;
+
+    while(1)
+    {
+        if((pos = str.find_first_not_of(charset, pos)) == std::string::npos)
+            break;
+        posend = str.find_first_of(charset, pos);
+        std::string to_add = str.substr(pos, posend - pos);
+        split.push_back(to_add);
+        if(posend == std::string::npos)
+            break;
+        pos = posend;
+    }
+
+    return(split);
+}
+
+std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
 int main(int ac, char **av) {
-  int sock = 0;
-  int long valread;
-
-  struct sockaddr_in serv_adr;
-
-  std::string request;
-  // request = "GET
-  // /index.htmloooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-  //
-  // HTTP/1.145\n";
-  request = "GET /../../salut";
-  // request += av[1];
-  request += " HTTP/1.1\r\n";
-  // request += "Hosta:\n";
-  // request += "Host: localhostPOST\r\n";
-  request += "Host: webserv\r\n";
-  // request += "Transer-encoding: chunk\r\n";
-  // request += "7\r\n";
-  // request += "bonjour";
-  // request += "0\r\n";
-  // request += "salut: coucou\r\n";
-  // request +=
-  // "bbonjourbonjourronjourbonjoubonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjoubonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjour"
-  // "bonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonj"
-  // "ourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrb"
-  // "onjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjou"
-  // "rrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbon"
-  // "jourrbonjourbonjourrbonjourbbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourb"
-  // "onjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjo"
-  // "urbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbo"
-  // "njourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjour"
-  // "rbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonjourrbonjourbonj"
-  // "ourronjourrbonjourbonjourrjourbonjourrbonjourbonjourrrrbonjourbonjourrrr"
-  // "\n";
-  // oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo";
-
-  // request += "\r\n";
-  // request += "Accept: */*\r\n";
-  // request += "Content-Type: application/x-www-form-urlencoded\r\n";
-  // request += "Content-Type: text/html\r\n";
-  // request += "Content-Length: 150\r\n";
-  //   request += "webserv_type: bonjour\r\n";
-  // request += "Content-Length: 27\r\n";
-  request += "\r\n";
-  // request += "param1=value1&param2=value2";
-  // request += "\r\n";
-
-  char buffer[20048] = {0};
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    std::cout << "Error: fail to create socket" << std::endl;
-    return 1;
+  
+  vs v;
+  std::ifstream	config;
+	config.open("./tester.log");
+	if (!config.is_open())
+    return(printf("Couldn't open file ./tester.log\n"));
+	std::stringstream strm;
+	strm << config.rdbuf();
+	std::string str = strm.str();
+	config.close();
+  vs s = split(str, "\n");
+  for (size_t i = 0; i < s.size(); i++)
+  {
+    s[i] = ReplaceAll(s[i], "$", "\r\n");
+    s[i] = ReplaceAll(s[i], "%", "\n");
   }
-  memset(&serv_adr, 0, sizeof(serv_adr));
-  serv_adr.sin_family = AF_INET;
-  serv_adr.sin_port = htons(PORT);
+  
+  for (size_t i = 0; i < s.size(); i++)
+  {
+    v.push_back(s[i]);
+  }
 
-  if (inet_pton(AF_INET, "127.0.0.1", &serv_adr.sin_addr) <= 0) {
-    std::cout << "Error: fail to inet_pton" << std::endl;
-    close(sock);
-    return (1);
+  
+  for (size_t i = 0; i < v.size(); i++)
+  {
+      int sock = 0;
+      int long valread;
+
+      struct sockaddr_in serv_adr;
+      char buffer[20048] = {0};
+      if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        std::cout << "Error: fail to create socket" << std::endl;
+        return 1;
+      }
+      memset(&serv_adr, 0, sizeof(serv_adr));
+      serv_adr.sin_family = AF_INET;
+      serv_adr.sin_port = htons(PORT);
+
+      if (inet_pton(AF_INET, "127.0.0.1", &serv_adr.sin_addr) <= 0) {
+        std::cout << "Error: fail to inet_pton" << std::endl;
+        close(sock);
+        return (1);
+      }
+      if (connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) < 0) {
+        std::cout << "Connection failed" << std::endl;
+        close(sock);
+        return (1);
+      }
+      send(sock, v[i].c_str(), v[i].size(), 0);
+      std::cout << RED << "**********SENT REQUEST [" << i << "] :********** \n" << RESET << v[i] << "\n" << std::endl;
+      valread = read(sock, buffer, 20048);
+      std::cout << buffer << std::endl;
+      std::cout << BLUE << "READ = " << valread << RESET "\n" << std::endl;
+      valread = read(sock, buffer, 20048);
+      std::cout << YELLOW << buffer << RESET "\n" <<  std::endl;
+      std::cout << "READ = " << valread << std::endl;
+      close(sock);
   }
-  if (connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr)) < 0) {
-    std::cout << "Connection failed" << std::endl;
-    close(sock);
-    return (1);
-  }
-  // std::string test = "salut\r\n";
-  send(sock, request.c_str(), request.size(), 0);
-  std::cout << "Sent request: \n" << request << std::endl;
-  valread = read(sock, buffer, 20048);
-  std::cout << buffer << std::endl;
-  std::cout << "READ = " << valread << std::endl;
-  // sleep(3);
-  // request = "Bonjour: */*\r\n";
-  // request += "\r\n";
-  valread = read(sock, buffer, 20048);
-  std::cout << buffer << std::endl;
-  std::cout << "READ = " << valread << std::endl;
-  // valread = read(sock, buffer, 20048);
-  // std::cout << buffer << std::endl;
-  // file << buffer;
-  // std::cout << "READ = " << valread << std::endl;
-  // valread = read(sock, buffer, 20048);
-  // file << buffer;
-  // std::cout << buffer << std::endl;
-  // std::cout << "READ = " << valread << std::endl;
-  // valread = read(sock, buffer, 2048);
-  // std::cout << buffer << std::endl;
-  // valread = read(sock, buffer, 2048);
-  // std::cout << buffer << std::endl;
+  
   return (0);
 }
