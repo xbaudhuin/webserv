@@ -6,8 +6,8 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf,
     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
       _clientIp(clientIp), _server(NULL), _location(NULL), _statusCode(0),
       _version(1), _requestSize(0), _bodyToRead(-1), _chunkRequest(false),
-      _requestIsDone(true), _checkMulti(false), _multipartRequest(false),
-      _tmpFd(-1), _sizeChunk(0), _currentMultipart(0), _response(),
+      _requestIsDone(true), _tmpFd(-1), _sizeChunk(0), _multipartRequest(false),
+      _checkMulti(false), _currentMultipart(0), _response(),
       _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
       _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
 
@@ -16,24 +16,6 @@ Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf,
     throw(std::logic_error("Default server is NULL"));
   return;
 }
-
-// Client::Client(int fd, mapConfs &mapConfs, ServerConf *defaultConf,
-//                in_addr_t IpClient)
-//     : _socket(fd), _mapConf(mapConfs), _defaultConf(defaultConf),
-//     _server(NULL),
-//       _location(NULL), _statusCode(0), _version(1), _requestSize(0),
-//       _bodyToRead(-1), _chunkRequest(false), _requestIsDone(true),
-//       _checkMulti(false), _multipartRequest(false), _tmpFd(-1),
-//       _sizeChunk(0), _currentMultipart(0), _response(),
-//       _keepConnectionAlive(true), _diffFileSystem(false), _epollIn(false),
-//       _uploadFd(-1), _leftToRead(0), _cgiPid(0) {
-//
-//   (void)IpClient;
-//   _time = getTime();
-//   if (defaultConf == NULL)
-//     throw(std::logic_error("Default server is NULL"));
-//   return;
-// }
 
 Client::~Client(void) {
   resetMultipart();
@@ -49,9 +31,9 @@ Client::~Client(void) {
   }
   if (_cgiPid > 0) {
     if (kill(_cgiPid, SIGKILL) == -1) {
-      std::cerr << "Client::~Client: Kill failed on " << _cgiPid << std::endl;
+      logErrorClient("Client::~Client: fail to kill cgi");
     }
-    waitpid(_cgiPid, NULL, WNOHANG);
+    waitpid(_cgiPid, NULL, 0);
   }
   return;
 }
@@ -79,8 +61,8 @@ void Client::copyMultipart(const std::vector<multipartRequest> &rhs) {
   _multipart = rhs;
 }
 
-void Client::resetMultipart(void){
-for (size_t i = 0; i < _multipart.size(); i++) {
+void Client::resetMultipart(void) {
+  for (size_t i = 0; i < _multipart.size(); i++) {
     if (_multipart[i].tmpFilename.empty() == false) {
       unlink(_multipart[i].tmpFilename.c_str());
     }
@@ -159,7 +141,7 @@ bool Client::isTimedOut(void) const {
 }
 
 void Client::resetClient(void) {
-  std::cout << YELLOW << "reset client + response" << RESET << std::endl;
+  std::cout << YELLOW << "reset client" << RESET << std::endl;
   _server = NULL;
   _location = NULL;
   _statusCode = 0;
@@ -221,11 +203,6 @@ ServerConf *Client::getServerConf(const std::string &host) {
   }
   return (_defaultConf);
 }
-
-// const std::vector<char> &Client::getBuffer(void) const { return
-// (_vBuffer); }
-
-// int Client::getBodyToRead(void) const { return (_bodyToRead); }
 
 bool Client::keepConnectionOpen(void) const { return (_keepConnectionAlive); }
 

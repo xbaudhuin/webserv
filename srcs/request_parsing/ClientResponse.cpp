@@ -6,7 +6,6 @@ bool Client::findIndex(std::string &url) {
   std::string tmp;
   struct stat statbuf;
   size_t it = 0;
-  std::cout << RED << "COUCOU BTCH" << std::endl;
   for (; it < vector.size(); it++) {
     tmp = "." + vector[it];
     if (stat(tmp.c_str(), &statbuf) == 0) {
@@ -559,32 +558,24 @@ void Client::handleUpload(void) {
 }
 
 void Client::handlePOST() {
-  std::cout << "HANDLEPOST: " << _multipart.size() << std::endl;
   if (_multipart.size() >= 1) {
     std::cout << "status code = " << _statusCode << std::endl;
     handleMultipart();
   } else
     handleUpload();
-  std::cout << RED << "_bodyToRead = " << _bodyToRead << std::endl;
   if (_bodyToRead == 0)
     handleError();
 }
 
 bool Client::getResponse(std::vector<char> &response) {
   if (_cgiPid > 0) {
-    std::cout << PURP2 << "Client::sendResponse: HandleCGI" << RESET
-              << std::endl;
     handleCgi(response);
     return (_leftToRead != 0);
   } else if (_sMethod == "DELETE" && _statusCode > 0 && _statusCode < 400) {
-    std::cout << PURP2 << "Client::sendResponse: HandleDELETE" << RESET
-              << std::endl;
     handleDelete();
     response = _response.getResponse();
     return (false);
   } else if (_sMethod == "POST" && _statusCode > 0 && _statusCode < 400) {
-    std::cout << PURP2 << "Client::sendResponse handlePOST" << RESET
-              << std::endl;
     handlePOST();
     if (_bodyToRead == 0) {
       response = _response.getResponse();
@@ -595,7 +586,6 @@ bool Client::getResponse(std::vector<char> &response) {
     response = _response.getResponse();
     return (_leftToRead != 0);
   }
-  bool ret = _leftToRead != 0;
   if (_leftToRead > 0) {
     readFile(response);
     if (_statusCode == 500) {
@@ -603,7 +593,6 @@ bool Client::getResponse(std::vector<char> &response) {
       return (false);
     }
   }
-  std::cout << RED << "return of sendResponse: " << ret << RESET << std::endl;
   return (_leftToRead != 0);
 }
 

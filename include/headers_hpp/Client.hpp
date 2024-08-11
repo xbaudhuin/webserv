@@ -45,13 +45,8 @@ public:
   // operator
   Client &operator=(Client const &rhs);
 
-  // method to debug
-  void print();
-  int getBodyToRead(void) const;
-
   // method
   bool addBuffer(std::vector<char> &buffer);
-  const std::vector<char> &getBuffer(void) const;
   bool sendResponse(std::vector<char> &response);
   void setStatusCode(size_t code);
   bool isTimedOut(void) const;
@@ -69,7 +64,6 @@ private:
   ServerConf *_server;
   Location *_location;
   time_t _time;
-  // Request _request;
 
   // requestLine attribute
   size_t _statusCode;
@@ -81,7 +75,6 @@ private:
   size_t _version;
 
   // request attribute
-  // std::string _sHost;
   std::map<std::string, std::string> _headers;
   size_t _requestSize;
   std::vector<char> _vBody;
@@ -89,13 +82,14 @@ private:
   int64_t _bodyToRead;
   bool _chunkRequest;
   bool _requestIsDone;
-  std::string _boundary;
-  bool _checkMulti;
-  bool _multipartRequest;
   std::string _tmpFile;
   int _tmpFd;
-  // int _chunkFd;
-  int64_t _sizeChunk;
+  uint64_t _sizeChunk;
+
+  // multipart attribute
+  bool _multipartRequest;
+  std::string _boundary;
+  bool _checkMulti;
   std::vector<multipartRequest> _multipart;
   size_t _currentMultipart;
 
