@@ -68,7 +68,7 @@ int main(int ac, char **av)
         file_log += ".log";
         req.os = new std::ofstream();
         req.os->open(file_log.c_str(), ostream::trunc | ostream::out);
-        r.emplace_back(req);
+        r.push_back(req);
     }
 
     for (size_t i = 0; i < r.size(); i++)

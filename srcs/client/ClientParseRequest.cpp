@@ -350,7 +350,6 @@ bool Client::saveToTmpFile(void) {
   if (_tmpFd == -1) {
     if (isCgi() == true) {
       _tmpFile = _location->getCgiPath(_sUri) + "infileCgi_";
-      std::cout << GREEN << "TMPFILE = " << _tmpFile << RESET << std::endl;
     } else
       _tmpFile = "webserv_tmpfile_";
     std::stringstream ss;

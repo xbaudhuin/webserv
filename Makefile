@@ -177,8 +177,9 @@ ${TXT}:
 		@echo "-Iinclude/headers_hpp\n-I/include/headers_h\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
 
 clean:	
-		${RM}  ${OBJ_PATH}
-		${RM}  ./log/*
+		${RM}	${OBJ_PATH}
+		${RM}	./log/*
+		${RM}	html/upload/*
 
 fclean:		clean
 		${RM} ${NAME} ${SPAM} ${SRC_PATH}${TXT} ${TXT}

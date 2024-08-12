@@ -17,7 +17,6 @@ bool Client::findIndex(std::string &url) {
       continue;
     }
   }
-  std::cout << "HERE: " << tmp << std::endl;
   if (_statusCode >= 400) {
     logErrorClient("Client::findIndex: fail to access index: " + url);
     return (true);
@@ -137,13 +136,6 @@ void Client::getUrlFromLocation(std::string &url) const {
           (_sUri.size() >= _location->myUri().size()
                ? _sUri.substr(_location->myUri().size())
                : "");
-    // std::cout << "s_Uri size: " << _sUri.size()
-    //           << " && myUri size:" << _location->myUri().size() << std::endl;
-    // std::cout << "HERE _sUri substr = "
-    //           << (_sUri.size() >= _location->myUri().size()
-    //                   ? _sUri.substr(_location->myUri().size())
-    //                   : "")
-    //           << std::endl;
   } else if (_location->hasAlias()) {
     std::string urli = _location->getRootServer();
     if (urli[urli.size() - 1] != '/')
@@ -152,26 +144,13 @@ void Client::getUrlFromLocation(std::string &url) const {
           (_sUri.size() > _location->myUri().size()
                ? _sUri.substr(_location->myUri().size())
                : "");
-    // std::cout << "MY URI AND MY URI SIZE: " << _location->myUri() << " && "
-    //           << _location->myUri().size() << std::endl;
-    // std::cout << "s_Uri size: " << _sUri.size()
-    //           << " && myUri size:" << _location->myUri().size() << std::endl;
-    // std::cout << "HERE _sUri substr = "
-    //           << (_sUri.size() >= _location->myUri().size()
-    //                   ? _sUri.substr(_location->myUri().size())
-    //                   : "")
-    //           << std::endl;
   } else
     url = "." + _location->getRootServer() + _sUri;
-  std::cout << std::endl << *_location << std::endl;
-  std::cout << RED << "_sUri = " << _sUri << RESET << std::endl;
-  std::cout << RED << "url = " << url << RESET << std::endl;
 }
 
 void Client::findPages(void) {
   std::string url;
   getUrlFromLocation(url);
-  std::cout << _location->isADir() << std::endl;
   if (_location->isADir() == true) {
     if (url[url.size() - 1] == '/') {
       struct stat st;
@@ -193,9 +172,6 @@ void Client::findPages(void) {
   }
   _sPath = url;
   struct stat st;
-  std::cout << GREEN
-            << "Client::findPages: AFTER searching location: _statusCode = "
-            << _statusCode << "; url = " << url << std::endl;
   errno = 0;
   if (stat(url.c_str(), &st) == -1) {
     if (errno == ENOENT || errno == ENOTDIR)
@@ -209,9 +185,6 @@ void Client::findPages(void) {
   }
   if ((st.st_mode & S_IFMT) != S_IFREG) {
     _statusCode = 403;
-    std::cout << YELLOW
-              << "Client::findPages: st.st_mode = " << (st.st_mode & S_IFMT)
-              << "; on file: " << url << RESET << std::endl;
     logErrorClient("Client::findPages: not a file: " + url);
     return;
   }
@@ -420,8 +393,6 @@ void Client::handleDelete(void) {
 
 void Client::handleMultipart(void) {
   struct stat st;
-  std::cout << "client::handleMultipart: _currentMultipart = "
-            << _currentMultipart << std::endl;
   if (stat(_multipart[_currentMultipart].file.c_str(), &st) != -1) {
     _statusCode = 409;
     logErrorClient("Client::handleMultipart: file already exist: " +
@@ -450,8 +421,6 @@ void Client::handleMultipart(void) {
                    _multipart[_currentMultipart].tmpFilename + " to " +
                    _multipart[_currentMultipart].file);
   } else {
-    std::cout << "Client::handleMultipart: renamed: "
-              << _multipart[_currentMultipart].tmpFilename << std::endl;
     _multipart[_currentMultipart].tmpFilename = "";
   }
   if (_diffFileSystem == true) {
@@ -514,8 +483,6 @@ void Client::uploadTmpFileDifferentFileSystem(std::string &tmp,
     close(_tmpFd);
     _tmpFd = -1;
     unlink(tmp.c_str());
-    std::cout << "Client::uploadTmpFileDifferentFileSystem: unlink: " << tmp
-              << std::endl;
     tmp = "";
     close(_uploadFd);
     _uploadFd = -1;
@@ -559,7 +526,6 @@ void Client::handleUpload(void) {
 
 void Client::handlePOST() {
   if (_multipart.size() >= 1) {
-    std::cout << "status code = " << _statusCode << std::endl;
     handleMultipart();
   } else
     handleUpload();

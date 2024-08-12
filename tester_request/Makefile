@@ -19,7 +19,7 @@ NAME					=	tester_request
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -g
+CXXFLAGS			=	-Wall -Werror -Wextra -std=c++98 -MMD -MP -g
 
 debug 				= 	0
 
