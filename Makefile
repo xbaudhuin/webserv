@@ -19,7 +19,7 @@ NAME					=	webserv
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98
 
 debug 				= 	0
 
@@ -56,6 +56,8 @@ endif
 ifeq ($(print), 3)
 	CXXFLAGS += -D PRINT=3
 endif
+
+SPAM			=	spam.exe
 
 TXT						=	compile_flags.txt
 
@@ -128,13 +130,17 @@ SRCS_MAIN		=	main/main.cpp \
 					error_logs/cgiException.cpp \
 					error_logs/bad_key_error.cpp \
 					error_pages/singleton.cpp \
-					request_parsing/Client.cpp \
-					request_parsing/ClientConst.cpp \
-					request_parsing/ClientResponse.cpp \
-					request_parsing/Response.cpp \
-					request_parsing/ClientParseRequest.cpp \
-					request_parsing/ClientCgi.cpp \
-					request_parsing/ClientMultipart.cpp \
+					client/Client.cpp \
+					client/ClientConst.cpp \
+					client/ClientResponse.cpp \
+					client/Response.cpp \
+					client/ClientParseRequest.cpp \
+					client/ClientCgi.cpp \
+					client/ClientMultipart.cpp \
+
+SRCS_SPAM 		= 	custom_client/client_spam.cpp \
+
+OBJS_SPAM 		= 	$(addprefix ${OBJ_PATH}, ${SRCS_SPAM:.cpp=.o}) \
 
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
 
@@ -156,19 +162,26 @@ ${OBJ_PATH}%.o:	${SRC_PATH}%.cpp
 		@${CXX} ${CXXFLAGS} ${HEADER} -c $< -o $@
 		@printf "${NEW}${YELLOW} ${NAME} ${GREEN}Building: ${RESET}${CXX} ${CXXFLAGS} ${ITALIC}${BOLD}$<${RESET}"
 
+${SPAM}: Makefile ${OBJS_SPAM} ${TXT}
+		@${CXX} ${CXXFLAGS} -o ${SPAM} ${OBJS_SPAM}
+		@printf "${NEW}${YELLOW}${SPAM}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
+
 txt:			${TXT}
 
 compile:	${OBJS}
 		@printf "\n"
 
+spam: ${SPAM}
+		@printf "${GREEN}Client spam compiled${RESET}\n"
 ${TXT}:
 		@echo "-Iinclude/headers_hpp\n-I/include/headers_h\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
 
 clean:	
 		${RM}  ${OBJ_PATH}
+		${RM}  ./log/*
 
 fclean:		clean
-		${RM} ${NAME} ${REQUEST} ${SRC_PATH}${TXT} ${TXT}
+		${RM} ${NAME} ${SPAM} ${SRC_PATH}${TXT} ${TXT}
 
 re:			fclean all
 

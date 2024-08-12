@@ -11,7 +11,6 @@
 
 int main(int argc, char **argv) {
   int sock = 0;
-  int long valread;
 
 
 	if (argc != 4) {
@@ -36,7 +35,7 @@ int main(int argc, char **argv) {
     close(sock);
     return (1);
   }
-  for (size_t i = 0; i < atoi(argv[2]) ; i++)
+  for (int i = 0; i < atoi(argv[2]) ; i++)
   {
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	connect(sock, (struct sockaddr *)&serv_adr, sizeof(serv_adr));
