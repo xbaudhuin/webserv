@@ -152,6 +152,7 @@ test:		${OBJS_TESTS} ${TXT} Makefile
 
 clean:	
 		${RM}  ${OBJ_PATH}
+		${RM}  ./logs/*
 
 fclean:		clean
 		${RM} ${NAME} ${REQUEST} ${SRC_PATH}${TXT} ${TXT}
