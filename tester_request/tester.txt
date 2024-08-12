@@ -11,3 +11,4 @@ GET / HTTP/1.1%%%Host: webserv$$
 GET / HTTP/1.1$$$Host: webserv$$$$
 %GET / HTTP/1.1$Host: webserv$$
 $GET / HTTP/1.1$Host: webserv$$
+$GET / HTTP/1.1$Host: webserv$$
