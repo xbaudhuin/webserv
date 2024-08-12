@@ -5,7 +5,7 @@
 .SH SYNOPSIS
 .B The program only take .conf files wherever it's located like this:
 .TP 5
-    {NAME}.conf \- Configuration file for webserv
+    ./webserv {NAME}.conf \- Configuration file for webserv
 
 .SH DESCRIPTION
 The \fB.conf\fR file is used to configure the \fBwebserv\fR. This file contains all the necessary parameters to configure the web server. \fBAnything\fR that isn't a directive will be considered an \fBerror\fR and therefore be \fBrefused\fR

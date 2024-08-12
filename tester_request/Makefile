@@ -15,11 +15,11 @@
 #                                 CONFIGURATION                                #
 ################################################################################
 
-NAME					=	webserv
+NAME					=	tester_request
 
 CXX						=	c++
 
-CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -std=c++98 -g
+CXXFLAGS			=	-Wall -Werror -Wextra -MMD -MP -g
 
 debug 				= 	0
 
@@ -59,24 +59,11 @@ endif
 
 TXT						=	compile_flags.txt
 
-HEADER				=	-I./include/headers_hpp/ \
+HEADER				=	-I./include/ \
 								
 DEP_PATH			=	dep/
 
-HEADER_FILES	=	 Webserv.hpp \
-					 ServerConf.hpp \
-					 Error.hpp \
-					 Port.hpp \
-					 Typedef.hpp \
-					 Utils.hpp \
-					 Client.hpp \
-					 Response.hpp \
-					 Port.hpp \
-					 sockets.hpp \
-					 Colors.hpp \
-					 security_error.hpp \
-					 cgiException.hpp \
-					 bad_key_error.hpp \
+HEADER_FILES	=	 tester_request.hpp \
 
 GREEN					=	\033[0;32m
 RED						=	\033[0;31m
@@ -92,7 +79,7 @@ SRC_PATH			=	./srcs/
 
 OBJ_PATH			=	obj/
 
-LOG 					= log/
+LOG 					= logs/
 
 RM						=	rm -rf
 
@@ -102,41 +89,30 @@ AR						=	ar rcs
 #                                    SOURCES                                   #
 ################################################################################
 
-SRCS_MAIN		=	main/main.cpp \
-					main/Webserv.cpp \
-					signals/handleSignal.cpp \
-					signals/getExitStatus.cpp \
-					exec/Port.cpp \
-					parser/Split.cpp \
-					parser/Parser.cpp \
-					parser/ServerConf.cpp \
-					parser/ServerConfGetter.cpp \
-					parser/Location.cpp \
-					parser/LocationChecker.cpp \
-					parser/LocationGetter.cpp \
-					parser/GetPreciseLocation.cpp \
-					parser/UtilsParser.cpp \
-					parser/ParserLocation.cpp \
-					parser/Printer.cpp \
-					sockets/createServerSocket.cpp \
-					sockets/addSocketToEpoll.cpp \
-					sockets/protectedClose.cpp \
-					sockets/changeEpollEvents.cpp \
-					sockets/checkEvent.cpp \
-					error_logs/logs.cpp \
-					error_logs/Security_error.cpp \
-					error_logs/cgiException.cpp \
-					error_logs/bad_key_error.cpp \
-					error_pages/singleton.cpp \
-					request_parsing/Client.cpp \
-					request_parsing/ClientConst.cpp \
-					request_parsing/ClientResponse.cpp \
-					request_parsing/Response.cpp \
-					request_parsing/ClientParseRequest.cpp \
-					request_parsing/ClientCgi.cpp \
-					request_parsing/ClientMultipart.cpp \
+SRCS_MAIN		=	main.cpp \
+					utils.cpp \
+					threads.cpp
 
+REQUEST = requester
+
+
+SRCS_REQUEST 	=	main.cpp \
+					utils.cpp \
+					threads.cpp
+	
 OBJS			=	$(addprefix ${OBJ_PATH}, ${SRCS_MAIN:.cpp=.o}) \
+
+OBJS_REQUEST	=	$(addprefix ${OBJ_PATH}, ${SRCS_REQUEST:.cpp=.o}) \
+
+################################################################################
+#                                    TESTS                                     #
+################################################################################
+
+SRCS_TESTS		=	main.cpp \
+					utils.cpp \
+					threads.cpp
+
+OBJS_TESTS		=	$(addprefix ${OBJ_PATH}, ${SRCS_TESTS:.cpp=.o}) \
 
 ################################################################################
 #                                 RULES                                        #
@@ -148,9 +124,15 @@ ${NAME}:		${OBJS} ${TXT} Makefile ${LOG}
 		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS} ${HEADER}
 		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 
+request: ${REQUEST}
+
 ${LOG}:
 		mkdir -p ${LOG}
 
+${REQUEST}: ${OBJS_REQUEST} ${TXT} Makefile
+		@${CXX} ${CXXFLAGS} -o ${REQUEST} ${OBJS_REQUEST} ${HEADER}
+		@printf "${NEW}${YELLOW}${REQUEST}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
+		
 ${OBJ_PATH}%.o:	${SRC_PATH}%.cpp
 		@mkdir -p $(dir $@)
 		@${CXX} ${CXXFLAGS} ${HEADER} -c $< -o $@
@@ -163,6 +145,10 @@ compile:	${OBJS}
 
 ${TXT}:
 		@echo "-Iinclude/headers_hpp\n-I/include/headers_h\n-Wall -Werror -Wextra -std=c++98" > compile_flags.txt
+
+test:		${OBJS_TESTS} ${TXT} Makefile
+		@${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS_TESTS} ${HEADER}
+		@printf "${NEW}${YELLOW}${NAME}${RESET}${GREEN}${BOLD} Compiled\n${RESET}${GREEN}compiled with:${RESET} ${CXX} ${CXXFLAGS}\n"
 
 clean:	
 		${RM}  ${OBJ_PATH}
