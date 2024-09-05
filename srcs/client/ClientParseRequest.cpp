@@ -665,7 +665,7 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
     return (parseBody());
   }
   fillBufferWithoutReturnCarriage(buffer);
-  buffer.erase(buffer.begin(), buffer.begin() + _vBuffer.size());
+  // buffer.erase(buffer.begin(), buffer.begin() + _vBuffer.size());
   int newLine = hasNewLine();
   if (newLine == -1) {
     return (false);
@@ -699,7 +699,7 @@ bool Client::parseBuffer(std::vector<char> &buffer) {
   return (false);
 }
 bool Client::addBuffer(std::vector<char> &buffer) {
-  // std::cout << "buffer: " << buffer << std::endl;
+  std::cout << "buffer: " << buffer << std::endl;
   bool ret = parseBuffer(buffer);
   std::cout << YELLOW;
   if (ret == false) {
